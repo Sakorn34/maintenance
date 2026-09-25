@@ -1,0 +1,66 @@
+/**
+ * maintenance — หน้ารอประเมิน (`status_rate`)
+ * scope: `.mn-addjob-page.mn-status-rate-page` — อาศัย `mn-page-addjob.css` เป็นชั้นหลัก
+ */
+
+.mn-addjob-page.mn-status-rate-page .content {
+  padding: 9rem 0 3rem;
+}
+
+@media (max-width: 768px) {
+  .mn-addjob-page.mn-status-rate-page .content {
+    padding: 10.5rem 0 2rem;
+  }
+}
+
+.mn-addjob-page.mn-status-rate-page .header {
+  z-index: 500;
+}
+
+.mn-addjob-page.mn-status-rate-page .content table#table1.mn-status-rate-table {
+  border-collapse: collapse;
+}
+
+.mn-addjob-page.mn-status-rate-page .mn-status-rate-thead th {
+  background-color: var(--mn-surface-2);
+  padding: 0.5rem 0.25rem;
+  border-bottom: 1px solid var(--mn-border);
+}
+
+.mn-addjob-page.mn-status-rate-page tr.mn-status-rate-row-under > td {
+  padding-bottom: 0.5em;
+  padding-top: 0.5em;
+}
+
+.mn-addjob-page.mn-status-rate-page .mn-status-rate-ins--in {
+  color: var(--mn-accent);
+  font-weight: 600;
+}
+
+.mn-addjob-page.mn-status-rate-page .mn-status-rate-ins--out {
+  color: var(--mn-danger-text);
+  font-weight: 600;
+}
+
+.mn-addjob-page.mn-status-rate-page .mn-status-rate-spare--yes {
+  color: #22863a;
+  font-weight: 600;
+}
+
+.mn-addjob-page.mn-status-rate-page .mn-status-rate-spare--no {
+  color: var(--mn-danger-text);
+  font-weight: 600;
+}
+
+.mn-addjob-page.mn-status-rate-page .mn-status-rate-edit {
+  color: var(--mn-accent);
+}
+
+.mn-addjob-page.mn-status-rate-page .mn-status-rate-edit:hover {
+  opacity: 0.85;
+}
+
+.mn-addjob-page.mn-status-rate-page .mn-status-rate-summary {
+  color: var(--mn-text-muted);
+  font-size: 0.95rem;
+}

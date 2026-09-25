@@ -1,0 +1,49 @@
+/**
+ * maintenance — หน้ารอรับเครื่องซ่อม (status_wait_hardware)
+ * อาศัย mn-page-addjob.css เป็นชั้นหลัก — ไฟล์นี้เพิ่ม padding ใต้ header และสไตล์หัวตาราง
+ */
+
+/* ─────────────────────────────────────────────────────────────────
+ * ชดเชยความสูงแถบ fixed (title-h + progress)
+ * ───────────────────────────────────────────────────────────────── */
+.mn-addjob-page.mn-status-wait-hardware-page .content {
+  padding: 9rem 0 3rem;
+}
+
+@media (max-width: 768px) {
+  .mn-addjob-page.mn-status-wait-hardware-page .content {
+    padding: 10.5rem 0 2rem;
+  }
+}
+
+.mn-addjob-page.mn-status-wait-hardware-page .header {
+  z-index: 500;
+}
+
+.mn-addjob-page.mn-status-wait-hardware-page .content table#table1.mn-status-wait-hardware-table {
+  border-collapse: collapse;
+}
+
+.mn-addjob-page.mn-status-wait-hardware-page .mn-status-wait-hardware-thead th {
+  background-color: #f5f5f5;
+  padding: 0.5rem 0.25rem;
+}
+
+.mn-addjob-page.mn-status-wait-hardware-page tr.mn-status-wait-hardware-row-under > td {
+  padding-bottom: 0.5em;
+  padding-top: 0.5em;
+}
+
+.mn-addjob-page.mn-status-wait-hardware-page .mn-wait-hw-spare-label--has {
+  color: #c00000;
+}
+
+.mn-addjob-page.mn-status-wait-hardware-page .mn-wait-hw-spare-label--none {
+  color: darkgreen;
+}
+
+.mn-addjob-page.mn-status-wait-hardware-page .mn-wait-hw-spare-detail-link {
+  color: #0000ff;
+  display: inline-block;
+  margin-top: 0.15rem;
+}

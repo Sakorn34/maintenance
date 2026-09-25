@@ -1,0 +1,69 @@
+/**
+ * maintenance — หน้ารอซ่อม (status_wait_ma)
+ * อาศัย mn-page-addjob.css — scope ด้วย body class
+ */
+
+/* ─────────────────────────────────────────────────────────────────
+ * padding ใต้ header + progress
+ * ───────────────────────────────────────────────────────────────── */
+.mn-addjob-page.mn-status-wait-ma-page .content {
+  padding: 9rem 0 3rem;
+}
+
+@media (max-width: 768px) {
+  .mn-addjob-page.mn-status-wait-ma-page .content {
+    padding: 10.5rem 0 2rem;
+  }
+}
+
+.mn-addjob-page.mn-status-wait-ma-page .header {
+  z-index: 500;
+}
+
+.mn-addjob-page.mn-status-wait-ma-page .content table#table1.mn-status-wait-ma-table {
+  border-collapse: collapse;
+}
+
+.mn-addjob-page.mn-status-wait-ma-page .mn-status-wait-ma-thead th {
+  background-color: #f5f5f5;
+  padding: 0.5rem 0.25rem;
+}
+
+.mn-addjob-page.mn-status-wait-ma-page tr.mn-status-wait-ma-row-under > td {
+  padding-bottom: 0.5em;
+  padding-top: 0.5em;
+}
+
+.mn-addjob-page.mn-status-wait-ma-page .mn-status-wait-ma-footnote {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* คอลัมน์รายการซ่อม + ลิงก์ detail_job (เทียบ `mn-status-wait-firmQV-edit-link`) */
+.mn-addjob-page.mn-status-wait-ma-page .mn-status-wait-ma-col-repair {
+  line-height: 1.45;
+}
+
+.mn-addjob-page.mn-status-wait-ma-page .mn-status-wait-ma-repair-list {
+  color: #15803d;
+  display: block;
+  font-size: 0.88rem;
+  margin-bottom: 0.35rem;
+}
+
+.mn-addjob-page.mn-status-wait-ma-page .mn-status-wait-ma-detail-link {
+  color: var(--mn-accent, #0369a1);
+  display: inline-block;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.mn-addjob-page.mn-status-wait-ma-page .mn-status-wait-ma-detail-link:hover {
+  opacity: 0.88;
+  text-decoration: underline;
+}
+
+.mn-addjob-page.mn-status-wait-ma-page .mn-status-wait-ma-detail-link__inner {
+  white-space: nowrap;
+}

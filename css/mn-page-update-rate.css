@@ -1,0 +1,306 @@
+/**
+ * maintenance — หน้าประเมินราคา/อาการ (`update_rate`)
+ * scope: `.mn-addjob-page.mn-update-rate-page` — layout แบบคาร์ด + grid (ไม่ใช้ table)
+ */
+
+.mn-addjob-page.mn-update-rate-page .content {
+  padding: 9rem 0 3rem;
+}
+
+@media (max-width: 768px) {
+  .mn-addjob-page.mn-update-rate-page .content {
+    padding: 10.5rem 0 2rem;
+  }
+}
+
+.mn-addjob-page.mn-update-rate-page .header {
+  z-index: 500;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-wrap {
+  max-width: 46rem;
+  margin: 0 auto;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-card {
+  background: var(--mn-surface, #fff);
+  border: 1px solid var(--mn-border, #ccc);
+  border-radius: 0.65rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-card__head {
+  padding: 0.75rem 1rem;
+  background: var(--mn-surface-2, #f0f0f0);
+  border-bottom: 1px solid var(--mn-border, #ddd);
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-card__title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--mn-text, #222);
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-summary {
+  padding: 1rem 1.1rem;
+  border-bottom: 1px solid var(--mn-border, #e8e8e8);
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-dl {
+  margin: 0;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-dl__row {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr;
+  gap: 0.35rem 0.75rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--mn-border, #eee);
+  align-items: baseline;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-dl__row:last-child {
+  border-bottom: none;
+}
+
+@media (max-width: 520px) {
+  .mn-addjob-page.mn-update-rate-page .mn-update-rate-dl__row {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+
+  .mn-addjob-page.mn-update-rate-page .mn-update-rate-dl__row dt {
+    font-weight: 700;
+    color: var(--mn-muted, #555);
+  }
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-dl__row--block {
+  grid-template-columns: 1fr;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-dl__row--block dt {
+  margin-bottom: 0.2rem;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-dl__row dt {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--mn-muted, #555);
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-dl__row dd {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-dl__sub {
+  display: inline-block;
+  margin-left: 0.25rem;
+  font-weight: 600;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-ins--in {
+  color: var(--mn-accent, #006600);
+  font-weight: 600;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-ins--out {
+  color: var(--mn-danger-text, #c00);
+  font-weight: 600;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-remark {
+  color: #1a56db;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-history {
+  padding: 0.85rem 1.1rem 1rem;
+  border-bottom: 1px solid var(--mn-border, #e8e8e8);
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-section-title {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-history__body {
+  font-size: 0.92rem;
+  line-height: 1.5;
+  max-height: 16rem;
+  overflow: auto;
+  padding: 0.35rem 0;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-form {
+  padding: 1rem 1.1rem 1.15rem;
+  background: var(--mn-surface-2, #f5f5f5);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--mn-accent, #04aa6d) 8%, var(--mn-surface-2, #f7f7f7)) 0%,
+    var(--mn-surface-2, #f9f9f9) 100%
+  );
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-prior-hint {
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.4rem;
+  background: #fff8eb;
+  border: 1px solid #f0d4b8;
+  color: #9a3412;
+  font-size: 0.9rem;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-form__heading {
+  margin: 0 0 0.85rem;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--mn-text, #222);
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 0.28rem;
+  color: var(--mn-muted, #444);
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-field {
+  min-width: 0;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-field--block {
+  margin-bottom: 0.85rem;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-field--inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-field--inline .mn-update-rate-label {
+  margin-bottom: 0;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-field__control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-hint {
+  font-size: 0.8rem;
+  color: var(--mn-muted, #666);
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem 1rem;
+  margin-bottom: 0.65rem;
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .mn-addjob-page.mn-update-rate-page .mn-update-rate-pair {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-pair--checks {
+  align-items: center;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  font-size: 0.92rem;
+  cursor: pointer;
+  margin: 0;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-check input {
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-input,
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-select,
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-textarea {
+  font-size: 0.95rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--mn-border, #c0c0c0);
+  border-radius: 0.3rem;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--mn-surface, #fff);
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-input--date {
+  width: auto;
+  min-width: 10.5rem;
+  text-align: center;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-select {
+  max-width: 100%;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-textarea {
+  resize: vertical;
+  min-height: 4.5rem;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-toolbar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--mn-border, #ddd);
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-toolbar__btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.35rem;
+  text-decoration: none;
+  color: var(--mn-accent, #c60);
+  font-weight: 600;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-toolbar__btn:hover {
+  opacity: 0.88;
+  background: color-mix(in srgb, var(--mn-accent, #c60) 12%, transparent);
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-toolbar__btn--primary {
+  color: var(--mn-accent, #04aa6d);
+}
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-toolbar__txt {
+  font-size: 0.78rem;
+  font-weight: 600;
+}

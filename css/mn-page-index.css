@@ -1,0 +1,284 @@
+/**
+ * maintenance — หน้า index (รายการใบซ่อม + ลิงก์ลัด + แถบค้นหา)
+ * โหลดหลัง mn-page-addjob.css
+ */
+
+.mn-index-page .mn-index-centered {
+  max-width: 100%;
+}
+
+/* ─ ลิงก์ลัดเหนือฟอร์มค้นหา (legacy bracket links) ─ */
+.mn-index-legacy-quicklinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem 0.35rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--mn-border, #ccc);
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  background: var(--mn-surface-2, #f9f9f9);
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+.mn-index-search-form {
+  margin-bottom: 1rem;
+}
+
+.mn-index-filters {
+  border: 1px solid var(--mn-border, #ccc);
+  border-radius: 0.5rem;
+  padding: 0.65rem 0.85rem 0.8rem;
+  background: var(--mn-surface-2, #f9f9f9);
+}
+
+.mn-index-filters-legend {
+  font-weight: 700;
+  padding: 0 0.35rem;
+}
+
+.mn-index-filters-grid {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 0.5rem 0.65rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.2rem;
+}
+
+.mn-index-field {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.mn-index-field--number {
+  flex: 0 0 6.75rem;
+  max-width: 7.25rem;
+}
+
+.mn-index-field--company {
+  flex: 1 1 8rem;
+  min-width: 6.5rem;
+  max-width: 12rem;
+}
+
+.mn-addjob-page.mn-index-page .mn-index-field--company .mn-index-detail-link--filter {
+  display: inline-block;
+  margin-top: 0.35rem;
+}
+
+.mn-index-field--product {
+  flex: 0 1 12rem;
+  min-width: 9rem;
+  max-width: 15rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.15rem;
+}
+
+.mn-index-label--stack {
+  margin-top: 0.35rem;
+  margin-bottom: 0.15rem;
+}
+
+.mn-index-field--status {
+  flex: 0 0 8rem;
+  max-width: 9rem;
+}
+
+.mn-index-field--report {
+  flex: 1 1 7rem;
+  min-width: 6rem;
+  max-width: 10rem;
+}
+
+.mn-index-field--actions {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+@media (max-width: 900px) {
+  .mn-index-filters-grid {
+    flex-wrap: wrap;
+  }
+
+  .mn-index-field--actions {
+    margin-left: 0;
+    flex: 1 1 100%;
+    justify-content: flex-start;
+  }
+}
+
+.mn-index-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 0.28rem;
+  color: var(--mn-muted, #555);
+  white-space: nowrap;
+}
+
+.mn-index-field input[type="text"],
+.mn-index-select {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.45rem;
+  border: 1px solid var(--mn-border, #ccc);
+  border-radius: 0.35rem;
+}
+
+.mn-index-field--status .mn-index-select {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mn-index-field--actions .mn-index-label {
+  visibility: hidden;
+  min-height: 0.85rem;
+  margin-bottom: 0.28rem;
+}
+
+.mn-index-placeholder {
+  display: inline-block;
+  padding: 0.35rem 0;
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.mn-index-toolbar-btns {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.mn-index-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.42rem 0.85rem;
+  font-size: 0.88rem;
+  border-radius: 0.35rem;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 600;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.mn-index-btn--primary {
+  background: linear-gradient(180deg, #2ea866 0%, #228b52 100%);
+  color: #fff;
+  border-color: #1e7a45;
+}
+
+.mn-index-btn--primary:hover {
+  filter: brightness(1.05);
+}
+
+.mn-index-btn--ghost {
+  background: #fff;
+  color: #333;
+  border-color: var(--mn-border, #bbb);
+}
+
+.mn-index-btn--ghost:hover {
+  background: #f5f5f5;
+}
+
+.mn-index-table {
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.mn-index-thead th {
+  padding: 0.5rem 0.35rem;
+  background: var(--mn-surface-2, #ececec);
+  border: 1px solid var(--mn-border, #ccc);
+}
+
+.mn-index-clear-hint td {
+  padding: 0.4rem 0.5rem;
+  background: #c8e6c9;
+  font-size: 0.88rem;
+}
+
+.mn-index-clear-hint a {
+  color: #1b5e20;
+  text-decoration: none;
+}
+
+.mn-index-clear-hint a:hover {
+  text-decoration: underline;
+}
+
+.mn-index-data-row td {
+  padding: 0.45rem 0.35rem;
+  border: 1px solid #e0e0e0;
+  background: #fff;
+}
+
+.mn-index-data-row:hover td {
+  background: #fffde7;
+}
+
+.mn-index-page .mn-index-process-link {
+  display: inline-block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1d4ed8;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.mn-index-page .mn-index-process-link:hover,
+.mn-index-page .mn-index-process-link:focus {
+  text-decoration: underline;
+}
+
+.mn-addjob-page.mn-index-page .mn-index-company-cell {
+  line-height: 1.45;
+}
+
+.mn-addjob-page.mn-index-page .mn-index-company-names-link {
+  color: var(--mn-text, #0f172a);
+  text-decoration: none;
+}
+
+.mn-addjob-page.mn-index-page .mn-index-company-names-link:hover {
+  text-decoration: underline;
+}
+
+.mn-addjob-page.mn-index-page .mn-index-detail-link {
+  color: var(--mn-accent, #0369a1);
+  display: inline-block;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin-top: 0.35rem;
+  text-decoration: none;
+}
+
+.mn-addjob-page.mn-index-page .mn-index-detail-link:hover {
+  opacity: 0.88;
+  text-decoration: underline;
+}
+
+.mn-addjob-page.mn-index-page .mn-index-detail-link__inner {
+  white-space: nowrap;
+}
+
+.mn-index-summary {
+  margin-top: 1rem;
+  font-size: 0.88rem;
+  color: #444;
+}
+
+.mn-index-summary p {
+  margin: 0.25rem 0;
+}

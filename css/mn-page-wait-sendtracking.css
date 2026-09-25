@@ -1,0 +1,150 @@
+/**
+ * maintenance — หน้าคิวส่งลิงก์ลูกค้า (wait_sendtracking)
+ * อาศัย `mn-page-addjob.css` เป็นชั้นเลย์เอาต์หลัก
+ */
+
+.mn-addjob-page.mn-wait-sendtracking-page .content {
+  padding: 9rem 0 3rem;
+}
+
+@media (max-width: 768px) {
+  .mn-addjob-page.mn-wait-sendtracking-page .content {
+    padding: 10.5rem 0 2rem;
+  }
+}
+
+.mn-addjob-page.mn-wait-sendtracking-page .header {
+  z-index: 500;
+}
+
+.mn-addjob-page.mn-wait-sendtracking-page .mn-wait-sendtracking-intro {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--mn-border, #ccc);
+  border-radius: 0.5rem;
+  background: var(--mn-surface-2, #f9f9f9);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.mn-addjob-page.mn-wait-sendtracking-page .content table#table1.mn-wait-sendtracking-table {
+  border-collapse: collapse;
+}
+
+.mn-addjob-page.mn-wait-sendtracking-page .mn-wait-sendtracking-thead th {
+  background-color: #5a7fc7;
+  color: #fff;
+  padding: 0.5rem 0.25rem;
+}
+
+.mn-addjob-page.mn-wait-sendtracking-page .mn-wst-th-hint {
+  display: block;
+  margin-top: 0.2rem;
+  font-weight: 400;
+  font-size: 0.72rem;
+  opacity: 0.92;
+}
+
+.mn-addjob-page.mn-wait-sendtracking-page .mn-wst-col-org-product {
+  text-align: left;
+  max-width: 14rem;
+}
+
+.mn-addjob-page.mn-wait-sendtracking-page .mn-wst-org-line {
+  font-weight: 600;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.mn-addjob-page.mn-wait-sendtracking-page .mn-wst-product-line {
+  margin-top: 0.35rem;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--mn-text-muted, #475569);
+  word-break: break-word;
+}
+
+.mn-addjob-page.mn-wait-sendtracking-page .mn-wst-channel-muted {
+  font-size: 0.88rem;
+  color: var(--mn-text-muted, #64748b);
+  word-break: break-all;
+}
+
+.mn-addjob-page.mn-wait-sendtracking-page .mn-wait-sendtracking-row td {
+  padding: 0.35rem 0.25rem;
+  vertical-align: top;
+}
+
+.mn-addjob-page.mn-wait-sendtracking-page .mn-wst-copy-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45rem;
+  max-width: 22rem;
+}
+
+.mn-addjob-page.mn-wait-sendtracking-page .mn-wst-share-plain {
+  width: 100%;
+  max-width: 22rem;
+  min-height: 5.5rem;
+  padding: 0.4rem 0.5rem;
+  font-family: "Noto Sans Thai", system-ui, sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border: 1px solid var(--mn-border, #ccc);
+  border-radius: 0.35rem;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.mn-addjob-page.mn-wait-sendtracking-page .mn-wst-channel-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.88rem;
+  text-decoration: none;
+  color: var(--mn-accent, #0066cc);
+}
+
+.mn-addjob-page.mn-wait-sendtracking-page .mn-wst-channel-link:hover {
+  text-decoration: underline;
+}
+
+.mn-addjob-page.mn-wait-sendtracking-page .mn-wst-channel-link--line {
+  color: #06c755;
+}
+
+.mn-addjob-page.mn-wait-sendtracking-page .mn-wst-channel-link--mail {
+  color: var(--mn-accent, #0066cc);
+}
+
+.mn-addjob-page.mn-wait-sendtracking-page .mn-wst-copy-btn {
+  cursor: pointer;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--mn-border, #ccc);
+  border-radius: 0.35rem;
+  background: var(--mn-surface, #fff);
+  font-size: 0.85rem;
+}
+
+.mn-addjob-page.mn-wait-sendtracking-page .mn-wst-copy-btn:hover:not(:disabled) {
+  border-color: var(--mn-accent, #0066cc);
+  color: var(--mn-accent, #0066cc);
+}
+
+.mn-addjob-page.mn-wait-sendtracking-page .mn-wst-copy-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.mn-addjob-page.mn-wait-sendtracking-page .mn-wait-sendtracking-error {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.5rem;
+  border: 1px solid #c0392b;
+  background: #fdecea;
+  color: #922b21;
+  font-size: 0.9rem;
+}

@@ -1,0 +1,201 @@
+/**
+ * maintenance — หน้าเพิ่ม/จัดการเครื่องสำรอง (`add_spare`)
+ * scope: `.mn-addjob-page.mn-add-spare-page`
+ * โทนเดียวกับ `mn-page-check-history-repair.css` / `mn-page-add-rate.css` (accent, border, หัวตาราง)
+ */
+
+.mn-addjob-page.mn-add-spare-page .content {
+  padding: 9rem 0 3rem;
+}
+
+@media (max-width: 768px) {
+  .mn-addjob-page.mn-add-spare-page .content {
+    padding: 10.5rem 0 2rem;
+  }
+}
+
+.mn-addjob-page.mn-add-spare-page .header {
+  z-index: 500;
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-inner {
+  max-width: 1100px;
+  width: 100%;
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-home {
+  color: var(--mn-accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-home:hover {
+  text-decoration: underline;
+  opacity: 0.9;
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-inner > p {
+  margin-bottom: 0.75rem;
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-table {
+  border-collapse: collapse;
+  width: 100%;
+  background: var(--mn-surface);
+  border: 1px solid var(--mn-border);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--mn-shadow);
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-table hr {
+  border: none;
+  border-top: 1px solid var(--mn-border);
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-table input[type="text"],
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-table select,
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-toolbar input[type="text"],
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-toolbar select {
+  font-size: 1rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--mn-border);
+  border-radius: 4px;
+  color: var(--mn-text);
+  background: var(--mn-surface);
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-table input[type="text"]:focus,
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-table select:focus,
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-toolbar input[type="text"]:focus,
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-toolbar select:focus {
+  outline: 2px solid var(--mn-accent-soft);
+  outline-offset: 1px;
+  border-color: var(--mn-accent);
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-toolbar {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-toolbar--add {
+  justify-content: center;
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-toolbar--status {
+  justify-content: flex-start;
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-toolbar-label {
+  flex: 0 0 auto;
+  color: var(--mn-text);
+  white-space: nowrap;
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-toolbar--add .mn-add-spare-select-product {
+  flex: 0 1 22rem;
+  min-width: 8rem;
+  max-width: 45%;
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-toolbar--add .mn-add-spare-input-sn {
+  flex: 1 1 10rem;
+  min-width: 0;
+  max-width: 22rem;
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-toolbar--status .mn-add-spare-input-sn-edit {
+  flex: 0 1 14rem;
+  min-width: 0;
+  max-width: 16rem;
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-toolbar--status .mn-add-spare-select-status {
+  flex: 0 1 16rem;
+  min-width: 8rem;
+  max-width: 40%;
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-save-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-row-add td,
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-row-status td {
+  padding: 0.65rem 0.75rem;
+  vertical-align: middle;
+}
+
+@media (max-width: 640px) {
+  .mn-addjob-page.mn-add-spare-page .mn-add-spare-toolbar {
+    flex-wrap: wrap;
+    justify-content: flex-start !important;
+    row-gap: 0.65rem;
+  }
+
+  .mn-addjob-page.mn-add-spare-page .mn-add-spare-toolbar--add .mn-add-spare-select-product,
+  .mn-addjob-page.mn-add-spare-page .mn-add-spare-toolbar--add .mn-add-spare-input-sn,
+  .mn-addjob-page.mn-add-spare-page .mn-add-spare-toolbar--status .mn-add-spare-input-sn-edit,
+  .mn-addjob-page.mn-add-spare-page .mn-add-spare-toolbar--status .mn-add-spare-select-status {
+    max-width: 100%;
+    flex: 1 1 100%;
+  }
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-head td {
+  background: var(--mn-accent);
+  color: #fff;
+  font-weight: 600;
+  text-align: center;
+  padding: 0.65rem 0.5rem;
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-section-title td {
+  background: var(--mn-accent-soft);
+  color: var(--mn-text);
+  font-weight: 600;
+  padding: 0.5rem;
+  border-top: 1px solid var(--mn-border);
+  border-bottom: 1px solid var(--mn-border);
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-table > tbody > tr:not(.mn-add-spare-head):not(.mn-add-spare-row-add):not(.mn-add-spare-row-status) > td {
+  padding: 0.5rem 0.65rem;
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-producthead {
+  background: var(--mn-accent-soft);
+  color: var(--mn-text);
+  border: 1px solid var(--mn-border);
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-table a {
+  color: var(--mn-accent);
+  text-decoration: none;
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-table a:hover {
+  text-decoration: underline;
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-save {
+  color: var(--mn-accent);
+  text-decoration: none;
+}
+
+.mn-addjob-page.mn-add-spare-page .mn-add-spare-save:hover {
+  opacity: 0.85;
+}

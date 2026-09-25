@@ -1,0 +1,363 @@
+/**
+ * maintenance — หน้าเปิดใบซ่อม (add_job; URL ไม่มีนามสกุล .php)
+ * โหลดหลัง mn-theme.css และ mn-layout.css; ใช้คลาส body.mn-addjob-page และ .mn-form-centered
+ */
+
+.mn-addjob-page {
+  font-family: "Noto Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--mn-surface-2);
+  color: var(--mn-text);
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.mn-addjob-page .header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: var(--mn-surface);
+  border-bottom: 1px solid var(--mn-border);
+  box-shadow: var(--mn-shadow);
+}
+
+.mn-addjob-page .progress-container {
+  width: 100%;
+  height: 4px;
+  background: var(--mn-surface-2);
+}
+
+.mn-addjob-page .progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #0369a1 0%, #0ea5e9 50%, #38bdf8 100%);
+  transition: width 0.2s ease;
+}
+
+.mn-addjob-page .content {
+  padding: 7.5rem 0 3rem;
+  font-size: 1rem;
+  box-sizing: border-box;
+  /* ทับ site-legacy.css: .content { margin:5rem 5rem; width:100% } ที่ทำให้ล้นจอ */
+  margin-left: auto !important;
+  margin-right: auto !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  width: var(--mn-workspace-width, 80%) !important;
+  max-width: 100%;
+}
+
+/* คงความกว้าง workspace ร่วมกับ .mn-workspace (mn-layout.css) */
+.mn-addjob-page .content.mn-workspace {
+  min-width: 0;
+}
+
+/* พื้นที่กว้าง 80% กึ่งกลางจอ — ใช้ร่วมกับ .mn-workspace จาก mn-layout.css */
+
+.mn-addjob-page .mn-form-centered {
+  width: 100%;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+.mn-addjob-page .content table#table1 {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  background: var(--mn-surface);
+  border-radius: 0.75rem;
+  border: 1px solid var(--mn-border);
+  box-shadow: var(--mn-shadow);
+  border-collapse: separate;
+  border-spacing: 0;
+  padding: 1.25rem 1.5rem;
+  box-sizing: border-box;
+  table-layout: fixed;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.mn-addjob-page .mn-form-centered table#table1 {
+  width: 100%;
+}
+
+.mn-addjob-page table,
+.mn-addjob-page td,
+.mn-addjob-page th {
+  border: 0;
+}
+
+.mn-addjob-page tr.spaceUnder > td {
+  padding-bottom: 1em;
+}
+
+.mn-addjob-page tr.spaceUnder05 > td {
+  padding-bottom: 0.5em;
+}
+
+.mn-addjob-page tr.spaceTop > td {
+  padding-top: 1em;
+}
+
+/* ช่องกรอกเต็มความกว้างเซลล์ จัดกลับแนวอ่านชัดในคอลัมน์กลาง */
+.mn-addjob-page .mn-form-centered input[type="text"],
+.mn-addjob-page .mn-form-centered input[type="date"],
+.mn-addjob-page .mn-form-centered input[type="tel"],
+.mn-addjob-page .mn-form-centered input[type="email"],
+.mn-addjob-page .mn-form-centered textarea,
+.mn-addjob-page .mn-form-centered select {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.mn-addjob-page .mn-form-centered input[type="radio"],
+.mn-addjob-page .mn-form-centered input[type="checkbox"] {
+  width: auto;
+  max-width: none;
+}
+
+/* inline width:400px จาก HTML — ให้ย่อตามจอ */
+.mn-addjob-page #ts_enduser_com,
+.mn-addjob-page #ts_security_com {
+  max-width: 100% !important;
+  width: 100% !important;
+  box-sizing: border-box;
+}
+
+.mn-addjob-page .content td {
+  overflow-wrap: anywhere;
+}
+
+.mn-addjob-page input[type="text"],
+.mn-addjob-page input[type="date"],
+.mn-addjob-page input[type="tel"],
+.mn-addjob-page input[type="email"],
+.mn-addjob-page textarea,
+.mn-addjob-page select {
+  font-family: inherit;
+  font-size: 0.9375rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--mn-border);
+  border-radius: 0.45rem;
+  color: var(--mn-text);
+  background: var(--mn-surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mn-addjob-page input:focus,
+.mn-addjob-page textarea:focus,
+.mn-addjob-page select:focus {
+  outline: none;
+  border-color: #7dd3fc;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.22);
+}
+
+.mn-addjob-page textarea {
+  line-height: 1.45;
+}
+
+.mn-addjob-page .ex {
+  display: inline-block;
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.6rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  background: var(--mn-danger-bg);
+  color: var(--mn-danger-text);
+  border: 1px solid var(--mn-danger-border);
+  width: max-content;
+}
+
+.mn-addjob-page .ex2 {
+  display: inline-block;
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.6rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  background: var(--mn-accent-soft);
+  color: var(--mn-accent);
+  border: 1px solid #bae6fd;
+  width: max-content;
+}
+
+.mn-addjob-page hr {
+  border: none;
+  border-top: 1px solid var(--mn-border);
+  margin: 1rem 0;
+}
+
+.mn-addjob-page .content a {
+  color: var(--mn-accent);
+}
+
+.mn-addjob-page .content a:hover {
+  color: #0c4a6e;
+}
+
+.mn-addjob-page .mn-save-row {
+  font-size: 1.15rem;
+  text-align: center;
+  padding-top: 1rem;
+}
+
+.mn-addjob-page .mn-save-row a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 0.55rem 1.35rem;
+  border-radius: 0.5rem;
+  background: var(--mn-accent-soft);
+  border: 1px solid #bae6fd;
+  color: var(--mn-accent);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.mn-addjob-page .mn-save-row a:hover {
+  background: #bae6fd;
+  border-color: #7dd3fc;
+  color: #0c4a6e;
+}
+
+.mn-addjob-page .mn-save-row .fa {
+  color: inherit !important;
+}
+
+@media (max-width: 768px) {
+  .mn-addjob-page .content {
+    padding: 6.5rem 0 2rem;
+  }
+
+  .mn-addjob-page .content table#table1 {
+    padding: 1rem;
+  }
+}
+
+/* End user vs รปภ. — สีแยกจุดสังเกต (index, status_logistic, status_wait_* ฯลฯ) */
+.mn-addjob-page .mn-company-enduser {
+  color: var(--mn-text, #0f172a);
+  font-weight: 600;
+}
+
+.mn-addjob-page .mn-company-security {
+  color: #1d4ed8;
+  font-weight: 500;
+}
+
+/* โหมดเปิดงานใหม่ / เพิ่มอุปกรณ์งานเดิม */
+.mn-addjob-page .mn-addjob-mode-row label {
+  font-weight: normal;
+  margin-right: 0.5rem;
+}
+
+.mn-addjob-page .mn-addjob-existing-summary-box {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 0.65rem 1rem;
+}
+
+.mn-addjob-page #mn-addjob-change-existing {
+  font-size: 0.9rem;
+}
+
+.mn-addjob-pick-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1rem;
+  overflow: auto;
+}
+
+.mn-addjob-pick-dialog {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+  width: min(960px, 100%);
+  max-height: calc(100vh - 4rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.mn-addjob-pick-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.mn-addjob-pick-close-btn {
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.mn-addjob-pick-search {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.mn-addjob-pick-search input[type="text"] {
+  flex: 1;
+  min-width: 0;
+}
+
+.mn-addjob-pick-search-btn,
+.mn-addjob-pick-select-btn {
+  padding: 0.35rem 0.85rem;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mn-addjob-pick-search-btn:hover,
+.mn-addjob-pick-select-btn:hover {
+  background: #e2e8f0;
+}
+
+.mn-addjob-pick-body {
+  padding: 0.5rem 1rem 1rem;
+  overflow: auto;
+}
+
+.mn-addjob-pick-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.mn-addjob-pick-table th,
+.mn-addjob-pick-table td {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.mn-addjob-pick-table thead th {
+  background: #f1f5f9;
+  font-weight: 600;
+}
+
+.mn-addjob-pick-empty {
+  text-align: center;
+  color: #64748b;
+  padding: 1rem;
+}

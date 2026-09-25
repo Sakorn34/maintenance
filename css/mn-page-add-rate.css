@@ -1,0 +1,433 @@
+/**
+ * maintenance — หน้าเพิ่มรายการซ่อม Rate (`add_rate`)
+ * scope: `.mn-addjob-page.mn-add-rate-page`
+ * เลย์เอาต์การ์ดฟอร์ม + กริดการ์ดสรุป (responsive) แทนตารางหลายคอลัมน์
+ */
+
+/* ─────────────────────────────────────────────────────────────────
+ * layout หลัก
+ * ───────────────────────────────────────────────────────────────── */
+.mn-addjob-page.mn-add-rate-page {
+  --mn-add-rate-control-h: 2.625rem;
+}
+
+.mn-addjob-page.mn-add-rate-page .content {
+  padding: 9rem 0 3rem;
+}
+
+@media (max-width: 768px) {
+  .mn-addjob-page.mn-add-rate-page .content {
+    padding: 10.5rem 0 2rem;
+  }
+}
+
+.mn-addjob-page.mn-add-rate-page .header {
+  z-index: 500;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-inner {
+  max-width: 1120px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 1rem 2rem;
+  box-sizing: border-box;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * toolbar
+ * ───────────────────────────────────────────────────────────────── */
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-toolbar {
+  margin: 0;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--mn-accent);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-home:hover {
+  text-decoration: underline;
+  opacity: 0.92;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * การ์ด
+ * ───────────────────────────────────────────────────────────────── */
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-card {
+  background: var(--mn-surface);
+  border: 1px solid var(--mn-border);
+  border-radius: 10px;
+  box-shadow: var(--mn-shadow);
+  overflow: hidden;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-card__head {
+  padding: 1rem 1.15rem 0.85rem;
+  background: linear-gradient(180deg, var(--mn-accent-soft) 0%, var(--mn-surface) 100%);
+  border-bottom: 1px solid var(--mn-border);
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-card__head--catalog {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.04) 0%, var(--mn-surface) 100%);
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-card__title {
+  margin: 0 0 0.35rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--mn-text);
+  letter-spacing: 0.02em;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-card__title--secondary {
+  font-size: 1.1rem;
+  font-weight: 650;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-card__lead {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--mn-text);
+  opacity: 0.88;
+  line-height: 1.45;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-card__body {
+  padding: 1.15rem 1.35rem 1.35rem;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-card__body--flush {
+  padding: 1rem 1.35rem 1.35rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * ฟอร์มบันทึก (label บน / คอนโทรลล่าง, ปุ่มจัดแนวกับช่อง)
+ * ───────────────────────────────────────────────────────────────── */
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-form-inline {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 1rem 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
+  padding-bottom: 0.1rem;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-form__group {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-form__group--product {
+  flex: 0 1 min(100%, 22rem);
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-form__group--rate {
+  flex: 1 1 14rem;
+  min-width: min(100%, 12rem);
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-form__group--save {
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-form__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-form__stack--save {
+  justify-content: flex-end;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-form__control-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-form__label-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+  min-width: 0;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-form__label-row .mn-add-rate-label {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-form__label-row .mn-add-rate-form__meta-links {
+  justify-content: flex-end;
+  flex: 0 1 auto;
+  margin-left: auto;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-form__meta-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.85rem;
+  margin: 0;
+  padding: 0;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-form__save-slot {
+  display: block;
+  min-height: calc(0.92rem * 1.35);
+  flex-shrink: 0;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-label {
+  display: block;
+  margin: 0;
+  white-space: nowrap;
+  font-size: 0.92rem;
+  line-height: 1.35;
+  color: var(--mn-text);
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-select-product,
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-input-productnew,
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-input-rate {
+  font-size: 1rem;
+  line-height: 1.25;
+  min-height: var(--mn-add-rate-control-h);
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--mn-border);
+  border-radius: 6px;
+  color: var(--mn-text);
+  background: var(--mn-surface);
+  box-sizing: border-box;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-select-product:focus,
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-input-productnew:focus,
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-input-rate:focus {
+  outline: 2px solid var(--mn-accent-soft);
+  outline-offset: 1px;
+  border-color: var(--mn-accent);
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-form__control-row .mn-add-rate-select-product,
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-form__control-row .mn-add-rate-input-productnew {
+  flex: 1 1 auto;
+  min-width: 9rem;
+  width: auto;
+  max-width: 100%;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-form__stack .mn-add-rate-input-rate {
+  width: 100%;
+  max-width: none;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-link {
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-link--action {
+  color: var(--mn-accent);
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-link--action:hover {
+  text-decoration: underline;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-link--muted {
+  color: var(--mn-text);
+  opacity: 0.75;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-link--muted:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-save--btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: var(--mn-add-rate-control-h);
+  padding: 0.45rem 1.1rem;
+  border-radius: 8px;
+  background: var(--mn-accent);
+  color: #fff !important;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-sizing: border-box;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-save--btn:hover {
+  filter: brightness(1.06);
+  opacity: 1;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-save--btn .fa {
+  font-size: 1.15rem;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-save__text {
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  .mn-addjob-page.mn-add-rate-page .mn-add-rate-save__text {
+    display: none;
+  }
+
+  .mn-addjob-page.mn-add-rate-page .mn-add-rate-save--btn {
+    padding: 0.45rem 0.85rem;
+    min-width: var(--mn-add-rate-control-h);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * กริดสรุป
+ * ───────────────────────────────────────────────────────────────── */
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem 0.85rem;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-product-card {
+  border: 1px solid var(--mn-border);
+  border-radius: 8px;
+  background: var(--mn-accent-soft);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 5.5rem;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-product-card__head {
+  padding: 0.55rem 0.65rem;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--mn-text);
+  border-bottom: 1px solid var(--mn-border);
+  background: var(--mn-surface);
+  word-break: break-word;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-rate-list {
+  margin: 0;
+  padding: 0.5rem 0.65rem 0.65rem 1.35rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--mn-text);
+  flex: 1 1 auto;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-rate-list li {
+  margin-bottom: 0.2rem;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-rate-list li:last-child {
+  margin-bottom: 0;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-rate-list__empty {
+  list-style: none;
+  margin-left: -0.5rem;
+  color: var(--mn-text);
+  opacity: 0.65;
+  font-style: italic;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-empty {
+  margin: 0.5rem 0 0;
+  padding: 1rem;
+  text-align: center;
+  color: var(--mn-text);
+  opacity: 0.75;
+  font-size: 0.95rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * พื้นที่แสดงรายการ (preview / ผลจาก URL)
+ * ───────────────────────────────────────────────────────────────── */
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-hint {
+  margin: 0.5rem 0 0;
+  padding: 0.9rem 1.1rem;
+  text-align: center;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--mn-text);
+  opacity: 0.82;
+  background: var(--mn-accent-soft);
+  border-radius: 8px;
+  border: 1px dashed var(--mn-border);
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-catalog-live {
+  min-height: 2.5rem;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-catalog-live--loading {
+  opacity: 0.72;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-card__catalog-reset {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+}
+
+.mn-addjob-page.mn-add-rate-page .mn-add-rate-card__body--catalog-results {
+  padding-top: 0.15rem;
+}
+
+@media (max-width: 720px) {
+  .mn-addjob-page.mn-add-rate-page .mn-add-rate-form-inline {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mn-addjob-page.mn-add-rate-page .mn-add-rate-form__group--save {
+    align-self: flex-start;
+  }
+
+  .mn-addjob-page.mn-add-rate-page .mn-add-rate-form__save-slot {
+    display: none;
+  }
+
+  .mn-addjob-page.mn-add-rate-page .mn-add-rate-form__stack--save {
+    padding-top: 0.25rem;
+  }
+}

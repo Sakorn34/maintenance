@@ -1,0 +1,124 @@
+/**
+ * maintenance — หน้าค้นประวัติซ่อม (`check_history_repair`)
+ * scope: `.mn-addjob-page.mn-check-history-repair-page`
+ * อาศัยตัวแปร `mn-theme.css` ให้โทนเดียวกับหน้า flow อื่น (status_logistic / add_borrow)
+ */
+
+/* ─────────────────────────────────────────────────────────────────
+ * ชดเชยความสูงแถบ fixed + z-index แถบหัว
+ * ───────────────────────────────────────────────────────────────── */
+.mn-addjob-page.mn-check-history-repair-page .content {
+  padding: 9rem 0 3rem;
+}
+
+@media (max-width: 768px) {
+  .mn-addjob-page.mn-check-history-repair-page .content {
+    padding: 10.5rem 0 2rem;
+  }
+}
+
+.mn-addjob-page.mn-check-history-repair-page .header {
+  z-index: 500;
+}
+
+.mn-addjob-page.mn-check-history-repair-page .mn-check-history-repair-inner {
+  max-width: 720px;
+  width: 100%;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * ลิงก์ / ฟอร์ม
+ * ───────────────────────────────────────────────────────────────── */
+.mn-addjob-page.mn-check-history-repair-page .mn-check-history-repair-home {
+  color: var(--mn-accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.mn-addjob-page.mn-check-history-repair-page .mn-check-history-repair-home:hover {
+  text-decoration: underline;
+  opacity: 0.9;
+}
+
+.mn-addjob-page.mn-check-history-repair-page .mn-check-history-repair-inner hr {
+  border: none;
+  border-top: 1px solid var(--mn-border);
+  margin: 1rem 0;
+}
+
+.mn-addjob-page.mn-check-history-repair-page .mn-check-history-repair-searchrow {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0.5rem 0 1rem;
+  min-width: 0;
+}
+
+.mn-addjob-page.mn-check-history-repair-page .mn-check-history-repair-searchlabel {
+  flex: 0 0 auto;
+  color: var(--mn-text);
+  white-space: nowrap;
+}
+
+.mn-addjob-page.mn-check-history-repair-page .mn-check-history-repair-searchinput {
+  flex: 1 1 12rem;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 1rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--mn-border);
+  border-radius: 4px;
+  color: var(--mn-text);
+  background: var(--mn-surface);
+}
+
+.mn-addjob-page.mn-check-history-repair-page .mn-check-history-repair-searchinput:focus {
+  outline: 2px solid var(--mn-accent-soft);
+  outline-offset: 1px;
+  border-color: var(--mn-accent);
+}
+
+.mn-addjob-page.mn-check-history-repair-page .mn-check-history-repair-searchsubmit {
+  flex: 0 0 auto;
+  font-size: 1rem;
+  padding: 0.45rem 1rem;
+  border: 1px solid var(--mn-accent);
+  border-radius: 4px;
+  background: var(--mn-accent);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mn-addjob-page.mn-check-history-repair-page .mn-check-history-repair-searchsubmit:hover {
+  opacity: 0.92;
+}
+
+.mn-addjob-page.mn-check-history-repair-page .mn-check-history-repair-snline {
+  color: var(--mn-text);
+  margin: 0.75rem 0;
+}
+
+.mn-addjob-page.mn-check-history-repair-page .mn-check-history-repair-snval {
+  color: var(--mn-accent);
+  font-weight: 600;
+}
+
+.mn-addjob-page.mn-check-history-repair-page .mn-check-history-repair-msg {
+  color: var(--mn-danger-text);
+  font-weight: 500;
+}
+
+.mn-addjob-page.mn-check-history-repair-page .mn-check-history-repair-result {
+  text-align: left;
+  margin-top: 1rem;
+  padding: 1rem 1.1rem;
+  background: var(--mn-surface-2);
+  border: 1px solid var(--mn-border);
+  border-radius: 8px;
+  box-shadow: var(--mn-shadow);
+  color: var(--mn-text);
+  line-height: 1.55;
+}

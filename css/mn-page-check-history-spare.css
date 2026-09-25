@@ -1,0 +1,114 @@
+/**
+ * maintenance — ประวัติส่งสำรองตาม S/N (`check_history_spare`)
+ * scope: `.mn-addjob-page.mn-check-history-spare-page`
+ * หน้า popup ไม่มีแถบ title-h — อาศัย `mn-page-addjob.css` + `table#table1`
+ */
+
+.mn-addjob-page.mn-check-history-spare-page {
+  --mn-workspace-width: 98%;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * layout
+ * ───────────────────────────────────────────────────────────────── */
+.mn-addjob-page.mn-check-history-spare-page .content {
+  padding: 1rem 0.5rem 2.5rem;
+}
+
+.mn-addjob-page.mn-check-history-spare-page .mn-check-history-spare-inner {
+  max-width: min(100%, 92rem);
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 0.35rem;
+  box-sizing: border-box;
+}
+
+/* ทับ padding รอบตารางจาก mn-page-addjob.css */
+.mn-addjob-page.mn-check-history-spare-page .content table#table1.mn-check-history-spare-table {
+  border-collapse: collapse;
+  padding: 0;
+  margin-top: 0.75rem;
+}
+
+.mn-addjob-page.mn-check-history-spare-page .mn-chs-card {
+  background: var(--mn-surface);
+  border: 1px solid var(--mn-border);
+  border-radius: 12px;
+  box-shadow: var(--mn-shadow);
+  overflow: visible;
+}
+
+.mn-addjob-page.mn-check-history-spare-page .mn-chs-card__header {
+  background: var(--mn-surface-2);
+  border-bottom: 1px solid var(--mn-border);
+  padding: 0.85rem 1.15rem;
+}
+
+.mn-addjob-page.mn-check-history-spare-page .mn-chs-card__title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--mn-text);
+}
+
+.mn-addjob-page.mn-check-history-spare-page .mn-chs-card__meta {
+  margin: 0.35rem 0 0;
+  font-size: 0.92rem;
+  color: var(--mn-text-muted);
+}
+
+.mn-addjob-page.mn-check-history-spare-page .mn-chs-card__body {
+  padding: 1rem 0.85rem 1.25rem;
+  overflow-x: auto;
+}
+
+.mn-addjob-page.mn-check-history-spare-page .mn-chs-hint,
+.mn-addjob-page.mn-check-history-spare-page .mn-chs-empty {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  color: var(--mn-text);
+  background: var(--mn-accent-soft);
+  border-radius: 8px;
+  border: 1px dashed var(--mn-border);
+}
+
+.mn-addjob-page.mn-check-history-spare-page .mn-chs-empty {
+  background: var(--mn-surface-2);
+  color: var(--mn-text-muted);
+}
+
+.mn-addjob-page.mn-check-history-spare-page .mn-check-history-spare-table {
+  width: 100%;
+  min-width: 58rem;
+  table-layout: auto;
+}
+
+.mn-addjob-page.mn-check-history-spare-page .mn-check-history-spare-table thead th {
+  background: var(--mn-surface-2);
+  color: var(--mn-text);
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid var(--mn-border);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.mn-addjob-page.mn-check-history-spare-page .mn-check-history-spare-table tbody td {
+  padding: 0.5rem 0.65rem;
+  border-bottom: 1px solid var(--mn-border);
+  font-size: 0.9rem;
+  color: var(--mn-text);
+  vertical-align: top;
+  word-break: break-word;
+}
+
+.mn-addjob-page.mn-check-history-spare-page .mn-check-history-spare-table tbody tr:hover {
+  background: var(--mn-accent-soft);
+}
+
+.mn-addjob-page.mn-check-history-spare-page .mn-check-history-spare-table .mn-chs-col--sn,
+.mn-addjob-page.mn-check-history-spare-page .mn-check-history-spare-table .mn-chs-col--track {
+  white-space: nowrap;
+}

@@ -1,0 +1,53 @@
+/**
+ * maintenance — หน้าแจ้งเข้ารับพัสดุ (`status_logistic_pickup`)
+ * scope: `.mn-addjob-page.mn-status-logistic-pickup-page`
+ */
+
+.mn-addjob-page.mn-status-logistic-pickup-page .content {
+  padding: 9rem 0 3rem;
+}
+
+@media (max-width: 768px) {
+  .mn-addjob-page.mn-status-logistic-pickup-page .content {
+    padding: 10.5rem 0 2rem;
+  }
+}
+
+.mn-addjob-page.mn-status-logistic-pickup-page .header {
+  z-index: 500;
+}
+
+.mn-addjob-page.mn-status-logistic-pickup-page .content table#table1.mn-status-logistic-pickup-table {
+  border-collapse: collapse;
+}
+
+.mn-addjob-page.mn-status-logistic-pickup-page .mn-status-logistic-pickup-thead th {
+  background-color: var(--mn-surface-2);
+  padding: 0.5rem 0.25rem;
+  border-bottom: 1px solid var(--mn-border);
+}
+
+.mn-addjob-page.mn-status-logistic-pickup-page tr.mn-status-logistic-pickup-row-under > td {
+  padding-bottom: 0.5em;
+  padding-top: 0.5em;
+}
+
+.mn-addjob-page.mn-status-logistic-pickup-page .mn-status-logistic-pickup-contact {
+  color: #0000ff;
+}
+
+.mn-addjob-page.mn-status-logistic-pickup-page .mn-status-logistic-pickup-tracking {
+  width: 95%;
+  font-size: 16px;
+  padding: 1px;
+  border: 1px solid #c0c0c0;
+}
+
+.mn-addjob-page.mn-status-logistic-pickup-page .mn-status-logistic-pickup-save {
+  color: #ff9900;
+}
+
+.mn-addjob-page.mn-status-logistic-pickup-page .mn-status-logistic-pickup-summary {
+  color: #ff9900;
+  font-size: 0.95rem;
+}

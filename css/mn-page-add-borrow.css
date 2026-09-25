@@ -1,0 +1,84 @@
+/**
+ * maintenance — หน้าเพิ่มรายการยืม (`add_borrow`)
+ * scope: `.mn-addjob-page.mn-add-borrow-page`
+ */
+
+.mn-addjob-page.mn-add-borrow-page .content {
+  padding: 9rem 0 3rem;
+}
+
+@media (max-width: 768px) {
+  .mn-addjob-page.mn-add-borrow-page .content {
+    padding: 10.5rem 0 2rem;
+  }
+}
+
+.mn-addjob-page.mn-add-borrow-page .header {
+  z-index: 500;
+}
+
+.mn-addjob-page.mn-add-borrow-page .mn-add-borrow-inner {
+  max-width: 960px;
+}
+
+.mn-addjob-page.mn-add-borrow-page .mn-add-borrow-backlink {
+  color: #333333;
+  text-decoration: none;
+}
+
+.mn-addjob-page.mn-add-borrow-page .mn-add-borrow-backlink:hover {
+  text-decoration: underline;
+}
+
+.mn-addjob-page.mn-add-borrow-page table#table1.mn-add-borrow-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.mn-addjob-page.mn-add-borrow-page .mn-add-borrow-headrow td {
+  background-color: #999999;
+  color: #fff;
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+
+.mn-addjob-page.mn-add-borrow-page .ex {
+  border-radius: 10px;
+  background: #ffcccc;
+  padding: 5px 10px;
+  width: max-content;
+}
+
+.mn-addjob-page.mn-add-borrow-page .ex2 {
+  border-radius: 10px;
+  background: #ccffff;
+  padding: 5px 10px;
+  width: max-content;
+}
+
+.mn-addjob-page.mn-add-borrow-page .mn-add-borrow-table input[type="text"],
+.mn-addjob-page.mn-add-borrow-page .mn-add-borrow-table input[type="date"],
+.mn-addjob-page.mn-add-borrow-page .mn-add-borrow-table select,
+.mn-addjob-page.mn-add-borrow-page .mn-add-borrow-table textarea {
+  font-size: 16px;
+  padding: 1px;
+  border: 1px solid #c0c0c0;
+  color: #0000ff;
+}
+
+.mn-addjob-page.mn-add-borrow-page .mn-add-borrow-save {
+  color: #006600;
+  text-decoration: none;
+}
+
+.mn-addjob-page.mn-add-borrow-page .mn-add-borrow-save:hover {
+  text-decoration: underline;
+}
+
+.mn-addjob-page.mn-add-borrow-page tr.spaceUnder > td {
+  padding-bottom: 1em;
+}
+
+.mn-addjob-page.mn-add-borrow-page tr.spaceUnder05 > td {
+  padding-bottom: 0.5em;
+}

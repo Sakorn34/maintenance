@@ -1,0 +1,80 @@
+/**
+ * maintenance — หน้ารอส่งพัสดุ (status_logistic)
+ * อาศัย `mn-page-addjob.css` เป็นชั้นเลย์เอาต์หลัก (body.mn-addjob-page + .content.mn-workspace + .mn-form-centered + table#table1)
+ * ไฟล์นี้เพิ่มเฉพาะสไตล์เฉพาะตาราง logistics และปรับ padding-top ใต้แถบ title-h.php ให้พอดีกว่า default ของ add_job
+ */
+
+/* ─────────────────────────────────────────────────────────────────
+ * ชดเชยความสูงแถบ fixed (title-h + progress) — add_job ใช้ 7.5rem / 6.5rem บางจออาจบังหัวตาราง
+ * ───────────────────────────────────────────────────────────────── */
+.mn-addjob-page.mn-status-logistic-page .content {
+  padding: 9rem 0 3rem;
+}
+
+@media (max-width: 768px) {
+  .mn-addjob-page.mn-status-logistic-page .content {
+    padding: 10.5rem 0 2rem;
+  }
+}
+
+.mn-addjob-page.mn-status-logistic-page .header {
+  z-index: 500;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * ตาราง logistics (ทับเฉพาะส่วนที่ต้องต่างจากฟอร์ม add_job)
+ * ───────────────────────────────────────────────────────────────── */
+/* ทับ `table#table1` ใน mn-page-addjob.css — ตาราง logistics ใช้ border-collapse แบบเดิม */
+.mn-addjob-page.mn-status-logistic-page .content table#table1.mn-status-logistic-table {
+  border-collapse: collapse;
+}
+
+.mn-addjob-page.mn-status-logistic-page .mn-status-logistic-thead th {
+  background-color: #6495ed;
+  color: #fff;
+  padding: 0.5rem 0.25rem;
+}
+
+.mn-addjob-page.mn-status-logistic-page .mn-status-logistic-section td,
+.mn-addjob-page.mn-status-logistic-page .mn-status-logistic-section2 td {
+  background-color: #bbe292;
+  font-weight: 600;
+  padding: 0.4rem;
+}
+
+.mn-addjob-page.mn-status-logistic-page .mn-status-logistic-section2 td {
+  background-color: #c9e8a8;
+}
+
+.mn-addjob-page.mn-status-logistic-page .mn-status-logistic-row td {
+  padding: 0.35rem 0.25rem;
+  vertical-align: top;
+}
+
+/* คลาสอยู่ที่ div ภายใน a — ทับสีลิงก์ accent จาก mn-page-addjob.css */
+.mn-addjob-page.mn-status-logistic-page .content a .mn-status-logistic-excel-link {
+  color: #0000ff;
+}
+
+.mn-addjob-page.mn-status-logistic-page .mn-status-logistic-excel-link {
+  margin-right: 1rem;
+}
+
+/* ปุ่ม/ลิงก์แก้ไข — สอดคล้อง `.mn-status-rate-edit` ใน `mn-page-status-rate.css` (สี accent + hover) */
+.mn-addjob-page.mn-status-logistic-page .mn-status-logistic-edit {
+  color: var(--mn-accent);
+}
+
+.mn-addjob-page.mn-status-logistic-page .mn-status-logistic-edit:hover {
+  opacity: 0.85;
+}
+
+.mn-addjob-page.mn-status-logistic-page a.mn-status-logistic-edit {
+  text-decoration: none;
+}
+
+.mn-addjob-page.mn-status-logistic-page tr.spaceUnder > td,
+.mn-addjob-page.mn-status-logistic-page tr.spaceUnder > th {
+  padding-bottom: 0.5em;
+  padding-top: 0.5em;
+}

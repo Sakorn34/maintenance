@@ -1,0 +1,28 @@
+/**
+ * maintenance_new — เลย์เอาต์พื้นที่ทำงานหลัก (ใช้ร่วมทุกหน้า)
+ *
+ * ใช้งาน:
+ * โหลดหลัง mn-theme.css จากนั้นครอบเนื้อหาหลักด้วย class `mn-workspace`
+ * (จากไฟล์ในราก maintenance_new ใช้ href="css/mn-layout.css";
+ *  จากโฟลเดอร์ย่อยใช้ href="../css/mn-layout.css" ตามระดับความลึกของ path)
+ *
+ * ตัวอย่าง:
+ * <div class="content mn-workspace"> ... </div>
+ */
+
+.mn-workspace {
+  width: var(--mn-workspace-width, 80%);
+  max-width: 100%;
+  min-width: 0;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .mn-workspace {
+    width: 100%;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}

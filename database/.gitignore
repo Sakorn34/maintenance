@@ -1,0 +1,6 @@
+# สร้างจาก export_mdb_to_mysql_sql.php — ขนาดใหญ่ / อาจมีข้อมูลภายในองค์กร
+mdb_import_data.sql
+# ไฟล์ย่อยจาก split_sql_for_phpmyadmin.php
+import_chunks/
+# ไฟล์ Access ต้นฉบับ (ไม่บังคับ commit)
+maintenance.mdb

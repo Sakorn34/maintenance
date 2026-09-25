@@ -1,0 +1,58 @@
+/**
+ * maintenance — หน้ารออนุมัติใบเสนอราคา (status_wait_firmQV)
+ * อาศัย mn-page-addjob.css — scope ด้วย body class เพื่อไม่กระทบหน้าอื่น
+ */
+
+/* ─────────────────────────────────────────────────────────────────
+ * padding ใต้ header + progress
+ * ───────────────────────────────────────────────────────────────── */
+.mn-addjob-page.mn-status-wait-firmQV-page .content {
+  padding: 9rem 0 3rem;
+}
+
+@media (max-width: 768px) {
+  .mn-addjob-page.mn-status-wait-firmQV-page .content {
+    padding: 10.5rem 0 2rem;
+  }
+}
+
+.mn-addjob-page.mn-status-wait-firmQV-page .header {
+  z-index: 500;
+}
+
+.mn-addjob-page.mn-status-wait-firmQV-page .content table#table1.mn-status-wait-firmQV-table {
+  border-collapse: collapse;
+}
+
+.mn-addjob-page.mn-status-wait-firmQV-page .mn-status-wait-firmQV-thead th {
+  background-color: #f5f5f5;
+  padding: 0.5rem 0.25rem;
+}
+
+.mn-addjob-page.mn-status-wait-firmQV-page tr.mn-status-wait-firmQV-row-under > td {
+  padding-bottom: 0.5em;
+  padding-top: 0.5em;
+}
+
+/* คอลัมน์ QV แบบอ่านอย่างเดียว + ลิงก์แก้ไข (เทียบ `mn-status-offer-price-*`) */
+.mn-addjob-page.mn-status-wait-firmQV-page .mn-status-wait-firmQV-qv-read {
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.mn-addjob-page.mn-status-wait-firmQV-page .mn-status-wait-firmQV-edit-link {
+  display: inline-block;
+  margin-top: 0.35rem;
+  text-decoration: none;
+  font-weight: 600;
+  color: var(--mn-accent, #04aa6d);
+}
+
+.mn-addjob-page.mn-status-wait-firmQV-page .mn-status-wait-firmQV-edit-link:hover {
+  opacity: 0.88;
+  text-decoration: underline;
+}
+
+.mn-addjob-page.mn-status-wait-firmQV-page .mn-status-wait-firmQV-edit-link__inner {
+  white-space: nowrap;
+}

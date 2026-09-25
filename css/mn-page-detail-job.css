@@ -1,0 +1,516 @@
+/**
+ * maintenance — หน้า detail_job (รายละเอียดใบงานตาม ts_id)
+ * โหลดหลัง mn-page-addjob.css — ปุ่มหัวใบงาน: แก้ไขโทนส้ม, บันทึกเขียว, ยกเลิกเทา
+ */
+
+.mn-addjob-page.mn-detail-job-page .content {
+  padding: 9rem 0 3rem;
+  font-size: 1rem;
+  box-sizing: border-box;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  width: var(--mn-workspace-width, 80%) !important;
+  max-width: 100%;
+}
+
+.mn-detail-job-page .mn-detail-job-address {
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 0.75rem 1rem;
+  background: var(--mn-surface-2);
+  border-radius: 0.5rem;
+  border: 1px solid var(--mn-border);
+  margin: 0.5rem 0 0.75rem;
+}
+
+.mn-detail-job-page .mn-detail-job-actions {
+  margin-top: 0.35rem;
+}
+
+.mn-detail-job-page #table1 tr.mn-dj-header-row td {
+  padding-top: 0.55rem;
+  padding-bottom: 0.65rem;
+  vertical-align: top;
+}
+
+.mn-detail-job-page #table1 tr.mn-dj-header-row .search-box-user > b,
+.mn-detail-job-page #table1 tr.mn-dj-header-row .search-box-sec > b,
+.mn-detail-job-page #table1 tr.mn-dj-header-row .search-box-tambon > b {
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.mn-detail-job-page .mn-dj-process-link {
+  display: inline-block;
+  margin-left: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1d4ed8;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.mn-detail-job-page .mn-dj-process-link:hover,
+.mn-detail-job-page .mn-dj-process-link:focus {
+  text-decoration: underline;
+}
+
+.mn-detail-job-page .mn-dj-edit-spare-link {
+  display: inline-block;
+  margin-left: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--mn-accent, #0066cc);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.mn-detail-job-page .mn-dj-edit-spare-link:hover,
+.mn-detail-job-page .mn-dj-edit-spare-link:focus {
+  text-decoration: underline;
+}
+
+/* ปุ่มเพิ่มเครื่องสำรอง — ทับ `.mn-addjob-page .content a` (สี accent) ด้วย specificity สูงกว่า */
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-edit-spare-btn,
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-edit-spare-btn:link,
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-edit-spare-btn:visited {
+  display: inline-block;
+  margin-top: 0.15rem;
+  padding: 0.18rem 0.55rem;
+  border: 1px solid var(--mn-accent, #0369a1);
+  border-radius: 4px;
+  background-color: var(--mn-accent, #0369a1);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.25;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-edit-spare-btn:hover,
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-edit-spare-btn:focus {
+  opacity: 0.92;
+  text-decoration: none;
+  color: #fff;
+  background-color: #0c4a6e;
+  border-color: #0c4a6e;
+}
+
+.mn-detail-job-page .mn-dj-spare-actions {
+  vertical-align: middle;
+}
+
+.mn-detail-job-page #table1 tr.mn-dj-header-row td > p {
+  line-height: 2;
+}
+
+.mn-dj-header-actions-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mn-dj-header-edit-btn,
+.mn-dj-header-save-btn,
+.mn-dj-header-cancel-btn {
+  padding: 0.22rem 0.6rem;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  cursor: pointer;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.mn-addjob-page.mn-detail-job-page .mn-dj-header-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 1px solid #e8d4bc;
+  border-radius: 4px;
+  background: #fffaf5;
+  color: #b45309;
+  box-shadow: none;
+}
+
+.mn-addjob-page.mn-detail-job-page .mn-dj-header-edit-btn:hover,
+.mn-addjob-page.mn-detail-job-page .mn-dj-header-edit-btn:focus {
+  background: #fff5eb;
+  border-color: #d4b896;
+  color: #9a3412;
+}
+
+.mn-addjob-page.mn-detail-job-page .mn-dj-header-edit-btn:active {
+  background: #ffedd9;
+}
+
+.mn-dj-header-edit-actions {
+  display: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mn-dj-header-actions-wrap--editing .mn-dj-header-edit-btn {
+  display: none;
+}
+
+.mn-dj-header-actions-wrap--editing .mn-dj-header-edit-actions {
+  display: inline-flex;
+}
+
+.mn-dj-header-save-btn,
+.mn-dj-header-cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.mn-dj-header-save-btn {
+  border: 1px solid #1e7a45;
+  background: linear-gradient(180deg, #2ea866 0%, #228b52 100%);
+  color: #fff;
+}
+
+.mn-dj-header-save-btn:hover {
+  filter: brightness(1.05);
+}
+
+.mn-dj-header-cancel-btn {
+  border: 1px solid var(--mn-border, #b0b0b0);
+  background: var(--mn-surface-2, #f0f0f0);
+  color: #333;
+}
+
+.mn-dj-header-cancel-btn:hover {
+  filter: brightness(0.97);
+}
+
+.mn-dj-header-locked-msg {
+  display: inline-block;
+  color: var(--mn-danger, #b00020);
+  font-size: 0.95rem;
+}
+
+/* สินค้า / S/N ซ่อม + ปุ่มแก้ไข inline */
+.mn-addjob-page.mn-detail-job-page .mn-dj-inline-field-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  vertical-align: middle;
+}
+
+.mn-addjob-page.mn-detail-job-page .mn-dj-symptom-field-wrap {
+  align-items: flex-start;
+}
+
+.mn-addjob-page.mn-detail-job-page .mn-dj-symptom-text {
+  display: inline-block;
+  max-width: 100%;
+  white-space: pre-wrap;
+  word-break: break-word;
+  vertical-align: top;
+}
+
+.mn-addjob-page.mn-detail-job-page .mn-dj-repair-machine-edit-row td {
+  padding: 0.25rem 0 0.35rem;
+}
+
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-repair-machine-edit-btn,
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-repair-machine-edit-btn:link,
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-repair-machine-edit-btn:visited,
+.mn-addjob-page.mn-detail-job-page .mn-dj-repair-machine-edit-btn,
+.mn-addjob-page.mn-detail-job-page .mn-dj-spare-send-edit-btn,
+.mn-addjob-page.mn-detail-job-page .mn-dj-repair-receive-edit-btn,
+.mn-addjob-page.mn-detail-job-page .mn-dj-repair-qv-edit-btn,
+.mn-addjob-page.mn-detail-job-page .mn-dj-repair-ma-edit-btn,
+.mn-addjob-page.mn-detail-job-page .mn-dj-repair-qc-edit-btn,
+.mn-addjob-page.mn-detail-job-page .mn-dj-repair-return-edit-btn,
+.mn-addjob-page.mn-detail-job-page .mn-dj-spare-early-return-btn,
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-edit-rate-btn,
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-edit-rate-btn:link,
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-edit-rate-btn:visited,
+.mn-addjob-page.mn-detail-job-page .mn-dj-edit-rate-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.15rem 0 0.25rem;
+  padding: 0.18rem 0.55rem;
+  min-height: 0;
+  line-height: 1.25;
+  border: 1px solid #e8d4bc;
+  border-radius: 4px;
+  background: #fffaf5;
+  color: #b45309 !important;
+  font-family: "Noto Sans Thai", system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 0.75rem;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: none;
+  vertical-align: middle;
+}
+
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-repair-machine-edit-btn:hover,
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-repair-machine-edit-btn:focus,
+.mn-addjob-page.mn-detail-job-page .mn-dj-repair-machine-edit-btn:hover,
+.mn-addjob-page.mn-detail-job-page .mn-dj-repair-machine-edit-btn:focus,
+.mn-addjob-page.mn-detail-job-page .mn-dj-spare-send-edit-btn:hover,
+.mn-addjob-page.mn-detail-job-page .mn-dj-spare-send-edit-btn:focus,
+.mn-addjob-page.mn-detail-job-page .mn-dj-repair-receive-edit-btn:hover,
+.mn-addjob-page.mn-detail-job-page .mn-dj-repair-receive-edit-btn:focus,
+.mn-addjob-page.mn-detail-job-page .mn-dj-repair-qv-edit-btn:hover,
+.mn-addjob-page.mn-detail-job-page .mn-dj-repair-qv-edit-btn:focus,
+.mn-addjob-page.mn-detail-job-page .mn-dj-repair-ma-edit-btn:hover,
+.mn-addjob-page.mn-detail-job-page .mn-dj-repair-ma-edit-btn:focus,
+.mn-addjob-page.mn-detail-job-page .mn-dj-repair-qc-edit-btn:hover,
+.mn-addjob-page.mn-detail-job-page .mn-dj-repair-qc-edit-btn:focus,
+.mn-addjob-page.mn-detail-job-page .mn-dj-repair-return-edit-btn:hover,
+.mn-addjob-page.mn-detail-job-page .mn-dj-repair-return-edit-btn:focus,
+.mn-addjob-page.mn-detail-job-page .mn-dj-spare-early-return-btn:hover,
+.mn-addjob-page.mn-detail-job-page .mn-dj-spare-early-return-btn:focus,
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-edit-rate-btn:hover,
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-edit-rate-btn:focus,
+.mn-addjob-page.mn-detail-job-page .mn-dj-edit-rate-btn:hover,
+.mn-addjob-page.mn-detail-job-page .mn-dj-edit-rate-btn:focus {
+  background: #fff5eb;
+  border-color: #d4b896;
+  color: #9a3412 !important;
+  text-decoration: none;
+  box-shadow: none;
+}
+
+.mn-dj-repair-machine-dialog,
+.mn-dj-spare-send-dialog,
+.mn-dj-repair-receive-dialog,
+.mn-dj-repair-qv-dialog,
+.mn-dj-repair-ma-dialog,
+.mn-dj-repair-qc-dialog,
+.mn-dj-repair-return-dialog,
+.mn-dj-spare-early-return-dialog {
+  max-width: min(96vw, 560px);
+}
+
+.mn-dj-spare-send-body,
+.mn-dj-repair-receive-body,
+.mn-dj-repair-qv-body,
+.mn-dj-repair-ma-body,
+.mn-dj-repair-qc-body,
+.mn-dj-repair-return-body,
+.mn-dj-spare-early-return-body {
+  max-height: min(78vh, 480px);
+  overflow-y: auto;
+}
+
+.mn-addjob-page.mn-detail-job-page .mn-dj-spare-early-return-note {
+  margin: 0 0 0.85rem;
+  padding: 0.55rem 0.65rem;
+  border-left: 3px solid #d97706;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.mn-addjob-page.mn-detail-job-page .mn-dj-spare-early-return-done {
+  display: inline-block;
+  margin: 0.2rem 0 0;
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.mn-dj-repair-machine-body {
+  max-height: min(78vh, 520px);
+  overflow-y: auto;
+}
+
+.mn-dj-bundle-section-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--mn-text-muted, #64748b);
+}
+
+.mn-dj-bundle-section-title--old {
+  margin-bottom: 0.25rem;
+}
+
+.mn-dj-bundle-section-title--new {
+  margin-top: 0.75rem;
+  margin-bottom: 0.4rem;
+  font-weight: 700;
+  color: var(--mn-text, #334155);
+}
+
+.mn-dj-bundle-old-summary {
+  margin: 0 0 0.5rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--mn-border, #e8edf2);
+  border-radius: 6px;
+  background: var(--mn-surface-2, #f8fafc);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--mn-text-muted, #64748b);
+}
+
+.mn-dj-bundle-old-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.35rem;
+  margin: 0;
+  padding: 0.12rem 0;
+}
+
+.mn-dj-bundle-old-row + .mn-dj-bundle-old-row {
+  border-top: 1px dashed var(--mn-border, #e2e8f0);
+  padding-top: 0.2rem;
+  margin-top: 0.12rem;
+}
+
+.mn-dj-bundle-old-label {
+  flex: 0 0 auto;
+  font-weight: 500;
+  color: var(--mn-text-muted, #94a3b8);
+}
+
+.mn-dj-bundle-old-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 400;
+  color: var(--mn-text, #475569);
+  word-break: break-word;
+}
+
+.mn-dj-bundle-old-value--pre {
+  white-space: pre-wrap;
+}
+
+.mn-dj-repair-machine-body .mn-modal-field-edit-input,
+.mn-dj-repair-machine-body select.mn-modal-field-edit-select {
+  margin-bottom: 0.65rem;
+}
+
+.mn-addjob-page.mn-detail-job-page .mn-dj-product-field-wrap .mn-dj-product-select {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.mn-addjob-page.mn-detail-job-page .mn-dj-field-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 1px solid var(--mn-border, #cbd5e1);
+  border-radius: 4px;
+  font-size: 0.7rem;
+  background: var(--mn-surface-2, #f1f5f9);
+  color: var(--mn-accent, #0369a1);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.mn-addjob-page.mn-detail-job-page .mn-dj-field-edit-btn:hover {
+  filter: brightness(0.97);
+  border-color: var(--mn-accent, #0369a1);
+}
+
+.mn-addjob-page.mn-detail-job-page .mn-dj-field-edit-btn:focus {
+  outline: 2px solid var(--mn-accent, #0369a1);
+  outline-offset: 1px;
+}
+
+/* บล็อก Comment รายการซ่อม */
+.mn-addjob-page.mn-detail-job-page .mn-dj-comment-row td {
+  padding-top: 0.35rem;
+}
+
+.mn-addjob-page.mn-detail-job-page .mn-dj-comment-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+  max-width: min(100%, 42rem);
+}
+
+.mn-addjob-page.mn-detail-job-page .mn-dj-comment-label {
+  color: #666666;
+  font-weight: 700;
+  font-size: inherit;
+}
+
+.mn-addjob-page.mn-detail-job-page .mn-dj-comment-textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 5.5rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--mn-border, #cbd5e1);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--mn-text, #1e293b);
+  font-family: "Noto Sans Thai", system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.mn-addjob-page.mn-detail-job-page .mn-dj-comment-textarea:focus {
+  outline: none;
+  border-color: var(--mn-accent, #0369a1);
+  box-shadow: 0 0 0 2px rgba(3, 105, 161, 0.15);
+}
+
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-comment-save-btn,
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-comment-save-btn:link,
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-comment-save-btn:visited,
+.mn-addjob-page.mn-detail-job-page .mn-dj-comment-save-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  margin: 0.1rem 0 0;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid #1e7a45;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+  color: #15803d !important;
+  font-family: "Noto Sans Thai", system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 0.75rem;
+  line-height: 1.25;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: none;
+  vertical-align: middle;
+}
+
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-comment-save-btn:hover,
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-comment-save-btn:focus,
+.mn-addjob-page.mn-detail-job-page .mn-dj-comment-save-btn:hover,
+.mn-addjob-page.mn-detail-job-page .mn-dj-comment-save-btn:focus {
+  background: linear-gradient(180deg, #dcfce7 0%, #bbf7d0 100%);
+  border-color: #15803d;
+  color: #166534 !important;
+  text-decoration: none;
+}
+
+.mn-addjob-page.mn-detail-job-page .mn-dj-comment-save-btn .fa {
+  font-size: 0.85em;
+}
+
+.mn-addjob-page.mn-detail-job-page .mn-dj-section-hr {
+  margin: 0.75rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--mn-border, #e2e8f0);
+}

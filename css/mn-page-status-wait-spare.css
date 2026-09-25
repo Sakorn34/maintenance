@@ -1,0 +1,56 @@
+/**
+ * maintenance — หน้ารอเครื่องสำรอง (`status_wait_spare`)
+ * scope: `.mn-addjob-page.mn-status-wait-spare-page`
+ */
+
+.mn-addjob-page.mn-status-wait-spare-page .content {
+  padding: 9rem 0 3rem;
+}
+
+@media (max-width: 768px) {
+  .mn-addjob-page.mn-status-wait-spare-page .content {
+    padding: 10.5rem 0 2rem;
+  }
+}
+
+.mn-addjob-page.mn-status-wait-spare-page .header {
+  z-index: 500;
+}
+
+.mn-addjob-page.mn-status-wait-spare-page .content table#table1.mn-status-wait-spare-table {
+  border-collapse: collapse;
+}
+
+.mn-addjob-page.mn-status-wait-spare-page .mn-status-wait-spare-thead th {
+  background-color: var(--mn-surface-2);
+  padding: 0.5rem 0.25rem;
+  border-bottom: 1px solid var(--mn-border);
+}
+
+.mn-addjob-page.mn-status-wait-spare-page tr.mn-status-wait-spare-row-under > td {
+  padding-bottom: 0.5em;
+  padding-top: 0.5em;
+}
+
+.mn-addjob-page.mn-status-wait-spare-page .mn-status-wait-spare-search-addr input {
+  font-size: 16px;
+  padding: 1px;
+  border: 1px solid #c0c0c0;
+}
+
+.mn-addjob-page.mn-status-wait-spare-page .mn-status-wait-spare-pickup-done {
+  color: #006600;
+}
+
+.mn-addjob-page.mn-status-wait-spare-page .mn-status-wait-spare-tracking-icon {
+  color: #0033ff;
+}
+
+.mn-addjob-page.mn-status-wait-spare-page .mn-status-wait-spare-save-icon {
+  color: #ff9900;
+}
+
+.mn-addjob-page.mn-status-wait-spare-page .mn-status-wait-spare-summary {
+  color: #ff9900;
+  font-size: 0.95rem;
+}

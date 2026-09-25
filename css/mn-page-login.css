@@ -1,0 +1,141 @@
+/**
+ * maintenance — หน้าเข้าสู่ระบบ (login.php)
+ * โหลดหลัง mn-theme.css และ mn-layout.css; หน้านี้ไม่มีแถบเมนู (title-h) จึงไม่ต้องใช้ mn-nav.css
+ * scope ด้วย .mn-addjob-page.mn-login-page ตามมาตรฐานไฟล์ CSS ต่อหน้า
+ */
+
+.mn-addjob-page.mn-login-page {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(160deg, var(--mn-accent-soft) 0%, #f8fafc 55%);
+  font-family: "Noto Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--mn-text);
+}
+
+.mn-addjob-page.mn-login-page .content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  box-sizing: border-box;
+}
+
+.mn-addjob-page.mn-login-page .mn-login-card {
+  width: 100%;
+  max-width: 26rem;
+  background: var(--mn-surface);
+  border: 1px solid var(--mn-border);
+  border-radius: 0.9rem;
+  box-shadow: var(--mn-shadow);
+  overflow: hidden;
+}
+
+.mn-addjob-page.mn-login-page .mn-login-card__head {
+  padding: 1.5rem 1.5rem 1.1rem;
+  border-bottom: 1px solid var(--mn-border);
+}
+
+.mn-addjob-page.mn-login-page .mn-login-card__brand {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--mn-accent);
+  line-height: 1.2;
+}
+
+.mn-addjob-page.mn-login-page .mn-login-card__tagline {
+  margin-top: 0.2rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--mn-text-muted);
+}
+
+.mn-addjob-page.mn-login-page .mn-login-card__body {
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.mn-addjob-page.mn-login-page .mn-login-note {
+  margin: 0 0 1.1rem;
+  padding: 0.7rem 0.85rem;
+  background: var(--mn-accent-soft);
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: #0c4a6e;
+}
+
+.mn-addjob-page.mn-login-page .mn-login-error {
+  margin: 0 0 1.1rem;
+  padding: 0.7rem 0.85rem;
+  background: var(--mn-danger-bg);
+  border: 1px solid var(--mn-danger-border);
+  border-radius: 0.5rem;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--mn-danger-text);
+}
+
+.mn-addjob-page.mn-login-page .mn-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mn-addjob-page.mn-login-page .mn-login-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--mn-text-muted);
+}
+
+.mn-addjob-page.mn-login-page .mn-login-select {
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--mn-text);
+  background: var(--mn-surface);
+  border: 1px solid var(--mn-border);
+  border-radius: 0.5rem;
+  box-sizing: border-box;
+}
+
+.mn-addjob-page.mn-login-page .mn-login-select:focus {
+  outline: none;
+  border-color: var(--mn-accent);
+  box-shadow: 0 0 0 3px var(--mn-accent-soft);
+}
+
+.mn-addjob-page.mn-login-page .mn-login-submit {
+  margin-top: 0.4rem;
+  padding: 0.65rem 1rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--mn-accent);
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.mn-addjob-page.mn-login-page .mn-login-submit:hover {
+  background: #075985;
+}
+
+.mn-addjob-page.mn-login-page .mn-login-card__foot {
+  padding: 0.85rem 1.5rem;
+  background: #f8fafc;
+  border-top: 1px solid var(--mn-border);
+  font-size: 0.72rem;
+  line-height: 1.7;
+  color: var(--mn-text-muted);
+}
+
+.mn-addjob-page.mn-login-page .mn-login-card__foot code {
+  padding: 0.05rem 0.3rem;
+  background: var(--mn-surface);
+  border: 1px solid var(--mn-border);
+  border-radius: 0.25rem;
+  font-size: 0.7rem;
+}

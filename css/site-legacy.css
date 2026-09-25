@@ -1,0 +1,213 @@
+﻿/* CSS Document */
+.bodyIndex{	
+		height:auto;
+		margin:0 auto;
+		/*background-color:#F0F0F0;*/
+		background-color:#82E0AA;
+		font-size:16px;
+		margin-top:50px;
+	 }
+	 img{
+	 	border:0px;
+	 
+	 }
+	 table{ 
+	 		/*border-color:#00CCFF;
+			border-radius: 10px; 
+			-moz-border-radius: 10px; 
+			-webkit-border-radius: 10px; 
+			-o-border-radius: 10px;*/
+	 }
+	 fieldset{
+	 			height:auto; 
+				border-radius: 10px; 
+				-moz-border-radius: 10px; 
+				-webkit-border-radius: 10px; 
+				-o-border-radius: 10px;
+				-ms-border-radius: 10px;
+	 		 }
+	  input[type="text"]{
+			  width: 100%;
+			  font-size: 18px;
+			  padding: 11px;
+			  border: 1px solid #ddd;
+	  
+	  }
+	 .ui-datepicker{  
+    			width:150px;  
+    			font-family:tahoma;  
+    			font-size:11px;  
+    			text-align:center;  
+				}
+.content{	
+			width:100%;
+			height:auto;
+			margin:5rem 5rem auto 5rem;
+		}
+.boxdetailinvoice{
+			border-radius: 10px; 
+			-moz-border-radius: 10px; 
+			-webkit-border-radius: 10px; 
+			-o-border-radius: 10px;
+			width:750px;
+			height:auto;
+			/*text-align:center;vertical-align : middle; display : table-cell;*/
+			background-image:-webkit-gradient(linear,left top,left bottom,from( #ffffff ),to( #DFDFDF ));/* Webkit, IE 9 */
+			background-image:-webkit-linear-gradient( top,#ffffff,#DFDFDF );/*#5dafd3 DFDFDF*/
+			background-image: -moz-linear-gradient( top,#ffffff,#DFDFDF );/* Firefox */
+			background-image: -ms-linear-gradient( top,#ffffff,#DFDFDF );/* IE 8 */
+			background-image: -o-linear-gradient( top,#ffffff,#DFDFDF );/* Opera */
+			background-image: linear-gradient( top,#ffffff,#DFDFDF );
+			filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#cccccc, endColorstr=#000000); /* IE 5.5 - 7 */
+			-ms-filter:"progid:DXImageTransform.Microsoft.gradient(startColorstr=#cccccc, endColorstr=#000000)"; /* IE 8 */
+	}
+.box{
+			border-radius: 10px; 
+			-moz-border-radius: 10px; 
+			-webkit-border-radius: 10px; 
+			-o-border-radius: 10px;
+			width:auto;
+			height:auto;
+			/*text-align:center;vertical-align : middle; display : table-cell;*/
+			background-image:-webkit-gradient(linear,left top,left bottom,from( #ffffff ),to( #DFDFDF ));/* Webkit, IE 9 */
+			background-image:-webkit-linear-gradient( top,#ffffff,#DFDFDF );/*#5dafd3 DFDFDF*/
+			background-image: -moz-linear-gradient( top,#ffffff,#DFDFDF );/* Firefox */
+			background-image: -ms-linear-gradient( top,#ffffff,#DFDFDF );/* IE 8 */
+			background-image: -o-linear-gradient( top,#ffffff,#DFDFDF );/* Opera */
+			background-image: linear-gradient( top,#ffffff,#DFDFDF );
+			filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#cccccc, endColorstr=#000000); /* IE 5.5 - 7 */
+			-ms-filter:"progid:DXImageTransform.Microsoft.gradient(startColorstr=#cccccc, endColorstr=#000000)"; /* IE 8 */
+	}
+.boxinvoice{
+			border-radius: 10px; 
+			-moz-border-radius: 10px; 
+			-webkit-border-radius: 10px; 
+			-o-border-radius: 10px;
+			width:625px;
+			height:auto;
+			/*text-align:center;vertical-align : middle; display : table-cell;*/
+			background-image:-webkit-gradient(linear,left top,left bottom,from( #ffffff ),to( #DFDFDF ));/* Webkit, IE 9 */
+			background-image:-webkit-linear-gradient( top,#ffffff,#DFDFDF );/*#5dafd3 DFDFDF*/
+			background-image: -moz-linear-gradient( top,#ffffff,#DFDFDF );/* Firefox */
+			background-image: -ms-linear-gradient( top,#ffffff,#DFDFDF );/* IE 8 */
+			background-image: -o-linear-gradient( top,#ffffff,#DFDFDF );/* Opera */
+			background-image: linear-gradient( top,#ffffff,#DFDFDF );
+			filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#cccccc, endColorstr=#000000); /* IE 5.5 - 7 */
+			-ms-filter:"progid:DXImageTransform.Microsoft.gradient(startColorstr=#cccccc, endColorstr=#000000)"; /* IE 8 */
+	}
+.boxproduct{
+			border-radius: 10px; 
+			-moz-border-radius: 10px; 
+			-webkit-border-radius: 10px; 
+			-o-border-radius: 10px;
+			width:700px;
+			height:auto;
+			/*text-align:center;vertical-align : middle; display : table-cell;*/
+			background-image:-webkit-gradient(linear,left top,left bottom,from( #ffffff ),to( #DFDFDF ));/* Webkit, IE 9 */
+			background-image:-webkit-linear-gradient( top,#ffffff,#DFDFDF );/*#5dafd3 DFDFDF*/
+			background-image: -moz-linear-gradient( top,#ffffff,#DFDFDF );/* Firefox */
+			background-image: -ms-linear-gradient( top,#ffffff,#DFDFDF );/* IE 8 */
+			background-image: -o-linear-gradient( top,#ffffff,#DFDFDF );/* Opera */
+			background-image: linear-gradient( top,#ffffff,#DFDFDF );
+			filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#cccccc, endColorstr=#000000); /* IE 5.5 - 7 */
+			-ms-filter:"progid:DXImageTransform.Microsoft.gradient(startColorstr=#cccccc, endColorstr=#000000)"; /* IE 8 */
+	}
+.m{
+	}
+	 a{text-decoration:none;
+	   color:#000000;
+	 }
+	 a:hover{color:#0000FF;}
+
+#tbl-container-product{
+height: 470px;
+width:720px;
+overflow: auto;
+}
+
+ 	
+#tbl-container-invoice{
+height: 470px;
+width:625px;
+overflow: auto;
+}
+
+
+#progress_bar {  
+    width:220px;  
+    height:40px;  
+    border:1px solid #ccc;  
+    padding:0;  
+    margin:0;  
+    position:relative;  
+    background-image:url("./img/22.gif");  
+    background-repeat:repeat-x;  
+} 
+ 
+#progress_bar div {  
+    background-color:#fff;  
+}
+
+
+/*  Custom select   */
+
+/* The container must be positioned relative: */
+/*.custom-select {
+  position: relative;
+  font-family: Arial;
+}
+
+.custom-select select {
+  display: none; 
+}*/
+
+/*.select-selected {
+  background-color: DodgerBlue;
+}*/
+
+/* Style the arrow inside the select element: */
+/*.select-selected:after {
+  position: absolute;
+  content: "";
+  top: 14px;
+  right: 10px;
+  width: 0;
+  height: 0;
+  border: 6px solid transparent;
+  border-color: #fff transparent transparent transparent;
+}*/
+
+/* Point the arrow upwards when the select box is open (active): */
+/*.select-selected.select-arrow-active:after {
+  border-color: transparent transparent #fff transparent;
+  top: 7px;
+}*/
+
+/* style the items (options), including the selected item: */
+/*.select-items div,.select-selected {
+  color: #ffffff;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-color: transparent transparent rgba(0, 0, 0, 0.1) transparent;
+  cursor: pointer;
+}*/
+
+/* Style items (options): */
+/*.select-items {
+  position: absolute;
+  background-color: DodgerBlue;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 99;
+}*/
+
+/* Hide the items when the select box is closed: */
+/*.select-hide {
+  display: none;
+}
+
+.select-items div:hover, .same-as-selected {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+*/

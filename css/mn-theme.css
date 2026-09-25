@@ -1,0 +1,21 @@
+/**
+ * maintenance_new — ธีมกลาง (ตัวแปรสี + ฟอนต์)
+ * ให้หน้า PHP ใดใน maintenance_new โหลดไฟล์นี้ก่อน mn-layout.css / mn-nav.css / mn-page-*.css
+ * เพื่อให้สีและฟอนต์สอดคล้องทั้งระบบ
+ */
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap");
+
+:root {
+  --mn-surface: #ffffff;
+  --mn-surface-2: #bfddf0;
+  --mn-border: #e2e8f0;
+  --mn-text: #0f172a;
+  --mn-text-muted: #64748b;
+  --mn-accent: #0369a1;
+  --mn-accent-soft: #e0f2fe;
+  --mn-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+  --mn-danger-bg: #fef2f2;
+  --mn-danger-border: #fecaca;
+  --mn-danger-text: #991b1b;
+  --mn-workspace-width: 80%;
+}

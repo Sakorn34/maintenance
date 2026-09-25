@@ -1,0 +1,194 @@
+/**
+ * maintenance — หน้า edit_spare (ส่ง/เปลี่ยนเครื่องสำรอง)
+ * scope: `.mn-addjob-page.mn-edit-spare-page` — card + grid ไม่ใช้ตารางจัดเลย์เอาต์
+ */
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-card {
+  background: var(--mn-surface);
+  border: 1px solid var(--mn-border);
+  border-radius: 12px;
+  box-shadow: var(--mn-shadow);
+  overflow: hidden;
+  max-width: 56rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-card__header {
+  background: var(--mn-surface-2);
+  border-bottom: 1px solid var(--mn-border);
+  padding: 0.85rem 1.25rem;
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-card__title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--mn-accent);
+  font-family: 'Noto Sans Thai', system-ui, sans-serif;
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-card__body {
+  padding: 0;
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-bottom: 1px solid var(--mn-border);
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-panel {
+  padding: 1rem 1.25rem;
+  border-right: 1px solid var(--mn-border);
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-panel:last-child {
+  border-right: none;
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-panel__heading {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--mn-text);
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-panel__body {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--mn-text);
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-section-head {
+  padding: 1rem 1.25rem 0.5rem;
+  text-align: center;
+  border-bottom: 1px solid var(--mn-border);
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-ex2 {
+  border-radius: 10px;
+  background: var(--mn-accent-soft);
+  padding: 0.35rem 0.85rem;
+  display: inline-block;
+  color: var(--mn-text);
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-row--sn {
+  padding: 1rem 1.25rem 0.5rem;
+  border-bottom: none;
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-sn-only-note {
+  margin: 0;
+  padding: 0.35rem 1.25rem 1rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--mn-text-muted, #64748b);
+  text-align: center;
+  border-bottom: 1px solid var(--mn-border);
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-sn-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem 1rem;
+  text-align: center;
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-sn-label {
+  font-size: 0.95rem;
+  color: var(--mn-text);
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-sn-prev {
+  color: var(--mn-accent);
+  font-weight: 600;
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-select--sn {
+  min-width: 10rem;
+  max-width: 22rem;
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-ship-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1.25rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--mn-border);
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--mn-text-muted);
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-input,
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-select {
+  font-size: 16px;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--mn-border);
+  border-radius: 6px;
+  background: var(--mn-surface);
+  color: var(--mn-text);
+  font-family: 'Noto Sans Thai', system-ui, sans-serif;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-card__footer {
+  padding: 1rem 1.25rem 1.5rem;
+  text-align: center;
+  background: var(--mn-surface-2);
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  color: var(--mn-accent);
+  font-weight: 600;
+  text-decoration: none;
+  font-family: 'Noto Sans Thai', system-ui, sans-serif;
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-save:hover {
+  background: var(--mn-accent-soft);
+}
+
+.mn-addjob-page.mn-edit-spare-page .mn-edit-spare-save .fa {
+  font-size: 1.5rem;
+}
+
+@media (max-width: 720px) {
+  .mn-addjob-page.mn-edit-spare-page .mn-edit-spare-two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .mn-addjob-page.mn-edit-spare-page .mn-edit-spare-panel {
+    border-right: none;
+    border-bottom: 1px solid var(--mn-border);
+  }
+
+  .mn-addjob-page.mn-edit-spare-page .mn-edit-spare-panel:last-child {
+    border-bottom: none;
+  }
+
+  .mn-addjob-page.mn-edit-spare-page .mn-edit-spare-ship-grid {
+    grid-template-columns: 1fr;
+  }
+}

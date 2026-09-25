@@ -1,0 +1,18 @@
+# เรียกสคริปต์ในโฟลเดอร์นี้โดยไม่ต้องใส่ .php (ต้องเปิด mod_rewrite + AllowOverride)
+# ไม่ hardcode RewriteBase — ใช้ path ของโฟลเดอร์ที่มี .htaccess นี้เป็นฐาน
+Options -MultiViews
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+	RewriteEngine On
+
+	# URL ลงท้ายด้วย / ของโฟลเดอร์นี้ → ให้เข้า index.php ชัดเจน (บางโฮสต์ไม่มี DirectoryIndex สำหรับ subfolder)
+	RewriteRule ^$ index.php [L,QSA]
+
+	RewriteCond %{REQUEST_FILENAME} -f [OR]
+	RewriteCond %{REQUEST_FILENAME} -d
+	RewriteRule ^ - [L]
+
+	RewriteCond %{REQUEST_FILENAME}.php -f
+	RewriteRule ^([^/]+)/?$ $1.php [L,QSA]
+</IfModule>

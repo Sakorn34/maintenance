@@ -1,0 +1,296 @@
+/**
+ * maintenance — หน้า `repair_dashboard` (วิเคราะห์งานซ่อม)
+ * scope: `.mn-addjob-page.mn-repair-dashboard-page`
+ */
+
+.mn-addjob-page.mn-repair-dashboard-page .content {
+  padding: 9rem 0 3rem;
+}
+
+@media (max-width: 768px) {
+  .mn-addjob-page.mn-repair-dashboard-page .content {
+    padding: 10.5rem 0 2rem;
+  }
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .header {
+  z-index: 500;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-wrap {
+  max-width: 72rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 1rem 2.5rem;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-head {
+  margin-bottom: 1.5rem;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--mn-text);
+  font-family: 'Noto Sans Thai', system-ui, sans-serif;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-lead {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--mn-text-muted);
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-lead__note {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.88rem;
+  color: var(--mn-text-muted);
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-sparse-note {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--mn-text);
+  background: var(--mn-accent-soft);
+  border: 1px solid var(--mn-border);
+  border-radius: 8px;
+  border-left: 4px solid var(--mn-accent);
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-filter {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.45rem 0.85rem;
+  padding: 0.55rem 0.9rem;
+  background: var(--mn-surface-2);
+  border: 1px solid var(--mn-border);
+  border-radius: 10px;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-filter__control {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 0 0 auto;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-filter__control label {
+  margin: 0;
+  white-space: nowrap;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--mn-text-muted);
+  font-family: 'Noto Sans Thai', system-ui, sans-serif;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-filter input[type="date"] {
+  font-size: 0.9rem;
+  padding: 0.32rem 0.45rem;
+  border: 1px solid var(--mn-border);
+  border-radius: 6px;
+  background: var(--mn-surface);
+  color: var(--mn-text);
+  width: auto;
+  min-width: 9.5rem;
+  max-width: 11rem;
+  flex-shrink: 0;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-filter__btn {
+  padding: 0.38rem 0.95rem;
+  border-radius: 6px;
+  border: none;
+  background: var(--mn-accent);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Noto Sans Thai', system-ui, sans-serif;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-filter__btn:hover {
+  opacity: 0.92;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-filter__presets {
+  display: inline-flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: 0;
+  flex: 0 0 auto;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-filter__preset {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: 1px solid var(--mn-border);
+  background: var(--mn-surface);
+  color: var(--mn-accent);
+  cursor: pointer;
+  font-family: 'Noto Sans Thai', system-ui, sans-serif;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-filter__preset:hover {
+  background: var(--mn-surface-2);
+}
+
+@media (max-width: 520px) {
+  .mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-filter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-filter__control {
+    justify-content: space-between;
+  }
+
+  .mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-filter input[type="date"] {
+    max-width: none;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-filter__presets {
+    justify-content: flex-start;
+  }
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-empty {
+  margin: 0;
+  padding: 1.25rem 0.75rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--mn-text-muted);
+  background: var(--mn-surface-2);
+  border-radius: 8px;
+  border: 1px dashed var(--mn-border);
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-kpi {
+  background: var(--mn-surface);
+  border: 1px solid var(--mn-border);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  box-shadow: var(--mn-shadow);
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-kpi--accent {
+  border-color: color-mix(in srgb, var(--mn-accent) 35%, var(--mn-border));
+  background: color-mix(in srgb, var(--mn-accent) 6%, var(--mn-surface));
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-kpi__label {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--mn-text-muted);
+  text-transform: none;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-kpi__value {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--mn-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-kpi__hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  color: var(--mn-text-muted);
+  line-height: 1.35;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+  gap: 1rem;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-card {
+  background: var(--mn-surface);
+  border: 1px solid var(--mn-border);
+  border-radius: 12px;
+  padding: 1rem 1.1rem 1.15rem;
+  box-shadow: var(--mn-shadow);
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-card--wide {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 900px) {
+  .mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-card--wide {
+    grid-column: span 2;
+  }
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-card__title {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--mn-text);
+  font-family: 'Noto Sans Thai', system-ui, sans-serif;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-card__desc {
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  color: var(--mn-text-muted);
+  line-height: 1.45;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-chart {
+  position: relative;
+  min-height: 14rem;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-chart--donut {
+  max-width: 20rem;
+  margin-left: auto;
+  margin-right: auto;
+  min-height: 16rem;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-tablewrap {
+  overflow-x: auto;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-table th,
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-table td {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid var(--mn-border);
+  text-align: left;
+}
+
+.mn-addjob-page.mn-repair-dashboard-page .mn-repair-dashboard-table th {
+  background: var(--mn-surface-2);
+  font-weight: 600;
+}

@@ -1,0 +1,185 @@
+/**
+ * maintenance — หน้า onsite (`status_onsite`)
+ * อาศัย `mn-page-addjob.css` ร่วมกับ `table#table1` + class `mn-status-onsite-table` (สอดคล้องกฎ mapping)
+ * scope: `.mn-addjob-page.mn-status-onsite-page`
+ */
+
+/* ─────────────────────────────────────────────────────────────────
+ * layout ใต้ header
+ * ───────────────────────────────────────────────────────────────── */
+.mn-addjob-page.mn-status-onsite-page .content {
+  padding: 9rem 0 3rem;
+}
+
+@media (max-width: 768px) {
+  .mn-addjob-page.mn-status-onsite-page .content {
+    padding: 10.5rem 0 2rem;
+  }
+}
+
+.mn-addjob-page.mn-status-onsite-page .header {
+  z-index: 500;
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-inner {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 1rem 2rem;
+  box-sizing: border-box;
+}
+
+/* ทับ `table#table1` ใน mn-page-addjob.css — ตาราง onsite ใช้ collapse + ไม่มี padding รอบตาราง */
+.mn-addjob-page.mn-status-onsite-page .content table#table1.mn-status-onsite-table {
+  border-collapse: collapse;
+  padding: 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-title {
+  text-align: center;
+  margin: 0 0 0.75rem;
+  color: var(--mn-text);
+  font-weight: 700;
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-notice {
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 1rem;
+  border-radius: 6px;
+  border: 1px solid var(--mn-danger-border);
+  background: var(--mn-danger-bg);
+  color: var(--mn-danger-text);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-table {
+  width: 100%;
+  background: var(--mn-surface);
+  border: 1px solid var(--mn-border);
+  box-shadow: var(--mn-shadow);
+  table-layout: fixed;
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-table hr {
+  border: none;
+  border-top: 1px solid var(--mn-border);
+}
+
+/* ความกว้างคอลัมน์ (เดิม inline width) */
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-col--company {
+  width: 20%;
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-col--product {
+  width: 15%;
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-col--symptom {
+  width: 20%;
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-col--spare {
+  width: 15%;
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-col--wait {
+  width: 10%;
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-col--status {
+  width: 15%;
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-col--track {
+  width: 10%;
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-td--center {
+  text-align: center;
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-td--left {
+  text-align: left;
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-headrow td {
+  background: var(--mn-surface-2);
+  color: var(--mn-text);
+  padding: 0.55rem 0.4rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--mn-border);
+  vertical-align: middle;
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-th #search_addr {
+  max-width: 14rem;
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-headrow input[type="text"],
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-headrow select {
+  font-size: 1rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--mn-border);
+  border-radius: 4px;
+  color: var(--mn-text);
+  background: var(--mn-surface);
+  box-sizing: border-box;
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-headrow input[type="text"]:focus,
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-headrow select:focus {
+  outline: 2px solid var(--mn-accent-soft);
+  outline-offset: 1px;
+  border-color: var(--mn-accent);
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-datarow:hover {
+  background: var(--mn-accent-soft);
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-datarow > td {
+  padding: 0.55rem 0.4rem;
+  vertical-align: top;
+  color: var(--mn-text);
+  border-bottom: 1px solid var(--mn-border);
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-datarow a {
+  color: var(--mn-accent);
+  text-decoration: none;
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-datarow a:hover {
+  text-decoration: underline;
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-spare--yes {
+  color: var(--mn-danger-text);
+  font-weight: 600;
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-phoneico {
+  color: var(--mn-accent);
+  font-size: 1.15rem;
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-seprow > td {
+  padding: 0.2rem 0.35rem;
+  border-bottom: 1px solid var(--mn-border);
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-seprow hr {
+  margin: 0;
+}
+
+.mn-addjob-page.mn-status-onsite-page .mn-status-onsite-summary {
+  color: var(--mn-accent);
+  font-weight: 600;
+  padding: 0.65rem 0.4rem !important;
+}

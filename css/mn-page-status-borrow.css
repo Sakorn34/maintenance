@@ -1,0 +1,78 @@
+/**
+ * maintenance — หน้ารายการยืม (`status_borrow`)
+ * scope: `.mn-addjob-page.mn-status-borrow-page`
+ */
+
+.mn-addjob-page.mn-status-borrow-page .content {
+  padding: 9rem 0 3rem;
+}
+
+@media (max-width: 768px) {
+  .mn-addjob-page.mn-status-borrow-page .content {
+    padding: 10.5rem 0 2rem;
+  }
+}
+
+.mn-addjob-page.mn-status-borrow-page .header {
+  z-index: 500;
+}
+
+.mn-addjob-page.mn-status-borrow-page .mn-status-borrow-inner {
+  max-width: 100%;
+}
+
+.mn-addjob-page.mn-status-borrow-page .mn-status-borrow-addlink {
+  color: #333333;
+  text-decoration: none;
+}
+
+.mn-addjob-page.mn-status-borrow-page .mn-status-borrow-addlink:hover {
+  text-decoration: underline;
+}
+
+.mn-addjob-page.mn-status-borrow-page table#table1.mn-status-borrow-table {
+  border-collapse: collapse;
+}
+
+.mn-addjob-page.mn-status-borrow-page .mn-status-borrow-headrow th {
+  background-color: #999999;
+  color: #fff;
+  padding: 0.35rem 0.25rem;
+  font-size: 0.95rem;
+}
+
+.mn-addjob-page.mn-status-borrow-page .mn-status-borrow-datarow > td {
+  padding-top: 1em;
+  padding-bottom: 1em;
+  vertical-align: top;
+}
+
+.mn-addjob-page.mn-status-borrow-page .mn-status-borrow-datarow:hover {
+  background-color: #ccecff;
+}
+
+.mn-addjob-page.mn-status-borrow-page .mn-status-borrow-tracking {
+  width: 98%;
+  font-size: 16px;
+  border: 1px solid #ddd;
+}
+
+.mn-addjob-page.mn-status-borrow-page .mn-status-borrow-datereturn {
+  display: none;
+  margin-top: 0.35rem;
+  width: 95%;
+}
+
+.mn-addjob-page.mn-status-borrow-page .mn-status-borrow-save {
+  color: #006600;
+  text-decoration: none;
+}
+
+.mn-addjob-page.mn-status-borrow-page .mn-status-borrow-save:hover {
+  text-decoration: underline;
+}
+
+.mn-addjob-page.mn-status-borrow-page .mn-status-borrow-summary {
+  color: #ff9900;
+  font-size: 0.95rem;
+}

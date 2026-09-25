@@ -1,0 +1,154 @@
+---
+description: มาตรฐาน refactor หน้า PHP + SQL + CSS ธีม mn-* สำหรับโปรเจกต์ maintenance (AppServ / mysqli)
+alwaysApply: true
+---
+
+# หน้า PHP และ SQL ใน maintenance
+
+โปรเจกต์รากนี้ **ยึดไฟล์กฎนี้เป็นหลัก** — โค้ด PHP/HTML/CSS/JS ที่อยู่นอก `old_system/` (และนอก vendor บุคคลที่สาม) ควรปฏิบัติตามทุกข้อด้านล่าง รายละเอียดการมอบหมายงานให้ AI ดู `AGENTS.md` ที่รากโปรเจกต์
+
+## ขอบเขตการยึดมาตรฐาน
+
+- **รากโปรเจกต์**: บังคับตามกฎนี้เมื่อเพิ่ม/แก้ฟีเจอร์
+- **`old_system/`**: เป็นอาร์ไคฟ์อ้างอิง — ไม่จำเป็นต้องแก้ให้ตรงกฎย้อนหลัง; เวลาย้ายฟีเจอร์ให้ refactor มารากตามกฎ
+- **ไลบรารีของบุคคลที่สาม** (เช่น `TCPDF-main`): ไม่บังคับธีม mn
+
+## โครงสร้างหน้า (ใหม่หรือ refactor จาก `old_system/`)
+
+1. ลำดับบังคับ: `require_once __DIR__ . '/includes/require_auth.php';` ก่อนมี output HTML/whitespace — **ยกเว้น `login.php` / `logout.php`** ซึ่งเป็นทางเข้า/ออกของ session เอง (ใช้ `includes/auth_guard.php` + `maintenance_new_auth_bootstrap()` แทน มิฉะนั้นจะ redirect วนหาตัวเอง)
+2. `header('Content-type: text/html; charset=utf-8');` หลัง auth เมื่อเป็นหน้า HTML
+3. Bootstrap DB + legacy: `require_once __DIR__ . '/includes/bootstrap_maintenance_legacy.php';` (หรือ bootstrap เฉพาะหน้าที่ห่อ `mysql_odbc_compat` + `function_legacy` อยู่แล้ว)
+4. Helper ร่วมสำหรับ parse GET เป็นตัวเลขและ JOIN: `includes/maintenance_flow_sql_helpers.php`
+5. แถบเมนู: ตั้ง `$page` แล้ว `require_once __DIR__ . '/includes/title-h.php';` — โหลดชุด CSS หลักใน `<head>` ตามหมวด **CSS และธีม** ด้านล่าง
+6. URL ภายในโปรเจกต์ไม่ใส่นามสกุล `.php` (อาศัย `.htaccess` ที่รากโปรเจกต์)
+7. **หน้าที่ logic ยังอยู่ใน `old_system/` เท่านั้น**: ถ้าต้องลิงก์จากหน้า refactor ให้มีสคริปต์ `.php` ที่รากเป็น delegate — `chdir` ไป `old_system/` ก่อน `require` สคริปต์เดิม เพื่อให้ `include`/`require` แบบ relative ของ legacy ยังทำงาน; ไม่เพิ่มฟีเจอร์ใน bridge — เมื่อย้าย logic มารากแล้วให้ลบแพตเทิร์นนี้ (หน้าเช่น `check_history_repair`, `add_rate`, `status_onsite`, `qc_checklist`, `update_wait_qc` ย้ายมารากแล้ว)
+
+## SQL และประสิทธิภาพ
+
+1. **Prepared statements** (`mysqli_prepare` + `mysqli_stmt_bind_param`) สำหรับทุกคำสั่งที่มีค่าจากผู้ใช้หรือจาก GET/POST
+2. **ตัวเลขจาก query string**: ใช้ `maintenance_flow_get_int($_GET, 'ชื่อ', 0)` หรือ `filter_var(..., FILTER_VALIDATE_INT)` ก่อนลง SQL
+3. **ลด round-trip**: ใช้ `JOIN` ดึง `Transac_repair` + `Transac` ครั้งเดียว แทน loop ที่ query `Transac` ซ้ำ
+4. **เลือกคอลัมน์**: หลีกเลี่ยง `SELECT *` เมื่อตารางใหญ่หรือใช้แค่บางฟิลด์ — ระบุคอลัมน์ + `ORDER BY` ที่จำเป็น (เช่น รายการ SN จาก `Spare`)
+5. **เขียน/อ่านหนักหลายคำสั่ง**: ใช้ `mysqli_begin_transaction` / `commit` / `rollback` ให้สอดคล้องกัน
+6. **ปิด connection**: หลังดึงข้อมูลครบสำหรับหน้า render ยาว ให้ `odbc_close($connect)` (alias mysqli) ก่อน output HTML ยาวได้
+
+## ความปลอดภัยการแสดงผล
+
+1. ข้อความจากฐานข้อมูล/ผู้ใช้ที่แสดงใน HTML: `maintenance_status_logistic_h()` จาก `includes/status_logistic_helpers.php`
+2. ข้อความที่ฟังก์ชัน legacy คืนเป็น HTML (เช่น `cal_wait_date()`): ห้ามห่อด้วย `htmlspecialchars` ซ้ำ — `echo` ตรง ๆ
+3. พารามิเตอร์ใน URL ที่สร้างจาก JavaScript: ใช้ `encodeURIComponent`
+
+## CSS และธีม (อ้างอิง `index.php`, `status_logistic.php`)
+
+เป้าหมายคือทุกหน้า refactor ใช้ชั้น **mn-*** เดียวกัน ไม่ผสม `css.css` แบบ legacy ของ `old_system/` เว้นแต่หน้าที่ยังไม่ย้าย
+
+### ลำดับ `<link>` ใน `<head>` (สงวนลำดับนี้)
+
+1. `css/mn-theme.css` — ตัวแปรสี / พื้นฐานธีม
+2. `css/mn-layout.css` — layout หลัก (header / content)
+3. `css/mn-nav.css` — แถบเมนูจาก `title-h.php` อ่านสไตล์จากที่นี่
+4. `css/site-legacy.css` — ทับพฤติกรรมเดิมที่ยังจำเป็น (เช่น hover ตาราง)
+5. `css/smoothness/jquery-ui-1.7.2.custom.css` — ถ้าใช้ jQuery UI บนหน้านั้น
+6. Font Awesome 4.x CDN เดิมของโปรเจกต์: `https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css`
+7. **`css/mn-page-addjob.css`** — เลย์เอาต์ฐานหน้างาน (workspace, ฟอร์มกึ่งกลาง, ตาราง `#table1` ฯลฯ) — หน้ารายการหลักทุกหน้าโหลดไฟล์นี้เป็น **ชั้นกลางร่วม**
+8. **`css/mn-page-{ชื่อหน้า}.css`** — สไตล์เฉพาะหน้าเท่านั้น (เช่น `mn-page-index.css`, `mn-page-status-logistic.css`, `mn-page-wait-hardware-flow.css`)
+
+### โครงสร้าง HTML มาตรฐาน
+
+- `body` ใช้คู่ class: `mn-addjob-page` + `mn-{รหัสหน้า}-page` (เช่น `mn-index-page`, `mn-status-logistic-page`) เพื่อให้ CSS หน้าเฉพาะ scope ทับเฉพาะเมื่อ body มีทั้งสอง class
+- แถบบน + progress:
+  - `<div class="header">` → `require_once .../includes/title-h.php';` (กำหนด `$page` ให้ตรงกับเมนู highlight)
+  - ตามด้วย `<div class="progress-container"><div class="progress-bar" id="myBar"></div></div>`
+- พื้นที่เนื้อหา:
+  - `<div class="content mn-workspace">`
+  - ภายในมักใช้ `<div class="mn-form-centered">` หรือ modifier เพิ่ม (เช่น `mn-index-centered` ใน `index.php`)
+- ตารางรายการใหญ่: ใช้ `id="table1"` ร่วมกับ class ระบุหน้า (เช่น `class="mn-status-logistic-table"`) ให้สอดคล้อง `mn-page-addjob.css`
+
+### ไฟล์ CSS ต่อหน้า
+
+- ตั้งชื่อ `css/mn-page-{slug}.css` ให้สอดคล้องชื่อหน้า / รหัส `$page`
+- ในไฟล์นั้น **scope ด้วย** `.mn-addjob-page.mn-{slug}-page` (และถ้าจำเป็น `.content` ลูก) เพื่อไม่ให้กระทบหน้าอื่น — ดูแบบใน `css/mn-page-status-logistic.css` (padding ใต้ header, thead สี, section row)
+- หลีกเลี่ยง inline `<style>` บล็อกใหญ่ในหน้า PHP ถ้าสไตล์ซ้ำหรือซับซ้อน — ย้ายไป `mn-page-*.css`
+
+### ตาราง mapping: สคริปต์ ↔ `$page` (title-h) ↔ `body` class ↔ CSS หน้า
+
+ทุกหน้า HTML หลักโหลด **`mn-page-addjob.css`** อยู่แล้ว — คอลัมน์ «CSS เพิ่ม» คือไฟล์ **นอกจาก** `mn-page-addjob.css` เท่านั้น  
+`body` ทุกหน้ามี `mn-addjob-page` — คอลัมน์ «class เพิ่มบน body» คือ class **ที่สอง (และถัดไป)** เท่านั้น
+
+| URL / สคริปต์ (ไม่มี `.php`) | `$page` สำหรับ `title-h.php` | class เพิ่มบน `body` | CSS เพิ่ม (`css/mn-page-*.css`) |
+|------------------------------|------------------------------|----------------------|----------------------------------|
+| `index` | `index` | `mn-index-page` | `mn-page-index.css` |
+| `login` | *(ไม่มีแถบ `title-h`)* | `mn-login-page` | `mn-page-login.css` *(ไม่โหลด `mn-page-addjob.css` / `mn-nav.css` — หน้าเดี่ยวไม่มีเมนู)* |
+| `logout` | *(ไม่มี `title-h` — redirect)* | *(ไม่มี class ที่สอง)* | *(ไม่มี)* |
+| `repair_dashboard` | `repair_dashboard` | `mn-repair-dashboard-page` | `mn-page-repair-dashboard.css` |
+| `status_logistic` | `status_logistic` | `mn-status-logistic-page` | `mn-page-status-logistic.css` |
+| `wait_sendtracking` | `wait_sendtracking` | `mn-wait-sendtracking-page` | `mn-page-wait-sendtracking.css` |
+| `status_wait_hardware` | `status_wait_hardware` | `mn-status-wait-hardware-page` | `mn-page-status-wait-hardware.css` |
+| `status_rate` | `status_rate` | `mn-status-rate-page` | `mn-page-status-rate.css` |
+| `status_offer_price` | `status_offer_price` | `mn-status-offer-price-page` | `mn-page-status-offer-price.css` |
+| `status_wait_firmQV` | `status_wait_firmQV` | `mn-status-wait-firmQV-page` | `mn-page-status-wait-firmQV.css` |
+| `status_wait_ma` | `status_wait_ma` | `mn-status-wait-ma-page` | `mn-page-status-wait-ma.css` |
+| `status_wait_qc` | `status_wait_qc` | `mn-status-wait-qc-page` | `mn-page-status-wait-qc.css` |
+| `status_wait_spare` | `status_wait_spare` | `mn-status-wait-spare-page` | `mn-page-status-wait-spare.css` |
+| `status_logistic_pickup` | `status_logistic_pickup` | `mn-status-logistic-pickup-page` | `mn-page-status-logistic-pickup.css` |
+| `status_borrow` | `status_borrow` | `mn-status-borrow-page` | `mn-page-status-borrow.css` |
+| `add_job` | `add_job` | *(ไม่มี class ที่สอง — ใช้แค่ `mn-addjob-page`)* | *(ไม่มี — ใช้แค่ `mn-page-addjob.css`)* |
+| `detail_job` | `''` (ว่าง) | `mn-detail-job-page` | `mn-page-detail-job.css` |
+| `update_wait_hardware` | `status_wait_hardware` | `mn-wait-hardware-flow-page` **และ** `mn-update-wait-hardware-page` | `mn-page-wait-hardware-flow.css` |
+| `pickup_wait_hardware` | *(ไม่มีแถบ `title-h`)* | `mn-wait-hardware-flow-page` **และ** `mn-pickup-wait-hardware-page` | `mn-page-wait-hardware-flow.css` |
+| `tracking_history` | *(ไม่มีแถบ `title-h`)* | `mn-wait-hardware-flow-page` **และ** `mn-tracking-history-page` | `mn-page-wait-hardware-flow.css` |
+| `edit_spare` | `status_wait_hardware` | `mn-wait-hardware-flow-page` **และ** `mn-edit-spare-page` | `mn-page-wait-hardware-flow.css` **และ** `mn-page-edit-spare.css` |
+| `update_rate` | `status_rate` | `mn-update-rate-page` | `mn-page-update-rate.css` |
+| `save_rate` | *(ไม่มี `title-h` — หน้า modal แล้ว redirect)* | *(ไม่มี class ที่สอง)* | *(ไม่มี — ใช้ modal asset เท่านั้น)* |
+| `edit_offer_price` | `status_offer_price` | `mn-edit-offer-price-page` | `mn-page-edit-offer-price.css` |
+| `update_offer_price` | *(ไม่มี `title-h` — หน้า modal แล้ว redirect)* | *(ไม่มี class ที่สอง)* | *(ไม่มี — ใช้ modal asset เท่านั้น)* |
+| `update_wait_spare` | *(ไม่มี `title-h` — redirect)* | *(ไม่มี class ที่สอง)* | *(ไม่มี)* |
+| `insert_borrow` | *(ไม่มี `title-h` — redirect)* | *(ไม่มี class ที่สอง)* | *(ไม่มี)* |
+| `insert_rate` | *(ไม่มี `title-h` — modal แล้ว redirect)* | *(ไม่มี class ที่สอง)* | *(ไม่มี — ใช้ modal asset เท่านั้น)* |
+| `add_borrow` | `status_borrow` | `mn-add-borrow-page` | `mn-page-add-borrow.css` |
+| `manage_logistics` | `''` | `mn-manage-logistics-page` | `mn-page-manage-logistics.css` |
+| `save_manage_logistics` | *(ไม่มี `title-h` — redirect)* | *(ไม่มี class ที่สอง)* | *(ไม่มี)* |
+| `check_history_repair` | `''` | `mn-check-history-repair-page` | `mn-page-check-history-repair.css` |
+| `check_history_spare` | *(ไม่มีแถบ `title-h` — popup)* | `mn-check-history-spare-page` | `mn-page-check-history-spare.css` |
+| `add_spare` | `''` | `mn-add-spare-page` | `mn-page-add-spare.css` |
+| `add_rate` | `''` | `mn-add-rate-page` | `mn-page-add-rate.css` |
+| `status_onsite` | `''` | `mn-status-onsite-page` | `mn-page-status-onsite.css` |
+| `qc_checklist` | `status_wait_qc` | `mn-qc-checklist-page` | `mn-page-qc-checklist.css` |
+| `save_pickup_wait_hardware` | *(ไม่มี `title-h` — ปิด popup หรือ redirect)* | *(ไม่มี class ที่สอง)* | *(ไม่มี)* |
+| `update_wait_qc` | *(ไม่มี `title-h` — redirect)* | *(ไม่มี class ที่สอง)* | *(ไม่มี)* |
+
+**หมายเหตุ**
+
+- หน้า popup / แคบ (`pickup_wait_hardware`, `tracking_history`) อาจไม่ `include` แถบ `title-h` แต่ยังใช้ชุด **wait-hardware-flow** เดียวกับฟอร์มรับเครื่อง
+- หน้าใหม่ที่ยังไม่มีแถวในตาราง: เพิ่มแถว + สร้าง `css/mn-page-{slug}.css` แล้ว scope ด้วย `.mn-addjob-page.mn-{slug}-page` ให้ตรงกับ class บน `body`
+
+### Modal / สคริปต์
+
+#### การแจ้งเตือนและยืนยัน (แทน `alert` / `confirm` / `prompt`)
+
+- **หน้า refactor ในรากโปรเจกต์** (PHP + JS ที่โหลดจากหน้านั้น): **ห้าม**ใช้ `window.alert`, `window.confirm`, `window.prompt` สำหรับข้อความถึงผู้ใช้ — ให้ใช้ **modal กลางชุด mn** แทน ให้สไตล์และพฤติกรรมสอดคล้องทั้งระบบ
+- **ต้นแบบการใช้งาน**: `add_job.php` + `js/add_job-form.js` — โหลด asset modal แล้วเรียก `mnModalAlert` พร้อม `variant`; มี wrapper ฟังก์ชันในไฟล์หน้า (เช่น `mnAlert`) ที่ตรวจ `typeof window.mnModalAlert === 'function'` แล้ว fallback เป็น `alert` **เฉพาะเมื่อ** modal ยังไม่โหลด (กันพังชั่วคราว)
+- **Flow รอเครื่อง / pickup / tracking / edit spare / รอเสนอราคา / รอซ่อม / รออนุมัติ QV / รอเครื่องสำรอง / เข้ารับหน้างาน / รายการยืม / QC checklist / คิวส่งลิงก์ลูกค้า**: หลัง `mn-modal.js` ให้โหลด `js/mn-maintenance-flow-modals.js` (ฟังก์ชันร่วม `mnMaintenanceFlowAlert` / `mnMaintenanceFlowConfirm`) **ก่อน** `*-page.js` ของหน้านั้น — ใช้ร่วมกับ `update_wait_hardware`, `status_wait_hardware`, `pickup_wait_hardware`, `tracking_history`, `edit_spare`, `status_offer_price`, `status_wait_ma`, `status_wait_firmQV`, `status_wait_spare`, `status_logistic_pickup`, `status_borrow`, `qc_checklist`, `wait_sendtracking`
+- **ยืนยันก่อนทำรายการ**: ใช้ `mnModalConfirm(message, { title, variant, onConfirm, onCancel, okLabel?, cancelLabel? })` แทน `confirm` — ต้นแบบดู `js/status_logistic-page.js` (`mnSlConfirm`)
+- **ป้อนข้อความสั้น ๆ**: ใช้ `mnModalPrompt(options)` แทน `prompt` — ดู signature ใน `js/mn-modal.js`
+- **`mnModalAlert`**: พารามิเตอร์ `(message, options?)` โดย `options.variant` เป็น `'info' | 'success' | 'warning' | 'danger'` (validation / คำเตือนมักใช้ `'warning'`)
+- **PHP หน้า HTML**: ตั้ง `$mnModalAssetPrefix = '';` แล้ว `require_once __DIR__ . '/includes/mn_modal_assets.php';` **หลัง** block `<link>` ของ CSS หน้านั้น (แบบ `add_job.php`, `index.php`, `status_logistic.php`) — ไฟล์นี้แทรก `css/mn-modal.css` และ `js/mn-modal.js`
+- **ลำดับ `<script>`**: ให้ `mn-modal.js` (จาก `mn_modal_assets.php`) โหลด **ก่อน** สคริปต์หน้าที่เรียก `mnModalAlert` / `mnModalConfirm` / `mnModalPrompt` — ลำดับมาตรฐานต่อท้ายคือ jQuery stack แล้วค่อย `js/{หน้า}-page.js` หรือสคริปต์ฟอร์มของหน้านั้น
+
+#### jQuery และสคริปต์อื่น
+
+- jQuery: ลำดับมาตรฐานโปรเจกต์คือ 1.3.2 → UI → (maskedinput ถ้าใช้) → 3.5.1 → `jquery-add_object.min.js` → `jquery-scroll.js` ตามที่หน้านั้นต้องการ — จากนั้น `js/mn-maintenance-flow-modals.js` (ถ้าใช้) แล้วค่อย `js/{หน้า}-page.js` ของหน้านั้น
+
+### ไอคอนและลิงก์
+
+- ใช้ Font Awesome 4: class แบบ `fa fa-*` ตามที่ใช้ใน `index.php` / `status_logistic.php`
+- สีไอคอนลิงก์ลัดเดิมมักใช้ `style="color:#333333"` บนหน้า index — หน้าใหม่ควรใช้ class ใน `mn-page-*.css` แทน inline เมื่อ refactor ต่อ
+
+## ไฟล์ที่เกี่ยวข้อง
+
+- `includes/mysql_odbc_compat.php` — mysqli + wrapper `odbc_*`
+- `includes/function_legacy.php` — ฟังก์ชันเดิม (`employee()`, `logistisc()`, `product()`, …)
+- `includes/status_logistic_helpers.php` — รายการ SN สำรองว่าง (`maintenance_status_logistic_spare_blank_options`)
+- `css/mn-theme.css`, `css/mn-layout.css`, `css/mn-nav.css`, `css/mn-page-addjob.css` — ธีมและโครงหลัก
+- `index.php`, `status_logistic.php` — ต้นแบบลำดับ CSS + โครง body / header / ตาราง
+- `add_job.php`, `js/add_job-form.js`, `js/mn-modal.js`, `js/mn-maintenance-flow-modals.js`, `includes/mn_modal_assets.php` — ต้นแบบ modal แทน `alert` / `confirm`

@@ -1,0 +1,468 @@
+/**
+ * maintenance — ฟอร์ม flow รับเครื่อง / pickup / tracking
+ * - pickup, tracking: card `.mn-flow-popup-card` (body `mn-pickup-wait-hardware-page` / `mn-tracking-history-page`)
+ * - update_wait_hardware: card `.mn-update-wait-hw-*` (body `mn-update-wait-hardware-page`) — footer มีปุ่มกลับ + บันทึก (เทียบ toolbar หน้า update_rate)
+ */
+
+.mn-addjob-page.mn-wait-hardware-flow-page .content {
+  padding: 9rem 0 3rem;
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-pickup-wait-hardware-page .content,
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-tracking-history-page .content {
+  padding: 1rem 1rem 2.5rem;
+}
+
+/* ─ popup flow: pickup + tracking — card ร่วม `.mn-flow-popup-card` ─ */
+.mn-pickup-wait-hardware-page .mn-flow-popup-card,
+.mn-tracking-history-page .mn-flow-popup-card {
+  background: var(--mn-surface);
+  border: 1px solid var(--mn-border);
+  border-radius: 12px;
+  box-shadow: var(--mn-shadow);
+  overflow: hidden;
+  max-width: 52rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mn-pickup-wait-hardware-page .mn-flow-popup-card__header,
+.mn-tracking-history-page .mn-flow-popup-card__header {
+  background: var(--mn-surface-2);
+  border-bottom: 1px solid var(--mn-border);
+  padding: 0.85rem 1.25rem;
+}
+
+.mn-pickup-wait-hardware-page .mn-flow-popup-card__title,
+.mn-tracking-history-page .mn-flow-popup-card__title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--mn-text);
+  font-family: 'Noto Sans Thai', system-ui, sans-serif;
+}
+
+.mn-pickup-wait-hardware-page .mn-flow-popup-card__body,
+.mn-tracking-history-page .mn-flow-popup-card__body {
+  padding: 0;
+}
+
+.mn-pickup-wait-hardware-page .mn-flow-popup-block-row,
+.mn-tracking-history-page .mn-flow-popup-block-row {
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--mn-border);
+}
+
+.mn-pickup-wait-hardware-page .mn-flow-popup-contact-full,
+.mn-tracking-history-page .mn-flow-popup-contact-full {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--mn-text);
+}
+
+.mn-tracking-history-page .mn-tracking-history-hiddens {
+  display: none;
+}
+
+.mn-pickup-wait-hardware-page .mn-flow-popup-row,
+.mn-tracking-history-page .mn-flow-popup-row {
+  display: grid;
+  grid-template-columns: minmax(9rem, 12rem) minmax(0, 1fr);
+  gap: 0.5rem 1rem;
+  align-items: start;
+  padding: 0.65rem 1.25rem;
+  border-bottom: 1px solid var(--mn-border);
+}
+
+.mn-pickup-wait-hardware-page .mn-flow-popup-row:last-child,
+.mn-tracking-history-page .mn-flow-popup-row:last-child {
+  border-bottom: none;
+}
+
+.mn-pickup-wait-hardware-page .mn-flow-popup-label,
+.mn-tracking-history-page .mn-flow-popup-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--mn-text-muted);
+  text-align: right;
+  line-height: 1.5;
+  font-family: 'Noto Sans Thai', system-ui, sans-serif;
+}
+
+.mn-pickup-wait-hardware-page .mn-flow-popup-control,
+.mn-tracking-history-page .mn-flow-popup-control {
+  min-width: 0;
+}
+
+.mn-pickup-wait-hardware-page .mn-flow-popup-readonly,
+.mn-tracking-history-page .mn-flow-popup-readonly {
+  font-size: 0.95rem;
+  color: var(--mn-text);
+  padding-top: 0.2rem;
+}
+
+.mn-pickup-wait-hardware-page .mn-flow-popup-input,
+.mn-pickup-wait-hardware-page .mn-flow-popup-select,
+.mn-pickup-wait-hardware-page .mn-flow-popup-textarea,
+.mn-tracking-history-page .mn-flow-popup-input,
+.mn-tracking-history-page .mn-flow-popup-select,
+.mn-tracking-history-page .mn-flow-popup-textarea {
+  width: 100%;
+  max-width: 28rem;
+  font-size: 16px;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--mn-border);
+  border-radius: 6px;
+  background: var(--mn-surface);
+  color: var(--mn-text);
+  font-family: 'Noto Sans Thai', system-ui, sans-serif;
+  box-sizing: border-box;
+}
+
+.mn-pickup-wait-hardware-page .mn-flow-popup-input--date,
+.mn-tracking-history-page .mn-flow-popup-input--date {
+  max-width: 12rem;
+}
+
+.mn-pickup-wait-hardware-page .mn-flow-popup-textarea,
+.mn-tracking-history-page .mn-flow-popup-textarea {
+  max-width: 100%;
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.mn-pickup-wait-hardware-page .mn-flow-popup-control--with-save,
+.mn-tracking-history-page .mn-flow-popup-control--with-save {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.mn-pickup-wait-hardware-page .mn-flow-popup-select,
+.mn-tracking-history-page .mn-flow-popup-select {
+  max-width: 22rem;
+}
+
+.mn-pickup-wait-hardware-page .mn-flow-popup-save,
+.mn-tracking-history-page .mn-flow-popup-save {
+  color: var(--mn-accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-family: 'Noto Sans Thai', system-ui, sans-serif;
+}
+
+.mn-pickup-wait-hardware-page .mn-flow-popup-save:hover,
+.mn-tracking-history-page .mn-flow-popup-save:hover {
+  background: var(--mn-accent-soft);
+}
+
+.mn-pickup-wait-hardware-page .mn-flow-popup-save__text,
+.mn-tracking-history-page .mn-flow-popup-save__text {
+  font-size: 1rem;
+}
+
+.mn-tracking-history-page .mn-tracking-history-log {
+  padding: 0.75rem 1.25rem 1rem;
+  border-bottom: 1px solid var(--mn-border);
+  background: var(--mn-surface-2);
+}
+
+.mn-tracking-history-page .mn-tracking-history-log__heading {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--mn-text);
+}
+
+.mn-tracking-history-page .mn-tracking-history-log__empty {
+  margin: 0;
+  color: var(--mn-text-muted);
+  font-size: 0.9rem;
+}
+
+.mn-tracking-history-page .mn-tracking-history-entry {
+  margin-bottom: 1rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--mn-border);
+  border-radius: 8px;
+  background: var(--mn-surface);
+}
+
+.mn-tracking-history-page .mn-tracking-history-entry:last-child {
+  margin-bottom: 0;
+}
+
+.mn-tracking-history-page .mn-tracking-history-entry__title {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--mn-danger-text);
+}
+
+.mn-tracking-history-page .mn-tracking-history-entry__dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.mn-tracking-history-page .mn-tracking-history-entry__term {
+  margin: 0;
+  font-weight: 600;
+  color: var(--mn-text-muted);
+  padding: 0.15rem 0;
+  border-bottom: 1px dashed transparent;
+}
+
+.mn-tracking-history-page .mn-tracking-history-entry__def {
+  margin: 0;
+  color: var(--mn-text);
+  padding: 0.15rem 0;
+  border-bottom: 1px dashed var(--mn-border);
+}
+
+.mn-tracking-history-page .mn-tracking-history-entry__dl .mn-tracking-history-entry__def:last-of-type {
+  border-bottom: none;
+}
+
+.mn-tracking-history-page .mn-flow-popup-row--two-dates {
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 1.5rem;
+}
+
+.mn-tracking-history-page .mn-flow-popup-split {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.mn-tracking-history-page .mn-flow-popup-row--two-dates .mn-flow-popup-label {
+  text-align: left;
+}
+
+@media (max-width: 720px) {
+  .mn-pickup-wait-hardware-page .mn-flow-popup-row,
+  .mn-tracking-history-page .mn-flow-popup-row {
+    grid-template-columns: 1fr;
+  }
+
+  .mn-pickup-wait-hardware-page .mn-flow-popup-label,
+  .mn-tracking-history-page .mn-flow-popup-label {
+    text-align: left;
+  }
+
+  .mn-tracking-history-page .mn-flow-popup-row--two-dates {
+    grid-template-columns: 1fr;
+  }
+
+  .mn-pickup-wait-hardware-page .mn-flow-popup-input,
+  .mn-pickup-wait-hardware-page .mn-flow-popup-select,
+  .mn-tracking-history-page .mn-flow-popup-input,
+  .mn-tracking-history-page .mn-flow-popup-select {
+    max-width: 100%;
+  }
+}
+
+.mn-wait-hardware-flow-inner {
+  max-width: 960px;
+}
+
+/* ─ update_wait_hardware — card + grid (ไม่ใช้ table layout) scope: mn-update-wait-hardware-page ─ */
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-card {
+  background: var(--mn-surface);
+  border: 1px solid var(--mn-border);
+  border-radius: 12px;
+  box-shadow: var(--mn-shadow);
+  overflow: hidden;
+  max-width: 52rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-card__header {
+  background: var(--mn-surface-2);
+  border-bottom: 1px solid var(--mn-border);
+  padding: 0.85rem 1.25rem;
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-card__title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--mn-text);
+  font-family: 'Noto Sans Thai', system-ui, sans-serif;
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-card__body {
+  padding: 0;
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-row {
+  display: grid;
+  grid-template-columns: minmax(9rem, 11rem) minmax(0, 1fr);
+  gap: 0.5rem 1rem;
+  align-items: start;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--mn-border);
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-row:last-child {
+  border-bottom: none;
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-row--block .mn-update-wait-hw-label {
+  padding-top: 0.15rem;
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--mn-text-muted);
+  text-align: right;
+  line-height: 1.5;
+  font-family: 'Noto Sans Thai', system-ui, sans-serif;
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-control {
+  min-width: 0;
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-contact {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--mn-text);
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-readonly {
+  font-size: 0.95rem;
+  color: var(--mn-text);
+  font-weight: 500;
+  padding-top: 0.2rem;
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-date-input,
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-sn-input,
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-age-input,
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-backup-input,
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-select,
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-textarea {
+  width: 100%;
+  max-width: 28rem;
+  font-size: 16px;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--mn-border);
+  border-radius: 6px;
+  background: var(--mn-surface);
+  color: var(--mn-text);
+  font-family: 'Noto Sans Thai', system-ui, sans-serif;
+  box-sizing: border-box;
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-textarea {
+  max-width: 100%;
+  min-height: 5.5rem;
+  resize: vertical;
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-date-input {
+  max-width: 12rem;
+  text-align: center;
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-sn-input {
+  max-width: 22rem;
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-age-cell {
+  color: var(--mn-danger-text);
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-age-input {
+  max-width: 18rem;
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-select {
+  max-width: 22rem;
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-card__footer {
+  padding: 1rem 1.25rem 1.25rem;
+  background: var(--mn-surface-2);
+  border-top: 1px solid var(--mn-border);
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-footnote {
+  margin: 0 0 1rem;
+  color: var(--mn-text-muted);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-back,
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-save {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-family: 'Noto Sans Thai', system-ui, sans-serif;
+  color: var(--mn-accent);
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-back:hover,
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-save:hover {
+  opacity: 0.88;
+  background: color-mix(in srgb, var(--mn-accent) 12%, transparent);
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-save--primary {
+  color: var(--mn-accent-2, #04aa6d);
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-save--primary:hover {
+  background: color-mix(in srgb, var(--mn-accent-2, #04aa6d) 12%, transparent);
+}
+
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-back__text,
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-save__text {
+  font-size: 0.78rem;
+}
+
+@media (max-width: 640px) {
+  .mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-row {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+  }
+
+  .mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-label {
+    text-align: left;
+  }
+
+  .mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-date-input,
+  .mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-sn-input,
+  .mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-age-input,
+  .mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-backup-input,
+  .mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-select {
+    max-width: 100%;
+  }
+}

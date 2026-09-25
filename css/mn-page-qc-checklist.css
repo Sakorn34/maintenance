@@ -1,0 +1,471 @@
+/**
+ * maintenance — หน้า QC checklist (`qc_checklist`)
+ * scope: `.mn-addjob-page.mn-qc-checklist-page`
+ * เลย์เอาต์การ์ด + กริดฟิลด์ (ไม่ใช้ตารางหลักแบบ legacy)
+ */
+
+/* ─────────────────────────────────────────────────────────────────
+ * layout หลัก
+ * ───────────────────────────────────────────────────────────────── */
+.mn-addjob-page.mn-qc-checklist-page .content {
+  padding: 9rem 0 3rem;
+}
+
+@media (max-width: 768px) {
+  .mn-addjob-page.mn-qc-checklist-page .content {
+    padding: 10.5rem 0 2rem;
+  }
+}
+
+.mn-addjob-page.mn-qc-checklist-page .header {
+  z-index: 500;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-checklist-inner {
+  max-width: 1080px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 1rem 2.5rem;
+  box-sizing: border-box;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * stack + toolbar
+ * ───────────────────────────────────────────────────────────────── */
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-toolbar {
+  margin: 0;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-toolbar__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--mn-accent);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-toolbar__link:hover {
+  text-decoration: underline;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * hero
+ * ───────────────────────────────────────────────────────────────── */
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-hero {
+  padding: 1.1rem 1.25rem;
+  background: linear-gradient(135deg, var(--mn-accent-soft) 0%, var(--mn-surface-2) 100%);
+  border: 1px solid var(--mn-border);
+  border-radius: 12px;
+  box-shadow: var(--mn-shadow);
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-hero__title {
+  margin: 0 0 0.4rem;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--mn-text);
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-hero__meta {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-size: 1rem;
+  color: var(--mn-text-muted);
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-hero__job {
+  font-weight: 600;
+  color: var(--mn-text);
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-hero__product {
+  padding: 0.15rem 0.65rem;
+  border-radius: 999px;
+  background: var(--mn-surface);
+  border: 1px solid var(--mn-border);
+  color: var(--mn-accent);
+  font-weight: 600;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * card
+ * ───────────────────────────────────────────────────────────────── */
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-card {
+  background: var(--mn-surface);
+  border: 1px solid var(--mn-border);
+  border-radius: 10px;
+  box-shadow: var(--mn-shadow);
+  overflow: hidden;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-card__head {
+  padding: 0.95rem 1.15rem 0.8rem;
+  background: linear-gradient(180deg, var(--mn-accent-soft) 0%, var(--mn-surface) 100%);
+  border-bottom: 1px solid var(--mn-border);
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-card__title {
+  margin: 0 0 0.25rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--mn-text);
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-card__title--inline {
+  font-size: 1rem;
+  margin: 0 0 0.85rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--mn-border);
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-card__lead {
+  margin: 0.35rem 0 0;
+  font-size: 0.88rem;
+  color: var(--mn-text-muted);
+  line-height: 1.45;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-card__lead code {
+  font-size: 0.85em;
+  background: var(--mn-surface-2);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-card__body {
+  padding: 1rem 1.15rem 1.15rem;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-card__body--prose {
+  padding-top: 0.85rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * split column
+ * ───────────────────────────────────────────────────────────────── */
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 900px) {
+  .mn-addjob-page.mn-qc-checklist-page .mn-qc-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* การ์ดคู่ «การแจ้งซ่อม» / «ประวัติซ่อม» — ขอบในไม่ชิดขอบการ์ด */
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-card--split .mn-qc-split {
+  padding: 1.15rem 1.4rem 1.4rem;
+  box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+  .mn-addjob-page.mn-qc-checklist-page .mn-qc-card--split .mn-qc-split {
+    padding: 1rem 1.15rem 1.25rem;
+  }
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-split__col--main {
+  min-width: 0;
+  padding-right: 0.35rem;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-split__col--side {
+  min-width: 0;
+  border-left: 1px solid var(--mn-border);
+  padding-left: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .mn-addjob-page.mn-qc-checklist-page .mn-qc-split__col--side {
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid var(--mn-border);
+    padding-top: 1.15rem;
+  }
+
+  .mn-addjob-page.mn-qc-checklist-page .mn-qc-split__col--main {
+    padding-right: 0;
+  }
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-prose {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--mn-text);
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-inline-meta {
+  margin: 0.75rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-sep {
+  margin: 0 0.35rem;
+  color: var(--mn-text-muted);
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-tag {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.88em;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-tag--age {
+  background: var(--mn-danger-bg);
+  color: var(--mn-danger-text);
+  border: 1px solid var(--mn-danger-border);
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-tag--insurance {
+  background: var(--mn-accent-soft);
+  color: var(--mn-accent);
+  border: 1px solid var(--mn-border);
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-dl {
+  margin: 0;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-dl__row {
+  display: grid;
+  grid-template-columns: minmax(8.5rem, 10.5rem) 1fr;
+  gap: 0.45rem 1rem;
+  padding: 0.6rem 0.2rem;
+  border-bottom: 1px dashed var(--mn-border);
+  font-size: 0.92rem;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-dl__row:last-child {
+  border-bottom: none;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-dl__row dt {
+  margin: 0;
+  font-weight: 600;
+  color: var(--mn-accent);
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-dl__row dd {
+  margin: 0;
+  color: var(--mn-text);
+  line-height: 1.55;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-dl__row--emph dt {
+  color: var(--mn-danger-text);
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-list-repair {
+  margin-top: 1rem;
+  padding: 0.75rem 0.85rem 0.85rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  background: var(--mn-surface-2);
+  border: 1px solid var(--mn-border);
+  border-radius: 8px;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-history {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  max-height: 28rem;
+  overflow: auto;
+  padding: 1rem 1.15rem 1.2rem;
+  background: var(--mn-surface-2);
+  border-radius: 8px;
+  border: 1px solid var(--mn-border);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * meta + fields
+ * ───────────────────────────────────────────────────────────────── */
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-field--grow {
+  flex: 1;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-field--block {
+  width: 100%;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--mn-text);
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-hint {
+  font-weight: 500;
+  color: var(--mn-danger-text);
+  font-style: normal;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-input,
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-select,
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-textarea {
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--mn-border);
+  border-radius: 6px;
+  background: var(--mn-surface);
+  color: var(--mn-text);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-input--date {
+  width: auto;
+  min-width: 11rem;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-textarea {
+  width: 100%;
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-field input[type='checkbox'] {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 0.15rem;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-suffix {
+  margin-left: 0.35rem;
+  font-size: 0.88rem;
+  color: var(--mn-text-muted);
+}
+
+/* checklist block */
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-band {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-badge {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  letter-spacing: 0.03em;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-badge--danger {
+  background: #b91c1c;
+  color: #fff;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-badge--accent {
+  background: var(--mn-accent);
+  color: #fff;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-subhead {
+  margin: 1rem 0 0.65rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-subhead:first-child {
+  margin-top: 0;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-subhead--danger {
+  background: linear-gradient(90deg, #fef2f2 0%, var(--mn-surface) 100%);
+  color: #991b1b;
+  border: 1px solid var(--mn-danger-border);
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-subhead--ok {
+  background: linear-gradient(90deg, #ecfccb 0%, var(--mn-surface) 100%);
+  color: #3f6212;
+  border: 1px solid #bbf7d0;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.85rem 1.1rem;
+  margin-bottom: 0.25rem;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-empty,
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-muted {
+  margin: 0;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: var(--mn-surface-2);
+  color: var(--mn-text-muted);
+  font-size: 0.92rem;
+}
+
+/* actions */
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--mn-border);
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.15rem;
+  border-radius: 8px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-btn--primary {
+  background: var(--mn-accent);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(3, 105, 161, 0.35);
+}
+
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-btn--primary:hover,
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-btn--primary:focus {
+  opacity: 0.94;
+  outline: none;
+}

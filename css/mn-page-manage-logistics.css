@@ -1,0 +1,229 @@
+/**
+ * maintenance — หน้าจัดการขนส่ง (`manage_logistics`)
+ * scope: `.mn-addjob-page.mn-manage-logistics-page`
+ */
+
+.mn-addjob-page.mn-manage-logistics-page .content {
+  padding: 9rem 0 3rem;
+}
+
+@media (max-width: 768px) {
+  .mn-addjob-page.mn-manage-logistics-page .content {
+    padding: 10.5rem 0 2rem;
+  }
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-inner {
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 1rem 2rem;
+  box-sizing: border-box;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-toolbar {
+  margin-bottom: 1rem;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--mn-accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-home:hover {
+  text-decoration: underline;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.5rem;
+  color: var(--mn-text);
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-lead {
+  margin: 0 0 1.25rem;
+  color: var(--mn-text-muted, #666);
+  line-height: 1.5;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-card {
+  background: #fff;
+  border: 1px solid var(--mn-border, #ddd);
+  border-radius: 6px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-card--alert {
+  border-color: #f0ad4e;
+  background: #fff8e6;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-card__title {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-link-cancel {
+  font-size: 0.9rem;
+  color: var(--mn-accent);
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 1.25rem;
+}
+
+@media (max-width: 640px) {
+  .mn-addjob-page.mn-manage-logistics-page .mn-mlg-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-field--wide {
+  grid-column: 1 / -1;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-field--check {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-req {
+  color: #c0392b;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-field input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-hint {
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-form-actions {
+  margin-top: 1rem;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-btn--primary {
+  background: var(--mn-accent);
+  color: #fff;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-btn--primary:hover {
+  filter: brightness(0.95);
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-table-wrap {
+  overflow-x: auto;
+}
+
+.mn-addjob-page.mn-manage-logistics-page table#table1.mn-mlg-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.mn-addjob-page.mn-manage-logistics-page table#table1.mn-mlg-table thead th {
+  background: var(--mn-accent);
+  color: #fff;
+  padding: 0.55rem 0.65rem;
+  text-align: left;
+  font-weight: 600;
+}
+
+.mn-addjob-page.mn-manage-logistics-page table#table1.mn-mlg-table tbody td {
+  padding: 0.5rem 0.65rem;
+  border-bottom: 1px solid #eee;
+  vertical-align: top;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-row--inactive td {
+  color: #888;
+  background: #fafafa;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-col-url a {
+  word-break: break-all;
+  color: #0066cc;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-muted {
+  color: #999;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-badge--on {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-badge--off {
+  background: #fce4ec;
+  color: #c62828;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-edit-link {
+  color: var(--mn-accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-edit-link:hover {
+  text-decoration: underline;
+}
+
+.mn-addjob-page.mn-manage-logistics-page .mn-mlg-empty {
+  text-align: center;
+  color: #777;
+  padding: 1.5rem !important;
+}

@@ -1,0 +1,271 @@
+/**
+ * maintenance — Modal กลางสำหรับแจ้งเตือน (แทน alert)
+ * โหลดหลัง mn-theme.css เพื่อใช้ตัวแปร --mn-*
+ */
+.mn-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.45);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.mn-modal-overlay.mn-modal-overlay--open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.mn-modal-dialog {
+  width: 100%;
+  max-width: 420px;
+  background: var(--mn-surface, #fff);
+  border-radius: 12px;
+  box-shadow: var(--mn-shadow, 0 4px 24px rgba(15, 23, 42, 0.12));
+  border: 1px solid var(--mn-border, #e2e8f0);
+  transform: scale(0.96) translateY(8px);
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+}
+
+.mn-modal-overlay.mn-modal-overlay--open .mn-modal-dialog {
+  transform: scale(1) translateY(0);
+}
+
+.mn-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 1rem 1.15rem;
+  border-bottom: 1px solid var(--mn-border, #e2e8f0);
+  font-family: "Noto Sans Thai", system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--mn-text, #0f172a);
+}
+
+.mn-modal-header__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 10px;
+  font-size: 1rem;
+}
+
+.mn-modal-header__glyph {
+  display: block;
+  font-size: 1.15rem;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.mn-modal-header__glyph--ok {
+  font-size: 1.05rem;
+}
+
+.mn-modal--info .mn-modal-header__icon {
+  background: var(--mn-accent-soft, #e0f2fe);
+  color: var(--mn-accent, #0369a1);
+}
+
+.mn-modal--success .mn-modal-header__icon {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.mn-modal--warning .mn-modal-header__icon {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.mn-modal--danger .mn-modal-header__icon {
+  background: var(--mn-danger-bg, #fef2f2);
+  color: var(--mn-danger-text, #991b1b);
+}
+
+.mn-modal-body {
+  padding: 1.15rem 1.15rem 1.25rem;
+  font-family: "Noto Sans Thai", system-ui, sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--mn-text, #0f172a);
+  max-height: min(50vh, 280px);
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* mnModalPrompt — textarea แก้ไขข้อความยาว */
+.mn-modal-dialog.mn-modal--prompt {
+  max-width: min(96vw, 640px);
+}
+
+.mn-modal-body.mn-modal-body--prompt {
+  max-height: min(72vh, 520px);
+}
+
+.mn-modal-prompt-hint {
+  margin: 0 0 0.65rem;
+  font-size: 0.88rem;
+  color: var(--mn-text-muted, #64748b);
+}
+
+/* mnModalFieldEdit — แสดงค่าเดิม + ช่องค่าใหม่ */
+.mn-modal-dialog.mn-modal--field-edit {
+  max-width: min(96vw, 480px);
+}
+
+.mn-modal-body.mn-modal-body--field-edit {
+  max-height: min(72vh, 420px);
+}
+
+.mn-modal-field-edit-old {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.75rem;
+  background: var(--mn-surface-2, #f8fafc);
+  border: 1px solid var(--mn-border, #e2e8f0);
+  border-radius: 8px;
+}
+
+.mn-modal-field-edit-old dt {
+  margin: 0 0 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--mn-text-muted, #64748b);
+}
+
+.mn-modal-field-edit-old dd {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--mn-text, #0f172a);
+  word-break: break-all;
+}
+
+.mn-modal-field-edit-old-dd--pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-weight: 500;
+}
+
+.mn-modal-dialog.mn-modal--field-edit-textarea {
+  max-width: min(96vw, 560px);
+}
+
+textarea.mn-modal-field-edit-textarea {
+  min-height: 6rem;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.mn-modal-field-edit-label {
+  display: block;
+  margin: 0 0 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--mn-text, #0f172a);
+}
+
+.mn-modal-field-edit-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.55rem 0.65rem;
+  font-family: "Noto Sans Thai", system-ui, sans-serif;
+  font-size: 0.95rem;
+  color: var(--mn-text, #0f172a);
+  border: 1px solid var(--mn-border, #e2e8f0);
+  border-radius: 8px;
+}
+
+select.mn-modal-field-edit-select {
+  min-height: 2.5rem;
+  cursor: pointer;
+  background: #fff;
+}
+
+.mn-modal-field-edit-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.82rem;
+  color: var(--mn-text-muted, #64748b);
+}
+
+.mn-modal-prompt-field {
+  display: block;
+  width: 100%;
+  min-height: 8rem;
+  box-sizing: border-box;
+  padding: 0.55rem 0.65rem;
+  font-family: "Noto Sans Thai", system-ui, sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--mn-text, #0f172a);
+  border: 1px solid var(--mn-border, #e2e8f0);
+  border-radius: 8px;
+  resize: vertical;
+}
+
+.mn-modal-footer {
+  padding: 0.65rem 1rem 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.mn-modal-footer.mn-modal-footer--has-extra {
+  justify-content: flex-end;
+}
+
+.mn-modal-footer.mn-modal-footer--has-extra .mn-modal-btn--extra {
+  margin-right: auto;
+}
+
+.mn-modal-btn--secondary {
+  background: var(--mn-border, #e2e8f0);
+  color: var(--mn-text, #0f172a);
+}
+
+.mn-modal-btn--secondary:hover {
+  filter: brightness(0.97);
+}
+
+.mn-modal-btn {
+  font-family: "Noto Sans Thai", system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.55rem 1.25rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.mn-modal-btn:active {
+  transform: scale(0.98);
+}
+
+.mn-modal-btn--primary {
+  background: var(--mn-accent, #0369a1);
+  color: #fff;
+}
+
+.mn-modal-btn--primary:hover {
+  filter: brightness(1.06);
+}
+
+.mn-modal-btn--danger {
+  background: #dc2626;
+  color: #fff;
+}
+
+.mn-modal-btn--danger:hover {
+  filter: brightness(1.06);
+}

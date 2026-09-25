@@ -1,0 +1,219 @@
+/**
+ * maintenance_new — แถบเมนู (.mn-appbar)
+ * ใช้ร่วมกับ includes/title-h.php (หน้าต้องโหลด mn-theme.css ก่อนไฟล์นี้)
+ */
+
+.mn-appbar {
+  font-family: "Noto Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--mn-surface);
+  border-bottom: 1px solid var(--mn-border);
+  box-shadow: var(--mn-shadow);
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.mn-appbar *,
+.mn-appbar *::before,
+.mn-appbar *::after {
+  box-sizing: border-box;
+}
+
+.mn-appbar__inner {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0.75rem 1rem 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+}
+
+.mn-appbar__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 10rem;
+}
+
+.mn-appbar__brand a {
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+  color: var(--mn-text);
+  text-decoration: none;
+  line-height: 1.2;
+}
+
+.mn-appbar__brand a:hover {
+  color: var(--mn-accent);
+}
+
+.mn-appbar__tagline {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--mn-text-muted);
+  letter-spacing: 0.02em;
+}
+
+.mn-appbar__navwrap {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.mn-navlist {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+  align-items: stretch;
+}
+
+.mn-navlist__item {
+  flex: 0 0 auto;
+}
+
+.mn-navlink {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-height: 3.25rem;
+  min-width: 5.5rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 0.65rem;
+  text-decoration: none;
+  color: var(--mn-text);
+  background: var(--mn-surface-2);
+  border: 1px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+  position: relative;
+}
+
+.mn-navlink:hover {
+  background: #fff;
+  border-color: var(--mn-border);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  color: var(--mn-accent);
+}
+
+.mn-navlink--active {
+  background: var(--mn-accent-soft);
+  border-color: #bae6fd;
+  color: var(--mn-accent);
+  font-weight: 600;
+  box-shadow: 0 1px 0 rgba(3, 105, 161, 0.12);
+}
+
+.mn-navlink__icon {
+  font-size: 1.05rem;
+  line-height: 1;
+  opacity: 0.92;
+}
+
+.mn-navlink--active .mn-navlink__icon {
+  opacity: 1;
+}
+
+.mn-navlink__text {
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.25;
+  max-width: 6.5rem;
+}
+
+.mn-navlink__badge {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.28rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.1rem;
+  text-align: center;
+  color: #fff;
+  background: #0f172a;
+  border-radius: 999px;
+}
+
+.mn-navlink--active .mn-navlink__badge {
+  background: var(--mn-accent);
+}
+
+.mn-appbar__accent {
+  height: 3px;
+  width: 100%;
+  background: linear-gradient(90deg, #0369a1 0%, #0ea5e9 45%, #38bdf8 100%);
+  opacity: 0.95;
+}
+
+@media (max-width: 768px) {
+  .mn-appbar__inner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mn-navlink {
+    min-width: 4.75rem;
+  }
+
+  .mn-navlink__text {
+    font-size: 0.65rem;
+  }
+}
+
+/* ── ผู้ใช้ที่เข้าสู่ระบบ + ออกจากระบบ (title-h.php) ───────────────── */
+.mn-appbar__user {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.mn-appbar__username {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--mn-text);
+}
+
+.mn-appbar__username .fa {
+  color: var(--mn-accent);
+  font-size: 0.95rem;
+}
+
+.mn-appbar__logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.32rem 0.65rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--mn-danger-text);
+  background: var(--mn-danger-bg);
+  border: 1px solid var(--mn-danger-border);
+  border-radius: 0.4rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.mn-appbar__logout:hover {
+  background: var(--mn-danger-border);
+}

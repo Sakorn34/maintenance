@@ -1,0 +1,45 @@
+# credential / machine-specific (คัดลอกจาก config/env.local.example.php)
+config/env.local.php
+
+# debug log insert_job (เปิดด้วย add_job_insert_debug)
+storage/logs/*.log
+
+# ============================================================
+# ไฟล์ที่มีรหัสผ่าน DB เป็นค่า default (ใช้ไฟล์ *.example.php เป็นแม่แบบ)
+# ============================================================
+/config/database.php
+/config/customer_mysql.php
+/config/server/config/database.php
+/config/server/config/customer_mysql.php
+
+# ============================================================
+# ส่วนกลาง (เหมือนกันทุกโปรเจค) — repo นี้เป็น Public
+# ============================================================
+
+# ข้อมูลลับทั่วไป
+.env
+*.local.php
+!*.example.php
+**/sftp.json
+**/.vscode/
+*.pem
+*.key
+*credentials*.json
+*token*.json
+
+# ฐานข้อมูล / backup — มีข้อมูลลูกค้า ห้ามขึ้น repo สาธารณะ
+*.sql
+*.sql.zip
+*.mdb
+*.accdb
+*.bak
+*.log
+
+# ไฟล์ Excel/CSV ส่วนใหญ่เป็นข้อมูลจริงของลูกค้า/สินค้า
+*.xlsx
+*.xls
+*.csv
+
+# ไฟล์ระบบ Windows
+Thumbs.db
+desktop.ini

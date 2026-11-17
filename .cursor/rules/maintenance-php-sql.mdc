@@ -116,6 +116,8 @@ alwaysApply: true
 | `qc_checklist` | `status_wait_qc` | `mn-qc-checklist-page` | `mn-page-qc-checklist.css` |
 | `save_pickup_wait_hardware` | *(ไม่มี `title-h` — ปิด popup หรือ redirect)* | *(ไม่มี class ที่สอง)* | *(ไม่มี)* |
 | `update_wait_qc` | *(ไม่มี `title-h` — redirect)* | *(ไม่มี class ที่สอง)* | *(ไม่มี)* |
+| `warranty_settings` | `warranty_settings` | `mn-warranty-settings-page` | `mn-page-warranty-settings.css` |
+| `save_warranty_settings` | *(ไม่มี `title-h` — redirect)* | *(ไม่มี class ที่สอง)* | *(ไม่มี)* |
 
 **หมายเหตุ**
 

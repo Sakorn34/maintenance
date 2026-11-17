@@ -109,7 +109,57 @@
 
   /**
    * Purpose:
-   * เรียก AJAX คำนวณอายุเครื่องจากวันที่ซื้อ แล้วเซ็ตฟิลด์ประกันเมื่อมีคำว่า «ปี»
+   * คำนวณสถานะประกันจากวันที่ซื้อ + window.mnWarrantyMonths แล้วเซ็ต dropdown + hint
+   * ไม่ทำงานถ้า mnRepairWarrantyActive = true (ใช้ค่าที่ PHP pre-select ไว้)
+   *
+   * Parameters สำคัญ:
+   * - buyDateStr: string Y-m-d
+   *
+   * Return value:
+   * - undefined
+   */
+  function mnUpdateWaitHwSuggestFromBuyDate(buyDateStr) {
+    var months = global.mnWarrantyMonths;
+    if (!months || months < 1 || !buyDateStr) {
+      return;
+    }
+    var parts = buyDateStr.split('-');
+    if (parts.length !== 3) {
+      return;
+    }
+    var buyDate = new Date(
+      parseInt(parts[0], 10),
+      parseInt(parts[1], 10) - 1,
+      parseInt(parts[2], 10)
+    );
+    if (isNaN(buyDate.getTime())) {
+      return;
+    }
+    var expiryDate = new Date(buyDate);
+    expiryDate.setMonth(expiryDate.getMonth() + months);
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    var suggested = (today <= expiryDate) ? 'อยู่ในประกัน' : 'หมดประกัน';
+    var ins = document.getElementById('w_insurance');
+    if (ins) {
+      ins.value = suggested;
+    }
+    var hintEl = document.getElementById('mn_insurance_hint');
+    if (hintEl) {
+      var diffMs = expiryDate.getTime() - today.getTime();
+      var diffDays = Math.round(diffMs / 86400000);
+      if (suggested === 'อยู่ในประกัน') {
+        hintEl.textContent = 'อยู่ในประกัน (เหลือประมาณ ' + diffDays + ' วัน)';
+      } else {
+        hintEl.textContent = 'หมดประกันแล้ว ' + Math.abs(diffDays) + ' วัน';
+      }
+      hintEl.style.display = '';
+    }
+  }
+
+  /**
+   * Purpose:
+   * เรียก AJAX คำนวณอายุเครื่องจากวันที่ซื้อ แล้วแนะนำสถานะประกันจาก warranty months
    *
    * Parameters สำคัญ:
    * - ไม่มี
@@ -129,11 +179,8 @@
         if (ageEl) {
           ageEl.value = data;
         }
-        if (typeof data === 'string' && data.indexOf('ปี') !== -1) {
-          var ins = document.getElementById('w_insurance');
-          if (ins) {
-            ins.value = 'หมดประกัน';
-          }
+        if (!global.mnRepairWarrantyActive) {
+          mnUpdateWaitHwSuggestFromBuyDate(inputVal);
         }
       })
       .fail(function () {

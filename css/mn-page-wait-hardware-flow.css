@@ -466,3 +466,15 @@
     max-width: 100%;
   }
 }
+
+/* warranty suggestion hint */
+.mn-addjob-page.mn-wait-hardware-flow-page.mn-update-wait-hardware-page .mn-update-wait-hw-insurance-hint {
+  margin-top: 5px;
+  font-size: 0.85em;
+  color: var(--mn-text-secondary, #555);
+  background: #e3f2fd;
+  border-left: 3px solid #1565c0;
+  padding: 3px 8px;
+  border-radius: 2px;
+  display: block;
+}

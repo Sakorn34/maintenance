@@ -17,6 +17,7 @@ require_once __DIR__ . '/includes/maintenance_flow_sql_helpers.php';
 require_once __DIR__ . '/includes/status_wait_hardware_helpers.php';
 require_once __DIR__ . '/includes/status_logistic_helpers.php';
 require_once __DIR__ . '/includes/bootstrap_logistic_recorder.php';
+require_once __DIR__ . '/includes/warranty_settings_helpers.php';
 
 $trp_id = maintenance_flow_get_int($_GET, 'trp_id', 0);
 if ($trp_id < 1) {
@@ -38,6 +39,13 @@ $trp_insurance_selected = trim($trp_insurance);
 $trp_insurance_valid = maintenance_wait_hardware_is_valid_insurance($trp_insurance_selected);
 $trp_insurance_options = maintenance_wait_hardware_allowed_insurance_values();
 $trp_backup = maintenance_flow_db_text_to_utf8(isset($row['trp_backup']) ? $row['trp_backup'] : '');
+$trp_buy_date = maintenance_flow_db_text_to_utf8(isset($row['trp_buy_date']) ? $row['trp_buy_date'] : '');
+
+$warranty_suggestion = maintenance_warranty_suggest_insurance($connect, $trp_product, $trp_buy_date, $trp_sn, $trp_id);
+if (!$trp_insurance_valid && $warranty_suggestion['value'] !== null) {
+    $trp_insurance_selected = $warranty_suggestion['value'];
+    $trp_insurance_valid    = true;
+}
 
 maintenance_db_odbc_close($connect);
 ?>
@@ -65,7 +73,11 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
 <script type="text/javascript" src="js/jquery-add_object.min.js"></script>
 <script type="text/javascript" src="js/jquery-scroll.js"></script>
 <script type="text/javascript" src="js/mn-maintenance-flow-modals.js"></script>
-<script type="text/javascript" src="js/update_wait_hardware-page.js?v=2"></script>
+<script type="text/javascript" src="js/update_wait_hardware-page.js?v=3"></script>
+<script type="text/javascript">
+window.mnWarrantyMonths = <?php echo json_encode($warranty_suggestion['product_months']); ?>;
+window.mnRepairWarrantyActive = <?php echo ($warranty_suggestion['repair_warranty'] !== null) ? 'true' : 'false'; ?>;
+</script>
 </head>
 <body class="mn-addjob-page mn-wait-hardware-flow-page mn-update-wait-hardware-page">
   <div class="header">
@@ -111,7 +123,7 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
           <div class="mn-update-wait-hw-row">
             <label class="mn-update-wait-hw-label" for="w_date_buy">วันที่ซื้อ</label>
             <div class="mn-update-wait-hw-control">
-              <input type="date" class="mn-update-wait-hw-date-input" name="w_date_buy" id="w_date_buy" onchange="mnUpdateWaitHwCalAgeUse();" />
+              <input type="date" class="mn-update-wait-hw-date-input" name="w_date_buy" id="w_date_buy" onchange="mnUpdateWaitHwCalAgeUse();" value="<?php echo maintenance_status_logistic_h($trp_buy_date); ?>" />
             </div>
           </div>
           <div class="mn-update-wait-hw-row">
@@ -129,6 +141,11 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
                 <option value="<?php echo maintenance_status_logistic_h($insurance_option); ?>"<?php echo ($trp_insurance_valid && $trp_insurance_selected === $insurance_option) ? ' selected="selected"' : ''; ?>><?php echo maintenance_status_logistic_h(maintenance_wait_hardware_insurance_option_label($insurance_option)); ?></option>
                 <?php } ?>
               </select>
+              <?php if ($warranty_suggestion['hint'] !== ''): ?>
+              <div class="mn-update-wait-hw-insurance-hint" id="mn_insurance_hint"><?php echo htmlspecialchars($warranty_suggestion['hint'], ENT_QUOTES, 'UTF-8'); ?></div>
+              <?php else: ?>
+              <div class="mn-update-wait-hw-insurance-hint" id="mn_insurance_hint" style="display:none;"></div>
+              <?php endif; ?>
             </div>
           </div>
           <div class="mn-update-wait-hw-row">

@@ -46,6 +46,7 @@ return array(
     // ว่างไว้ = ใช้ default ในโค้ด (BIT login); บนเครื่อง dev ที่บังคับ production อาจ override เป็น path ทดสอบ
     'auth_login_url' => 'https://bit-online.net/bitlogin/index.php',
     'maintenance_web_base' => '/maintenance',
+    'inventory_web_base' => '/inventory',
     'database' => array(
         'host' => 'localhost',
         'user' => 'root',
@@ -67,6 +68,14 @@ return array(
         'user' => 'root',
         'password' => 'CHANGE_ME',
         'name' => 'maintenance',
+        'port' => 3306,
+        'charset' => 'utf8mb4',
+    ),
+    'inventory_mysql' => array(
+        'host' => 'localhost',
+        'user' => 'root',
+        'password' => 'CHANGE_ME',
+        'name' => 'biton_inventory',
         'port' => 3306,
         'charset' => 'utf8mb4',
     ),

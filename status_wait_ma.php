@@ -18,6 +18,7 @@ require_once __DIR__ . '/includes/bootstrap_status_wait_ma_page.php';
 require_once __DIR__ . '/includes/status_wait_ma_helpers.php';
 require_once __DIR__ . '/includes/status_logistic_helpers.php';
 require_once __DIR__ . '/includes/bootstrap_logistic_recorder.php';
+require_once __DIR__ . '/includes/maintenance_inventory_pickup_helpers.php';
 
 $status_label = maintenance_wait_ma_status_literal();
 $filters = maintenance_wait_ma_parse_get_filters($_GET);
@@ -29,6 +30,10 @@ $arr_length_product = count($arr_product);
 $join_rows = maintenance_wait_ma_fetch_join_rows($connect, $filters);
 maintenance_db_odbc_close($connect);
 
+$pickup_maps = maintenance_inventory_pickup_maps_for_rows($join_rows);
+$pickup_status_map = $pickup_maps['status'];
+$pickup_pre_id_map = $pickup_maps['pre_id'];
+$mn_wait_ma_pickup_lines_url = rtrim(maintenance_new_maintenance_web_base(), '/') . '/maintenance_inventory_pickup_lines';
 $row_count = count($join_rows);
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -55,6 +60,9 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
 <script type="text/javascript" src="js/jquery-add_object.min.js"></script>
 <script type="text/javascript" src="js/jquery-scroll.js"></script>
 <script type="text/javascript" src="js/mn-maintenance-flow-modals.js"></script>
+<script type="text/javascript">
+window.MN_WAIT_MA_PICKUP_LINES_URL = <?php echo json_encode($mn_wait_ma_pickup_lines_url, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+</script>
 <script type="text/javascript" src="js/status_wait_ma-page.js"></script>
 </head>
 <body class="mn-addjob-page mn-status-wait-ma-page">
@@ -127,6 +135,14 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
             $status_firm = isset($result_join['trp_status_firmma']) ? (string) $result_join['trp_status_firmma'] : '';
             $backup = isset($result_join['trp_backup']) ? (string) $result_join['trp_backup'] : '';
             $mtn = isset($result_join['ts_mtn_number']) ? (string) $result_join['ts_mtn_number'] : '';
+            $trp_sn_row = isset($result_join['trp_sn']) ? (string) $result_join['trp_sn'] : '';
+            $enduser_row = isset($result_join['ts_enduser_com']) ? (string) $result_join['ts_enduser_com'] : '';
+            $mtn_key_row = maintenance_inventory_pickup_mtn_key($mtn);
+            $pickup_cache_key = maintenance_inventory_pickup_row_cache_key($mtn_key_row, $trp_sn_row);
+            $pickup_status = isset($pickup_status_map[$pickup_cache_key]) ? $pickup_status_map[$pickup_cache_key] : 'none';
+            $pickup_pre_id = isset($pickup_pre_id_map[$pickup_cache_key]) ? (string) $pickup_pre_id_map[$pickup_cache_key] : '';
+            $pickup_btn = maintenance_inventory_pickup_button_meta($pickup_status);
+            $pickup_href = maintenance_inventory_pickup_url($mtn, $enduser_row, $trp_sn_row);
             ?>
       <tr id="row<?php echo (int) $i; ?>" class="mn-status-wait-ma-row-under" style="border-collapse:collapse; background-color:#fff;" onmouseover="ChangeHoverBGColor(this)" onmouseout="RestoreHoverBGColor(this)">
         <td align="center"><?php echo (int) $i; ?></td>
@@ -148,6 +164,15 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
           <span style="color:#FF0000"><?php echo maintenance_status_logistic_h($firm_qv); ?></span><br />
           <?php echo maintenance_status_logistic_h($status_firm); ?><br /><?php echo maintenance_status_logistic_h($backup); ?>
           <input type="hidden" id="trp_status_firmma<?php echo (int) $i; ?>" value="<?php echo maintenance_status_logistic_h($status_firm); ?>" />
+          <div class="mn-wait-ma-pickup-wrap">
+            <?php if (($pickup_status === 'issued' || $pickup_status === 'pre') && $mtn_key_row !== '' && trim($trp_sn_row) !== '') { ?>
+            <button type="button" class="mn-wait-ma-pickup-badge mn-user-receive-display <?php echo maintenance_status_logistic_h($pickup_btn['class']); ?>" data-mtn-key="<?php echo maintenance_status_logistic_h($mtn_key_row); ?>" data-trp-sn="<?php echo maintenance_status_logistic_h($trp_sn_row); ?>" data-pickup-url="<?php echo maintenance_status_logistic_h($pickup_href); ?>" title="ดูสรุปรายการเบิกอะไหล่ (รอจ่าย + จ่ายแล้ว)"><?php echo maintenance_status_logistic_h($pickup_btn['label']); ?></button>
+            <?php } elseif ($pickup_btn['clickable'] && $mtn_key_row !== '' && trim($trp_sn_row) !== '') { ?>
+            <a class="mn-wait-ma-pickup-badge mn-user-receive-display <?php echo maintenance_status_logistic_h($pickup_btn['class']); ?>" href="<?php echo maintenance_status_logistic_h($pickup_href); ?>" target="_blank" rel="noopener noreferrer" title="เปิดหน้าเบิกอะไหล่ในระบบ Inventory"><?php echo maintenance_status_logistic_h($pickup_btn['label']); ?></a>
+            <?php } else { ?>
+            <span class="mn-wait-ma-pickup-badge mn-user-receive-display <?php echo maintenance_status_logistic_h($pickup_btn['class']); ?> mn-wait-ma-pickup-btn--disabled" title="ไม่พบเลขใบซ่อมหรือ S/N"><?php echo maintenance_status_logistic_h($pickup_btn['label']); ?></span>
+            <?php } ?>
+          </div>
         </td>
         <td align="center"><input type="date" name="trp_success_date<?php echo (int) $i; ?>" id="trp_success_date<?php echo (int) $i; ?>" value="" /></td>
         <td align="center">
@@ -175,5 +200,24 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
     <br />
     </div>
   </div>
+<div id="mn_wait_ma_pickup_preview_modal" class="mn-wait-ma-pickup-preview-modal" aria-hidden="true" role="dialog" aria-labelledby="mn_wait_ma_pickup_preview_title">
+  <div class="mn-wait-ma-pickup-preview-modal__backdrop" data-mn-pickup-preview-close="1"></div>
+  <div class="mn-wait-ma-pickup-preview-modal__panel">
+    <button type="button" class="mn-wait-ma-pickup-preview-modal__close" data-mn-pickup-preview-close="1">ปิด</button>
+    <div id="mn_wait_ma_pickup_preview_loading" class="mn-wait-ma-pickup-preview-modal__loading">กำลังโหลดรายการ…</div>
+    <div id="mn_wait_ma_pickup_preview_content" class="mn-wait-ma-pickup-preview-modal__content" hidden>
+      <header class="mn-wait-ma-pickup-preview-modal__head">
+        <p class="mn-wait-ma-pickup-preview-modal__kicker">สรุปการเบิกอะไหล่</p>
+        <h2 id="mn_wait_ma_pickup_preview_title" class="mn-wait-ma-pickup-preview-modal__title">—</h2>
+        <p id="mn_wait_ma_pickup_preview_meta" class="mn-wait-ma-pickup-preview-modal__meta"></p>
+      </header>
+      <div id="mn_wait_ma_pickup_preview_body" class="mn-wait-ma-pickup-preview-modal__body"></div>
+      <footer class="mn-wait-ma-pickup-preview-modal__foot">
+        <p class="mn-wait-ma-pickup-preview-modal__hint">เอกสารที่จ่ายแล้วแก้รายการย้อนหลังไม่ได้ — ถ้าเบิกไม่ครบ ให้เปิด<strong>เอกสารเบิกใหม่</strong> (เลขใบซ่อม + S/N เดิม) แล้วเลือก part เพิ่มใน inventory</p>
+        <a id="mn_wait_ma_pickup_preview_add" class="mn-wait-ma-pickup-preview-modal__add-link" href="#" target="_blank" rel="noopener noreferrer">เบิกอะไหล่เพิ่ม (เอกสารใหม่)</a>
+      </footer>
+    </div>
+  </div>
+</div>
 </body>
 </html>

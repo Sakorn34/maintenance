@@ -1,0 +1,24 @@
+---
+description: เมื่อผู้ใช้แจ้งอัปโหลด deploy maintenance แล้ว — บันทึก baseline และ build แพ็กถัดไปแบบ incremental
+alwaysApply: true
+---
+
+# Deploy maintenance — คำว่า「อัปโหลดแล้ว」
+
+## ความหมาย
+เมื่อผู้ใช้บอกว่า **「อัปโหลดแล้ว」** (หรือความหมายเดียวกัน) ให้ถือว่า **แพ็ก deploy maintenance ล่าสุดถูก copy ขึ้น production แล้ว**
+
+## หลังผู้ใช้บอกอัปโหลดแล้ว — ต้องทำ
+1. รัน `php tools/mark_deploy_maintenance_uploaded.php`  
+   หรือ `php tools/mark_deploy_maintenance_uploaded.php 2026-11-12-r1-maintenance`
+2. แจ้งผู้ใช้สั้นๆ ว่าบันทึก baseline แล้ว แพ็กถัดไปจะรวมเฉพาะไฟล์ที่แก้หลังจุดนี้
+
+## สร้างแพ็ก deploy ครั้งถัดไป
+- **incremental (ค่าเริ่มต้น):** `php tools/build_deploy_maintenance_package.php <เวอร์ชัน>`
+- **full:** `php tools/build_deploy_maintenance_package.php <เวอร์ชัน> --full`
+- **ไม่สร้างไฟล์ zip**
+- ถ้าไม่มีไฟล์เปลี่ยน ไม่ต้องสร้างแพ็กใหม่
+
+## อ้างอิง
+- แนวทางเดียวกับ `inventory/.cursor/rules/deploy-pickup-uploaded.mdc`
+- `deploy/LAST_UPLOADED.txt`, `deploy/README.txt`

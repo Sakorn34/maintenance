@@ -253,3 +253,32 @@ if (!function_exists('maintenance_new_tracking_public_base_url')) {
         return rtrim($webBase, '/') . '/maintenancetracking';
     }
 }
+
+if (!function_exists('maintenance_new_inventory_web_base')) {
+    /**
+     * Purpose:
+     * path รากของแอป inventory สำหรับลิงก์เบิกอะไหล่จาก maintenance
+     *
+     * Parameters สำคัญ:
+     * - ไม่มี
+     *
+     * Return value:
+     * - string เช่น `/inventory` (ไม่มี slash ท้าย)
+     */
+    function maintenance_new_inventory_web_base()
+    {
+        $fromEnv = getenv('MAINTENANCE_INVENTORY_WEB_BASE');
+        if (is_string($fromEnv) && $fromEnv !== '') {
+            return rtrim($fromEnv, '/');
+        }
+        $local = maintenance_new_env_local_config();
+        if (!empty($local['inventory_web_base']) && is_string($local['inventory_web_base'])) {
+            return rtrim($local['inventory_web_base'], '/');
+        }
+        if (maintenance_new_app_env_is_production()) {
+            return 'https://bit-online.net/inventory';
+        }
+
+        return '/inventory';
+    }
+}

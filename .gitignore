@@ -9,8 +9,17 @@ storage/logs/*.log
 # ============================================================
 /config/database.php
 /config/customer_mysql.php
+/config/inventory_mysql.php
 /config/server/config/database.php
 /config/server/config/customer_mysql.php
+
+# ============================================================
+# สำเนา / ผลลัพธ์ build — ไม่ใช่ซอร์สโค้ด ไม่ต้องเก็บใน repo
+# ============================================================
+# สำเนาโปรเจกต์ทั้งชุดสำหรับงานฐานข้อมูล (สร้างใหม่ได้ มี .mdb ขนาดใหญ่)
+/DB-project/
+# แพ็กไฟล์สำหรับนำขึ้น server (สร้างด้วย tools/build_deploy_maintenance_package.php)
+/deploy/
 
 # ============================================================
 # ส่วนกลาง (เหมือนกันทุกโปรเจค) — repo นี้เป็น Public

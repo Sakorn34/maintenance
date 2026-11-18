@@ -16,6 +16,7 @@ require_once __DIR__ . '/includes/update_rate_helpers.php';
 require_once __DIR__ . '/includes/detail_job_edit_helpers.php';
 require_once __DIR__ . '/includes/status_logistic_helpers.php';
 require_once __DIR__ . '/includes/bootstrap_logistic_recorder.php';
+require_once __DIR__ . '/includes/checklist_helpers.php';
 
 $trp_id = maintenance_flow_get_int($_GET, 'trp_id', 0);
 $rate_row = null;
@@ -38,6 +39,22 @@ if ($trp_id > 0) {
     }
 }
 
+$cl_product   = ($trp_id > 0 && is_array($rate_row))
+    ? (string) (isset($rate_row['trp_product']) ? $rate_row['trp_product'] : '')
+    : '';
+$cl_supported = $cl_product !== '' && !$rate_edit_locked && maintenance_checklist_product_supported($cl_product);
+$cl_symptoms         = array();
+$cl_all_headers      = array();
+$cl_saved_symptom_id = 0;
+if ($cl_supported) {
+    maintenance_checklist_ensure_tables($connect);
+    $cl_symptoms    = maintenance_checklist_fetch_symptoms($connect);
+    $cl_all_headers = maintenance_checklist_fetch_all_job_headers($connect, $trp_id);
+    foreach ($cl_all_headers as $sid => $h) {
+        if ($sid > 0) { $cl_saved_symptom_id = $sid; break; }
+    }
+}
+
 maintenance_db_odbc_close($connect);
 
 $missing = ($trp_id < 1 || !is_array($rate_row));
@@ -54,6 +71,9 @@ $missing = ($trp_id < 1 || !is_array($rate_row));
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" />
 <link rel="stylesheet" href="css/mn-page-addjob.css" />
 <link rel="stylesheet" href="css/mn-page-update-rate.css" />
+<?php if ($cl_supported): ?>
+<link rel="stylesheet" href="css/mn-page-checklist.css" />
+<?php endif; ?>
 <?php
 $mnModalAssetPrefix = '';
 require_once __DIR__ . '/includes/mn_modal_assets.php';
@@ -65,6 +85,14 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
 <script type="text/javascript" src="js/jquery-add_object.min.js"></script>
 <script type="text/javascript" src="js/jquery-scroll.js"></script>
 <script type="text/javascript" src="js/update_rate-page.js"></script>
+<?php if ($cl_supported): ?>
+<script type="text/javascript">
+window.mnClTrpId = <?php echo (int) $trp_id; ?>;
+window.mnClProduct = <?php echo json_encode($cl_product, JSON_UNESCAPED_UNICODE); ?>;
+window.mnClSavedSymptomId = <?php echo (int) $cl_saved_symptom_id; ?>;
+</script>
+<script type="text/javascript" src="js/update_rate-checklist.js"></script>
+<?php endif; ?>
 </head>
 <body class="mn-addjob-page mn-update-rate-page">
 <?php if ($missing) { ?>
@@ -184,6 +212,39 @@ $has_prior_rate = $existing_user_rate !== ''
             ?>
           </div>
         </section>
+
+        <?php if ($cl_supported): ?>
+        <section class="mn-cl-section" aria-label="ตรวจสอบก่อนประเมิน">
+          <h2 class="mn-update-rate-section-title">ตรวจสอบก่อนประเมิน</h2>
+          <div class="mn-cl-inner">
+            <div class="mn-cl-subsection mn-cl-subsection--basic">
+              <h3 class="mn-cl-subsection__title">การตรวจพื้นฐาน</h3>
+              <div id="mn_cl_basic_wrap" class="mn-cl-items-wrap"></div>
+            </div>
+            <div class="mn-cl-subsection mn-cl-subsection--symptom">
+              <h3 class="mn-cl-subsection__title">ตรวจตามอาการ</h3>
+              <div class="mn-cl-symptom-row">
+                <label class="mn-cl-symptom-label" for="mn_cl_symptom">อาการ</label>
+                <select id="mn_cl_symptom" class="mn-cl-symptom-select">
+                  <option value="">— เลือกอาการ —</option>
+                  <?php foreach ($cl_symptoms as $sym): ?>
+                  <option value="<?php echo (int) $sym['cs_id']; ?>"
+                    <?php echo ($cl_saved_symptom_id === (int) $sym['cs_id']) ? ' selected="selected"' : ''; ?>>
+                    <?php echo htmlspecialchars($sym['cs_name'], ENT_QUOTES, 'UTF-8'); ?>
+                  </option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+              <div id="mn_cl_items_wrap" class="mn-cl-items-wrap"></div>
+            </div>
+            <div class="mn-cl-actions" id="mn_cl_actions">
+              <button type="button" id="mn_cl_save_btn" class="mn-cl-apply-btn">
+                <i class="fa fa-check-circle" aria-hidden="true"></i> บันทึกและเติมรายการประเมิน
+              </button>
+            </div>
+          </div>
+        </section>
+        <?php endif; ?>
 
         <section class="mn-update-rate-form" aria-label="ฟอร์มสำหรับช่าง">
           <h2 class="mn-update-rate-form__heading">สำหรับช่าง</h2>

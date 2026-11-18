@@ -118,6 +118,8 @@ alwaysApply: true
 | `update_wait_qc` | *(ไม่มี `title-h` — redirect)* | *(ไม่มี class ที่สอง)* | *(ไม่มี)* |
 | `warranty_settings` | `warranty_settings` | `mn-warranty-settings-page` | `mn-page-warranty-settings.css` |
 | `save_warranty_settings` | *(ไม่มี `title-h` — redirect)* | *(ไม่มี class ที่สอง)* | *(ไม่มี)* |
+| `checklist_items` | *(AJAX JSON — ไม่มี HTML)* | *(ไม่มี)* | *(ไม่มี)* |
+| `save_checklist` | *(AJAX JSON — ไม่มี HTML)* | *(ไม่มี)* | *(ไม่มี)* |
 
 **หมายเหตุ**
 

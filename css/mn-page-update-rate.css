@@ -304,3 +304,31 @@
   font-size: 0.78rem;
   font-weight: 600;
 }
+
+/* ลิงก์ไปหน้าตรวจเช็คและประเมิน (assess_repair) */
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-assess-cta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  background: #0f172a;
+  color: #fff;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: background 0.18s, transform 0.12s;
+}
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-assess-cta:hover { background: #1e293b; }
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-assess-cta:active { transform: scale(0.99); }
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-assess-cta__icon {
+  width: 40px; height: 40px; flex-shrink: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-assess-cta__text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-assess-cta__text strong { font-size: 15px; font-weight: 600; }
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-assess-cta__text span { font-size: 12.5px; color: #cbd5e1; }
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-assess-cta__go { font-size: 22px; color: #94a3b8; transition: transform 0.2s; }
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-assess-cta:hover .mn-update-rate-assess-cta__go { transform: translateX(3px); }

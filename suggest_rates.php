@@ -9,7 +9,7 @@ $trp_id  = isset($_GET['trp_id'])  ? (int) $_GET['trp_id']           : 0;
 
 if ($product === '') {
     maintenance_db_odbc_close($connect);
-    echo json_encode(array('top_rates' => array()), JSON_UNESCAPED_UNICODE);
+    echo json_encode(array('top' => array()), JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -38,7 +38,10 @@ if ($stmt) {
     $stmt->close();
 }
 
-$top_rates = array_slice(array_keys($freq), 0, 8);
+$top = array();
+foreach (array_slice($freq, 0, 8, true) as $rate => $count) {
+    $top[] = array('rate' => (string) $rate, 'count' => (int) $count);
+}
 
 maintenance_db_odbc_close($connect);
-echo json_encode(array('top_rates' => $top_rates), JSON_UNESCAPED_UNICODE);
+echo json_encode(array('top' => $top), JSON_UNESCAPED_UNICODE);

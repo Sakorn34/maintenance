@@ -85,18 +85,21 @@
     toastTimer = setTimeout(function () { el.classList.remove('is-on'); }, 2200);
   }
 
+  // X-Requested-With ทำให้ server ตอบ 401 เมื่อ session หมด แทนการ redirect ไปหน้า login
+  var AJAX = { 'X-Requested-With': 'XMLHttpRequest' };
+
   function apiGet(params) {
     var q = Object.keys(params).map(function (k) {
       return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
     }).join('&');
-    return fetch(API + '?' + q, { credentials: 'same-origin' }).then(parseJson);
+    return fetch(API + '?' + q, { credentials: 'same-origin', headers: AJAX }).then(parseJson);
   }
 
   function apiPost(body) {
     body.product = state.product;
     return fetch(API, {
       method: 'POST', credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
       body: JSON.stringify(body)
     }).then(parseJson).then(function (res) {
       if (!res.ok) { throw new Error(res.error || 'บันทึกไม่สำเร็จ'); }
@@ -105,11 +108,31 @@
   }
 
   function parseJson(r) {
+    if (r.status === 401) {
+      var e = new Error('auth');
+      e.auth = true;
+      throw e;
+    }
     if (!r.ok) { throw new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ (' + r.status + ')'); }
     return r.json();
   }
 
-  function fail(err) { alertMsg(err && err.message ? err.message : 'เกิดข้อผิดพลาด', 'danger'); }
+  var authAsked = false;
+  function authExpired() {
+    if (authAsked) { return; }
+    authAsked = true;
+    confirmMsg('หมดเวลาเข้าสู่ระบบ จึงบันทึกไม่ได้ — ข้อมูลที่กรอกค้างไว้ในหน้านี้ยังอยู่ ไม่ต้องปิดหน้านี้\n\n'
+      + '1) กด「เข้าสู่ระบบ」ระบบจะเปิดแท็บใหม่ให้ล็อกอิน\n2) ล็อกอินเสร็จแล้วกลับมาที่แท็บนี้ กดบันทึกอีกครั้ง', function () {
+      authAsked = false;
+      global.open('checklist_settings', '_blank');
+    }, { title: 'ต้องเข้าสู่ระบบใหม่', variant: 'warning', ok: 'เข้าสู่ระบบ' });
+    setTimeout(function () { authAsked = false; }, 3000);
+  }
+
+  function fail(err) {
+    if (err && err.auth) { authExpired(); return; }
+    alertMsg(err && err.message ? err.message : 'เกิดข้อผิดพลาด', 'danger');
+  }
 
   function guardDirty(next) {
     if (!state.dirty) { next(); return; }
@@ -188,6 +211,7 @@
     $('mn_cls_pmeta').textContent = 'ข้อตรวจ ' + d.items.length + ' ข้อ · อาการ ' + d.symptoms.length
       + ' · กลุ่มชิ้นส่วน ' + d.groups.length + ' · ซ่อม ' + p.repairs.toLocaleString() + ' งาน';
     renderShare();
+    $('mn_cls_try').href = 'checklist_try?product=' + encodeURIComponent(d.share_from || d.product);
     doc.querySelectorAll('.mn-cls-tab').forEach(function (t) {
       t.classList.toggle('is-on', t.getAttribute('data-tab') === state.tab);
     });
@@ -794,15 +818,26 @@
       return;
     }
     if (e.target.closest('#mn_cls_e_delete')) {
-      confirmMsg('ลบข้อตรวจ “' + d.question + '” ?', function () {
-        apiPost({ action: 'delete_item', id: d.id }).then(function (res) {
-          toast(res.disabled ? 'ข้อนี้เคยใช้ในใบงาน ' + res.used + ' งาน จึงปิดใช้งานแทนการลบ' : 'ลบข้อตรวจแล้ว');
-          state.dirty = false;
-          closeEditor();
-          return reload();
-        }).catch(fail);
-      }, { variant: 'danger', ok: 'ลบ' });
+      confirmMsg('ลบข้อตรวจ “' + d.question + '” ?', function () { deleteItem(d, false); }, { variant: 'danger', ok: 'ลบ' });
     }
+  }
+
+  function deleteItem(d, force) {
+    apiPost({ action: 'delete_item', id: d.id, force: force }).then(function (res) {
+      state.dirty = false;
+      closeEditor();
+      return reload().then(function () {
+        if (!res.disabled) {
+          toast('ลบข้อตรวจแล้ว');
+          return;
+        }
+        setTimeout(function () {
+          confirmMsg('ข้อนี้มีผลตรวจในใบงาน ' + res.used + ' งาน จึงปิดใช้งานไว้ก่อน (ช่างไม่เห็นข้อนี้แล้ว และผลตรวจเดิมยังอยู่)\n\n'
+            + 'ต้องการลบถาวรไหม? ผลตรวจของข้อนี้ในใบงานเหล่านั้นจะถูกลบด้วย และกู้คืนไม่ได้',
+          function () { deleteItem(d, true); }, { title: 'ปิดใช้งานแล้ว', variant: 'danger', ok: 'ลบถาวร' });
+        }, 250);
+      });
+    }).catch(fail);
   }
 
   function validateDraft(d) {
@@ -860,6 +895,9 @@
     global.addEventListener('beforeunload', function (e) {
       if (state.dirty) { e.preventDefault(); e.returnValue = ''; }
     });
+
+    // ส่งสัญญาณทุก 5 นาที กัน session หมดอายุระหว่างแก้ไขนาน ๆ
+    setInterval(function () { apiGet({ action: 'ping' }).catch(fail); }, 5 * 60 * 1000);
 
     $('mn_cls_search').addEventListener('input', renderProducts);
     $('mn_cls_plist').addEventListener('click', function (e) {

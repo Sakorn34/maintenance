@@ -34,6 +34,10 @@ $src = $is_post ? $body : $_GET;
 $action = isset($src['action']) ? (string) $src['action'] : '';
 $product = isset($src['product']) ? trim((string) $src['product']) : '';
 
+if ($action === 'ping') {
+    mn_cls_respond($connect, array('ok' => true));
+}
+
 if ($action === 'products') {
     mn_cls_respond($connect, array('ok' => true, 'products' => mn_cls_products($connect)));
 }
@@ -58,7 +62,7 @@ switch ($action) {
         $out = mn_cls_save_item($connect, $product, isset($body['item']) && is_array($body['item']) ? $body['item'] : array());
         break;
     case 'delete_item':
-        $out = mn_cls_delete_item($connect, $product, $id);
+        $out = mn_cls_delete_item($connect, $product, $id, !empty($body['force']));
         break;
     case 'reorder_items':
     case 'reorder_symptoms':

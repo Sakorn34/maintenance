@@ -27,7 +27,7 @@ $initial = isset($_GET['product']) ? trim((string) $_GET['product']) : '';
 <link type="text/css" rel="stylesheet" href="css/site-legacy.css" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" />
 <link rel="stylesheet" href="css/mn-page-addjob.css" />
-<link rel="stylesheet" href="css/mn-page-checklist-settings.css" />
+<link rel="stylesheet" href="css/mn-page-checklist-settings.css?v=<?php echo filemtime(__DIR__ . '/css/mn-page-checklist-settings.css'); ?>" />
 <?php
 $mnModalAssetPrefix = '';
 require_once __DIR__ . '/includes/mn_modal_assets.php';
@@ -70,10 +70,13 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
               <h2 class="mn-cls-h2" id="mn_cls_pname"></h2>
               <p class="mn-cls-muted" id="mn_cls_pmeta"></p>
             </div>
-            <div class="mn-cls-tabs" role="tablist">
-              <button type="button" class="mn-cls-tab is-on" data-tab="items" role="tab">ข้อตรวจ</button>
-              <button type="button" class="mn-cls-tab" data-tab="setup" role="tab">อาการ / กลุ่ม</button>
-              <button type="button" class="mn-cls-tab" data-tab="history" role="tab">ประวัติซ่อม</button>
+            <div class="mn-cls-main__acts">
+              <div class="mn-cls-tabs" role="tablist">
+                <button type="button" class="mn-cls-tab is-on" data-tab="items" role="tab">ข้อตรวจ</button>
+                <button type="button" class="mn-cls-tab" data-tab="setup" role="tab">อาการ / กลุ่ม</button>
+                <button type="button" class="mn-cls-tab" data-tab="history" role="tab">ประวัติซ่อม</button>
+              </div>
+              <a class="mn-cls-btn mn-cls-btn--try" id="mn_cls_try" href="checklist_try" target="_blank" rel="noopener" title="เปิดหน้าที่ช่างใช้ประเมินเครื่อง (ไม่บันทึกข้อมูล)"><i class="fa fa-play-circle" aria-hidden="true"></i> ทดลองใช้งาน</a>
             </div>
           </div>
           <div class="mn-cls-share" id="mn_cls_share"></div>
@@ -97,6 +100,6 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
 window.mnClsInitial = <?php echo json_encode($initial, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP); ?>;
 </script>
 <script type="text/javascript" src="js/jquery-scroll.js"></script>
-<script type="text/javascript" src="js/checklist_settings-page.js"></script>
+<script type="text/javascript" src="js/checklist_settings-page.js?v=<?php echo filemtime(__DIR__ . '/js/checklist_settings-page.js'); ?>"></script>
 </body>
 </html>

@@ -281,13 +281,16 @@ if (!function_exists('mn_cls_save_item')) {
 
 /**
  * ลบข้อตรวจ — ถ้าเคยถูกใช้ในใบงานแล้วจะปิดการใช้งานแทน เพื่อไม่ให้ผลตรวจเดิมหาย
+ * $force = ลบถาวรพร้อมผลตรวจของข้อนี้ในทุกใบงาน (ผู้ใช้ยืนยันแล้ว)
  */
 if (!function_exists('mn_cls_delete_item')) {
-    function mn_cls_delete_item($connect, $product, $id)
+    function mn_cls_delete_item($connect, $product, $id, $force = false)
     {
         if (!mn_cls_belongs($connect, 'item', $id, $product)) { return array('ok' => false, 'error' => 'ไม่พบข้อตรวจนี้'); }
         $used = mn_cls_query_all($connect, 'SELECT COUNT(*) AS n FROM cl_job_item WHERE cji_item_id = ?', 'i', array((int) $id));
-        if ($used && (int) $used[0]['n'] > 0) {
+        if ($force) {
+            mn_cls_exec($connect, 'DELETE FROM cl_job_item WHERE cji_item_id = ?', 'i', array((int) $id));
+        } elseif ($used && (int) $used[0]['n'] > 0) {
             mn_cls_exec($connect, 'UPDATE cl_item SET ci_enabled = 0 WHERE ci_id = ? AND ci_product = ?', 'is', array((int) $id, $product));
             return array('ok' => true, 'disabled' => true, 'used' => (int) $used[0]['n']);
         }

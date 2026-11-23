@@ -513,3 +513,9 @@
   .mn-checklist-settings-page button.mn-cls-dot,
   .mn-checklist-settings-page .mn-cls-pal__sw { transition: none; }
 }
+
+/* ปุ่มทดลองใช้งาน */
+.mn-checklist-settings-page .mn-cls-main__acts { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mn-checklist-settings-page a.mn-cls-btn--try { text-decoration: none; color: var(--cls-accent); border-color: #b9dbf1; background: var(--cls-accent-soft); }
+.mn-checklist-settings-page a.mn-cls-btn--try:hover { background: #d9ebf8; }
+.mn-checklist-settings-page a.mn-cls-btn--try .fa { font-size: 15px; }

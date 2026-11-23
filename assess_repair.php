@@ -74,7 +74,7 @@ function mn_ar_f($row, $key)
 <link type="text/css" rel="stylesheet" href="css/site-legacy.css" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" />
 <link rel="stylesheet" href="css/mn-page-addjob.css" />
-<link rel="stylesheet" href="css/mn-page-assess-repair.css" />
+<link rel="stylesheet" href="css/mn-page-assess-repair.css?v=<?php echo filemtime(__DIR__ . '/css/mn-page-assess-repair.css'); ?>" />
 <?php
 $mnModalAssetPrefix = '';
 require_once __DIR__ . '/includes/mn_modal_assets.php';
@@ -298,6 +298,6 @@ $sn = mn_ar_f($ar_row, 'trp_sn');
 <script type="text/javascript">
 window.mnAr = <?php echo json_encode($boot, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP); ?>;
 </script>
-<script type="text/javascript" src="js/assess_repair-page.js"></script>
+<script type="text/javascript" src="js/assess_repair-page.js?v=<?php echo filemtime(__DIR__ . '/js/assess_repair-page.js'); ?>"></script>
 </body>
 </html>

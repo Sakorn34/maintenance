@@ -8,7 +8,12 @@
   var B = global.mnAr || {};
   var doc = global.document;
   var MAX_PARTS = 10;
-  var STEP_LABELS = { 1: 'เริ่มตรวจ', 2: 'ถัดไป', 3: 'สรุปผล', 4: 'บันทึกการประเมิน' };
+  var STEP_LABELS = { 1: 'เริ่มตรวจ', 2: 'ถัดไป', 3: 'สรุปผล', 4: B.demo ? 'ดูผลที่จะบันทึก' : 'บันทึกการประเมิน' };
+  // โหมดทดลอง: ไม่มีใบงานให้คำนวณ จึงให้กดเลือกผลของข้ออัตโนมัติเอง
+  var DEMO_AUTO = {
+    buy_date: { pass: 'อายุไม่เกิน 2 ปี', fail: 'อายุเกิน 2 ปี' },
+    last_ma: { pass: 'MA ล่าสุดไม่เกิน 2 ปี', fail: 'MA เกิน 2 ปี / ไม่พบ MA', na: 'N/A (เครื่องไม่ถึง 2 ปี)' }
+  };
 
   var state = {
     step: 1,
@@ -67,7 +72,7 @@
     var q = Object.keys(params).map(function (k) {
       return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
     }).join('&');
-    return fetch(url + '?' + q, { credentials: 'same-origin' }).then(function (r) {
+    return fetch(url + '?' + q, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) {
       if (!r.ok) { throw new Error('HTTP ' + r.status); }
       return r.json();
     });
@@ -77,9 +82,10 @@
     return fetch(url, {
       method: 'POST',
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
       body: JSON.stringify(body)
     }).then(function (r) {
+      if (r.status === 401) { throw new Error('auth'); }
       if (!r.ok) { throw new Error('HTTP ' + r.status); }
       return r.json();
     });
@@ -185,6 +191,16 @@
 
   function renderControl(it, res) {
     var html = '';
+    if (it.ci_auto_source && B.demo) {
+      var labels = DEMO_AUTO[it.ci_auto_source] || { pass: 'ผ่าน', fail: 'ไม่ผ่าน' };
+      html = '<div class="mn-ar-opts" role="group">';
+      Object.keys(labels).forEach(function (k) {
+        var on = res.result === k;
+        html += '<button type="button" class="mn-ar-opt mn-ar-opt--' + (k === 'pass' ? 'good' : (k === 'fail' ? 'bad' : 'na')) + (on ? ' is-on' : '')
+          + '" data-result="' + k + '" data-note="0" aria-pressed="' + on + '">' + esc(labels[k]) + '</button>';
+      });
+      return html + '<span class="mn-ar-auto__tag">งานจริงระบบคำนวณให้</span></div>';
+    }
     if (it.ci_auto_source) {
       var ar = it.auto_result || 'na';
       return '<div><span class="mn-ar-auto mn-ar-auto--' + esc(ar) + '">' + esc(it.auto_label || '')
@@ -500,6 +516,7 @@
 
   function findingText(item, res) {
     var note = (res.note || '').trim();
+    if (item.ci_auto_source && B.demo) { return ((DEMO_AUTO[item.ci_auto_source] || {})[res.result]) || res.result; }
     if (item.ci_auto_source) { return note || item.auto_label || res.result; }
     if (item.ci_unit && hasThreshold(item) && res.result === 'fail') {
       return item.ci_question + ' ' + note + ' ' + item.ci_unit + ' (นอกเกณฑ์ ' + item.ci_val_min + '–' + (item.ci_val_max !== null && item.ci_val_max !== undefined ? item.ci_val_max : '') + ')';
@@ -820,6 +837,10 @@
       $('mn_ar_part_search').focus();
       return;
     }
+    if (B.demo) {
+      showDemoResult();
+      return;
+    }
     if (!B.userRate) {
       alertMsg('ไม่พบชื่อผู้ประเมินจาก session — ติดต่อผู้ดูแลระบบ');
       return;
@@ -845,13 +866,38 @@
       }
       global.removeEventListener('beforeunload', onBeforeUnload);
       global.location.href = 'save_rate?' + buildRateQuery();
-    }).catch(function () {
+    }).catch(function (err) {
       state.saving = false;
       btn.classList.remove('is-busy');
       btn.querySelector('.fa').className = 'fa fa-check';
       btn.querySelector('.mn-ar-btn__txt').textContent = STEP_LABELS[4];
-      alertMsg('บันทึกผลตรวจเช็คไม่สำเร็จ ลองใหม่อีกครั้ง', 'danger');
+      alertMsg(err && err.message === 'auth'
+        ? 'หมดเวลาเข้าสู่ระบบ — ล็อกอินใหม่ในแท็บอื่นแล้วกลับมากดบันทึกอีกครั้ง (ผลตรวจในหน้านี้ยังอยู่)'
+        : 'บันทึกผลตรวจเช็คไม่สำเร็จ ลองใหม่อีกครั้ง', 'danger');
     });
+  }
+
+  function showDemoResult() {
+    var extra = ['trp_clean', 'trp_repeat_solder', 'trp_spray'].map(checkVal).filter(function (v) { return v; })
+      .map(function (v) { return v.trim(); });
+    var lines = [
+      'อาการที่ประเมิน',
+      $('mn_ar_tech').value.trim(),
+      '',
+      'รายการซ่อม (' + state.parts.length + ')'
+    ].concat(state.parts.map(function (p, i) { return (i + 1) + '. ' + p.name; }));
+    if (extra.length) { lines.push('', 'งานเพิ่มเติม: ' + extra.join(', ')); }
+    if ($('trp_fw').value.trim()) { lines.push('UP FW: ' + $('trp_fw').value.trim()); }
+    if ($('trp_repair_remarks').value.trim()) { lines.push('หมายเหตุ: ' + $('trp_repair_remarks').value.trim()); }
+    lines.push('', 'โหมดทดลอง — ข้อมูลนี้ไม่ได้บันทึกที่ใด');
+    if (typeof global.mnModalConfirm === 'function') {
+      global.mnModalConfirm(lines.join('\n'), {
+        title: 'ผลที่จะบันทึกลงใบงาน', variant: 'info', okLabel: 'ทดลองใหม่', cancelLabel: 'ปิด',
+        onConfirm: function () { global.location.reload(); }
+      });
+    } else {
+      global.alert(lines.join('\n'));
+    }
   }
 
   function checkVal(id) {
@@ -882,7 +928,7 @@
   }
 
   function onBeforeUnload(e) {
-    if (state.dirty && !state.saving) {
+    if (state.dirty && !state.saving && !B.demo) {
       e.preventDefault();
       e.returnValue = '';
     }
@@ -978,6 +1024,13 @@
         pickSearch(li.getAttribute('data-rate'));
       }
     });
+
+    var demoSel = $('mn_ar_demo_product');
+    if (demoSel) {
+      demoSel.addEventListener('change', function () {
+        global.location.href = 'checklist_try?product=' + encodeURIComponent(demoSel.value);
+      });
+    }
 
     $('mn_ar_regen').addEventListener('click', function () {
       var tech = $('mn_ar_tech');

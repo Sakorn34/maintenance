@@ -24,12 +24,12 @@ require $root . '/includes/mysql_odbc_compat.php';
 
 // ---------- files ----------
 
-$entries = array('checklist_settings.php', 'checklist_settings_api.php');
+$entries = array('checklist_settings.php', 'checklist_settings_api.php', 'checklist_try.php', 'checklist_items.php', 'suggest_rates.php');
 $assets = array(
     '.htaccess',
     'css/mn-theme.css', 'css/mn-layout.css', 'css/mn-nav.css', 'css/site-legacy.css',
-    'css/mn-page-addjob.css', 'css/mn-page-checklist-settings.css', 'css/mn-modal.css',
-    'js/jquery-scroll.js', 'js/checklist_settings-page.js', 'js/mn-modal.js',
+    'css/mn-page-addjob.css', 'css/mn-page-checklist-settings.css', 'css/mn-page-assess-repair.css', 'css/mn-modal.css',
+    'js/jquery-scroll.js', 'js/checklist_settings-page.js', 'js/assess_repair-page.js', 'js/mn-modal.js',
     'config/app_environment.php',
 );
 $skip = array('includes/title-h.php', 'config/database.php');
@@ -182,6 +182,12 @@ file_put_contents($out . '/DEPLOY.txt', <<<TXT
 
 ทีมใช้หน้านี้ตั้งค่าข้อตรวจ / อาการ / กลุ่มชิ้นส่วน ของแต่ละรุ่น
 ทุกอย่างบันทึกลงฐาน biton_maintenance_test — ไม่แตะ biton_maintenance และไม่แตะไฟล์ในโฟลเดอร์ maintenance
+ปุ่ม「ทดลองใช้งาน」ในหน้าตั้งค่าเปิด checklist_try — หน้าเดียวกับที่ช่างใช้ประเมิน แต่ไม่บันทึกข้อมูล
+
+【ถ้าเคยขึ้นชุดก่อนหน้าแล้ว (อัปเดต)】
+  - อัปโหลดเฉพาะ www/ ทับของเดิม (config/env.local.php บน server ไม่อยู่ในชุด จึงไม่ถูกทับ)
+  - ห้าม import sql/02_checklist_start.sql อีก — จะทับข้อตรวจที่ทีมตั้งไว้
+  - ข้าม 1), 2), 4) ไปทดสอบที่ 5) ได้เลย
 
 --------------------------------------------------------------------------------
 1) สร้างฐานข้อมูลทดสอบ (phpMyAdmin / cPanel)
@@ -218,12 +224,13 @@ $list
 --------------------------------------------------------------------------------
 5) ทดสอบ
 --------------------------------------------------------------------------------
-  [ ] เปิด https://bit-online.net/test-tom/  → เด้งไปหน้าตั้งค่า (ถ้ายังไม่ล็อกอินจะไปหน้า BIT login ก่อน)
+  [ ] เปิดโฟลเดอร์ที่วางไฟล์ เช่น https://bit-online.net/test-tom/maintenance/  → เด้งไปหน้าตั้งค่า (ถ้ายังไม่ล็อกอินจะไปหน้า BIT login ก่อน)
       หลังล็อกอิน ถ้าระบบพากลับไปหน้า maintenance ให้เปิดลิงก์ test-tom อีกครั้ง
   [ ] รายชื่อรุ่นทางซ้ายแสดง พร้อมจำนวนงานซ่อม
   [ ] เลือก bitVisitor Plus → เห็นข้อตรวจตั้งต้น / แท็บประวัติซ่อมแสดงตาราง
   [ ] ลองเพิ่มข้อตรวจ → บันทึก → รีเฟรชแล้วยังอยู่ → ลบทิ้ง
   [ ] หัวเพจขึ้นคำว่า "ชุดทดสอบ" (ยืนยันว่าไม่ได้เปิดหน้าของระบบจริง)
+  [ ] กด「ทดลองใช้งาน」→ ตอบข้อตรวจครบ 4 ขั้น → ปุ่มสุดท้ายแสดงผลที่จะบันทึก (ไม่บันทึกจริง)
 
   ถ้าขึ้น "เชื่อมต่อ MySQL ไม่สำเร็จ" → ตรวจ config/env.local.php
   ถ้าเปิด checklist_settings แล้ว 404 → server ต้องเปิด mod_rewrite + AllowOverride (เหมือนโฟลเดอร์ maintenance)

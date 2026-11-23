@@ -16,7 +16,7 @@ if ($product === '' || $symptom_id < 0) {
 }
 
 maintenance_checklist_ensure_tables($connect);
-$items   = maintenance_checklist_fetch_items($connect, $product, $symptom_id);
+$items   = maintenance_checklist_fetch_items($connect, maintenance_checklist_effective_product($connect, $product), $symptom_id);
 $results = $trp_id > 0 ? maintenance_checklist_fetch_job_results($connect, $trp_id) : array();
 
 $out = array();
@@ -29,13 +29,19 @@ foreach ($items as $item) {
     $opts_arr = null;
     if ($opts_raw !== '') {
         $parts    = explode('|', $opts_raw);
+        $rates    = json_decode((string) (isset($item['ci_opt_rates']) ? $item['ci_opt_rates'] : ''), true);
+        $colors   = json_decode((string) (isset($item['ci_opt_colors']) ? $item['ci_opt_colors'] : ''), true);
         $opts_arr = array();
-        foreach ($parts as $part) {
+        foreach ($parts as $pi => $part) {
             $part     = trim($part);
             $has_note = (substr($part, -5) === ':note');
             $label    = $has_note ? substr($part, 0, -5) : $part;
             if ($label !== '') {
-                $opts_arr[] = array('label' => $label, 'has_note' => $has_note);
+                $rate = is_array($rates)
+                    ? (isset($rates[$pi]) ? (string) $rates[$pi] : '')
+                    : ($pi > 0 ? (string) $item['ci_rate_on_fail'] : '');
+                $color = is_array($colors) && isset($colors[$pi]) ? (string) $colors[$pi] : '';
+                $opts_arr[] = array('label' => $label, 'has_note' => $has_note, 'rate' => $rate, 'color' => $color);
             }
         }
         if (count($opts_arr) === 0) { $opts_arr = null; }
@@ -63,6 +69,9 @@ foreach ($items as $item) {
         'ci_val_min'     => (isset($item['ci_val_min']) && $item['ci_val_min'] !== null) ? (float) $item['ci_val_min'] : null,
         'ci_val_max'     => (isset($item['ci_val_max']) && $item['ci_val_max'] !== null) ? (float) $item['ci_val_max'] : null,
         'ci_opts'        => $opts_arr,
+        'ci_multi'       => $opts_arr !== null && (int) $item['ci_multi'] === 1 && (string) $item['ci_unit'] === '',
+        'group_id'       => (int) $item['ci_group_id'],
+        'group_name'     => (string) $item['group_name'],
         'ci_auto_source' => $auto_source !== '' ? $auto_source : null,
         'auto_result'    => $auto_result,
         'auto_label'     => $auto_label,

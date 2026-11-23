@@ -332,3 +332,14 @@
 .mn-addjob-page.mn-update-rate-page .mn-update-rate-assess-cta__text span { font-size: 12.5px; color: #cbd5e1; }
 .mn-addjob-page.mn-update-rate-page .mn-update-rate-assess-cta__go { font-size: 22px; color: #94a3b8; transition: transform 0.2s; }
 .mn-addjob-page.mn-update-rate-page .mn-update-rate-assess-cta:hover .mn-update-rate-assess-cta__go { transform: translateX(3px); }
+
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-assess-setup {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: #0369a1;
+  text-decoration: none;
+}
+.mn-addjob-page.mn-update-rate-page .mn-update-rate-assess-setup:hover { text-decoration: underline; }

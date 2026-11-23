@@ -7,14 +7,6 @@
  * ทุก ensure_tables เรียกครั้งแรกในทุก request ที่ใช้ checklist เพื่อ auto-migrate
  */
 
-if (!function_exists('maintenance_checklist_product_supported')) {
-    function maintenance_checklist_product_supported($product)
-    {
-        $supported = array('bitVisitor Plus');
-        return in_array(trim((string) $product), $supported, true);
-    }
-}
-
 if (!function_exists('maintenance_checklist_format_age')) {
     function maintenance_checklist_format_age($days)
     {
@@ -103,18 +95,134 @@ if (!function_exists('maintenance_checklist_auto_result')) {
     }
 }
 
+if (!function_exists('maintenance_checklist_column_exists')) {
+    function maintenance_checklist_column_exists($connect, $table, $column)
+    {
+        $stmt = mysqli_prepare($connect,
+            'SELECT COUNT(*) AS n FROM information_schema.columns'
+            . ' WHERE table_schema=DATABASE() AND table_name=? AND column_name=?'
+        );
+        if (!$stmt) { return true; }
+        mysqli_stmt_bind_param($stmt, 'ss', $table, $column);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        return $row ? (int) $row['n'] > 0 : true;
+    }
+}
+
+if (!function_exists('maintenance_checklist_group_rules')) {
+    function maintenance_checklist_group_rules()
+    {
+        return array(
+            array('/อายุเครื่อง|ประวัติ MA|^MA /u', 'ข้อมูลเครื่อง / MA'),
+            array('/TouchScreen|จอแสดงผล|LUX|หน้าจอ|BackLight/iu', 'หน้าจอ'),
+            array('/HDMI/u', 'สาย HDMI'),
+            array('/Acrylic/u', 'ตัวเครื่อง / Acrylic'),
+            array('/HUB|Port USB/u', 'HUB / USB'),
+            array('/กล้อง|Focus/u', 'กล้อง'),
+            array('/Adapter|Jack Power|Switch|Step down/u', 'ภาคจ่ายไฟ'),
+            array('/Main Board|Crystal|Real Time|Battery/u', 'บอร์ด Main Board (PI)'),
+            array('/Micro SD|Write image|Config/u', 'Micro SD / ระบบ'),
+            array('/Smart Card|Scanner/u', 'เครื่องอ่านบัตร / สแกน'),
+        );
+    }
+}
+
+/**
+ * จัดกลุ่มชิ้นส่วนตั้งต้นจากคำในคำถาม (ใช้ตอน migrate ครั้งแรกเท่านั้น)
+ */
+if (!function_exists('maintenance_checklist_seed_groups_by_keyword')) {
+    function maintenance_checklist_seed_groups_by_keyword($connect, $product)
+    {
+        $order = array('หน้าจอ', 'สาย HDMI', 'ตัวเครื่อง / Acrylic', 'HUB / USB', 'กล้อง', 'ภาคจ่ายไฟ',
+            'บอร์ด Main Board (PI)', 'Micro SD / ระบบ', 'เครื่องอ่านบัตร / สแกน', 'ข้อมูลเครื่อง / MA');
+        $ids = array();
+        $ins = mysqli_prepare($connect, 'INSERT INTO cl_group (cg_product, cg_name, cg_order) VALUES (?, ?, ?)');
+        if (!$ins) { return; }
+        foreach ($order as $i => $name) {
+            $n = $i + 1;
+            mysqli_stmt_bind_param($ins, 'ssi', $product, $name, $n);
+            mysqli_stmt_execute($ins);
+            $ids[$name] = (int) mysqli_insert_id($connect);
+        }
+        mysqli_stmt_close($ins);
+
+        $sel = mysqli_prepare($connect, 'SELECT ci_id, ci_question FROM cl_item WHERE ci_product = ?');
+        $upd = mysqli_prepare($connect, 'UPDATE cl_item SET ci_group_id = ? WHERE ci_id = ?');
+        if (!$sel || !$upd) { return; }
+        mysqli_stmt_bind_param($sel, 's', $product);
+        mysqli_stmt_execute($sel);
+        $res = mysqli_stmt_get_result($sel);
+        $rules = maintenance_checklist_group_rules();
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            foreach ($rules as $rule) {
+                if (preg_match($rule[0], (string) $row['ci_question']) && isset($ids[$rule[1]])) {
+                    $gid = $ids[$rule[1]];
+                    $cid = (int) $row['ci_id'];
+                    mysqli_stmt_bind_param($upd, 'ii', $gid, $cid);
+                    mysqli_stmt_execute($upd);
+                    break;
+                }
+            }
+        }
+        mysqli_stmt_close($sel);
+        mysqli_stmt_close($upd);
+
+        $del = mysqli_prepare($connect,
+            'DELETE g FROM cl_group g LEFT JOIN cl_item i ON i.ci_group_id = g.cg_id'
+            . ' WHERE g.cg_product = ? AND i.ci_id IS NULL'
+        );
+        if ($del) {
+            mysqli_stmt_bind_param($del, 's', $product);
+            mysqli_stmt_execute($del);
+            mysqli_stmt_close($del);
+        }
+    }
+}
+
 if (!function_exists('maintenance_checklist_ensure_tables')) {
     function maintenance_checklist_ensure_tables($connect)
     {
+        static $done = false;
+        if ($done) { return; }
+        $done = true;
+
         $col = 'CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci';
+        $tbl = ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci';
 
         mysqli_query($connect,
             'CREATE TABLE IF NOT EXISTS `cl_symptom` ('
             . '`cs_id` INT NOT NULL AUTO_INCREMENT,'
+            . '`cs_product` VARCHAR(100) ' . $col . ' NOT NULL DEFAULT \'\','
             . '`cs_name` VARCHAR(100) ' . $col . ' NOT NULL,'
             . '`cs_order` INT NOT NULL DEFAULT 0,'
-            . 'PRIMARY KEY (`cs_id`)'
-            . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+            . 'PRIMARY KEY (`cs_id`),'
+            . 'INDEX `idx_cs_product` (`cs_product`)'
+            . $tbl
+        );
+
+        mysqli_query($connect,
+            'CREATE TABLE IF NOT EXISTS `cl_group` ('
+            . '`cg_id` INT NOT NULL AUTO_INCREMENT,'
+            . '`cg_product` VARCHAR(100) ' . $col . ' NOT NULL DEFAULT \'\','
+            . '`cg_name` VARCHAR(100) ' . $col . ' NOT NULL,'
+            . '`cg_order` INT NOT NULL DEFAULT 0,'
+            . '`cg_note` VARCHAR(300) ' . $col . ' NOT NULL DEFAULT \'\','
+            . 'PRIMARY KEY (`cg_id`),'
+            . 'INDEX `idx_cg_product` (`cg_product`)'
+            . $tbl
+        );
+
+        mysqli_query($connect,
+            'CREATE TABLE IF NOT EXISTS `cl_product` ('
+            . '`cp_product` VARCHAR(100) ' . $col . ' NOT NULL,'
+            . '`cp_share_from` VARCHAR(100) ' . $col . ' NOT NULL DEFAULT \'\','
+            . '`cp_updated_at` VARCHAR(20) ' . $col . ' NOT NULL DEFAULT \'\','
+            . '`cp_updated_by` VARCHAR(100) ' . $col . ' NOT NULL DEFAULT \'\','
+            . 'PRIMARY KEY (`cp_product`)'
+            . $tbl
         );
 
         mysqli_query($connect,
@@ -122,6 +230,7 @@ if (!function_exists('maintenance_checklist_ensure_tables')) {
             . '`ci_id` INT NOT NULL AUTO_INCREMENT,'
             . '`ci_product` VARCHAR(100) ' . $col . ' NOT NULL DEFAULT \'\','
             . '`ci_symptom_id` INT NOT NULL DEFAULT 0,'
+            . '`ci_group_id` INT NOT NULL DEFAULT 0,'
             . '`ci_step` INT NOT NULL DEFAULT 0,'
             . '`ci_question` VARCHAR(300) ' . $col . ' NOT NULL,'
             . '`ci_rate_on_fail` VARCHAR(200) ' . $col . ' NOT NULL DEFAULT \'\','
@@ -130,11 +239,14 @@ if (!function_exists('maintenance_checklist_ensure_tables')) {
             . '`ci_val_min` DECIMAL(7,2) NULL DEFAULT NULL,'
             . '`ci_val_max` DECIMAL(7,2) NULL DEFAULT NULL,'
             . '`ci_opts` TEXT ' . $col . ' NULL DEFAULT NULL,'
+            . '`ci_opt_rates` TEXT ' . $col . ' NULL DEFAULT NULL,'
+            . '`ci_opt_colors` VARCHAR(200) ' . $col . ' NULL DEFAULT NULL,'
+            . '`ci_multi` TINYINT(1) NOT NULL DEFAULT 0,'
             . '`ci_auto_source` VARCHAR(50) ' . $col . ' NULL DEFAULT NULL,'
             . '`ci_enabled` TINYINT(1) NOT NULL DEFAULT 1,'
             . 'PRIMARY KEY (`ci_id`),'
             . 'INDEX `idx_product_symptom` (`ci_product`, `ci_symptom_id`)'
-            . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+            . $tbl
         );
 
         mysqli_query($connect,
@@ -147,83 +259,93 @@ if (!function_exists('maintenance_checklist_ensure_tables')) {
             . '`ch_saved_by` VARCHAR(100) ' . $col . ' NOT NULL DEFAULT \'\','
             . 'PRIMARY KEY (`ch_id`),'
             . 'UNIQUE KEY `uq_ch_trp` (`ch_trp_id`, `ch_symptom_id`)'
-            . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+            . $tbl
         );
-
-        // migrate: widen cji_result to VARCHAR(100) if still VARCHAR(10)
-        $r_res = mysqli_query($connect,
-            "SELECT CHARACTER_MAXIMUM_LENGTH AS len FROM information_schema.columns"
-            . " WHERE table_schema=DATABASE() AND table_name='cl_job_item' AND column_name='cji_result'"
-        );
-        if ($r_res) {
-            $row_res = mysqli_fetch_assoc($r_res);
-            if ($row_res && (int) $row_res['len'] < 100) {
-                mysqli_query($connect,
-                    "ALTER TABLE cl_job_item MODIFY COLUMN cji_result VARCHAR(100)"
-                    . " CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT ''"
-                );
-            }
-        }
 
         mysqli_query($connect,
             'CREATE TABLE IF NOT EXISTS `cl_job_item` ('
             . '`cji_id` INT NOT NULL AUTO_INCREMENT,'
             . '`cji_trp_id` INT NOT NULL,'
             . '`cji_item_id` INT NOT NULL,'
-            . '`cji_result` VARCHAR(100) ' . $col . ' NOT NULL DEFAULT \'\','
+            . '`cji_result` VARCHAR(700) ' . $col . ' NOT NULL DEFAULT \'\','
             . '`cji_note` VARCHAR(200) ' . $col . ' NOT NULL DEFAULT \'\','
             . 'PRIMARY KEY (`cji_id`),'
             . 'UNIQUE KEY `uq_cji` (`cji_trp_id`, `cji_item_id`)'
-            . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+            . $tbl
         );
 
-        // migrate: add ci_unit column to cl_item if missing
-        $r_unit = mysqli_query($connect,
-            "SELECT COUNT(*) AS n FROM information_schema.columns"
-            . " WHERE table_schema=DATABASE() AND table_name='cl_item' AND column_name='ci_unit'"
+        // migrate: widen cji_result to VARCHAR(100)
+        $r_res = mysqli_query($connect,
+            "SELECT CHARACTER_MAXIMUM_LENGTH AS len FROM information_schema.columns"
+            . " WHERE table_schema=DATABASE() AND table_name='cl_job_item' AND column_name='cji_result'"
         );
-        if ($r_unit && (int) mysqli_fetch_assoc($r_unit)['n'] === 0) {
+        $row_res = $r_res ? mysqli_fetch_assoc($r_res) : null;
+        if ($row_res && (int) $row_res['len'] < 700) {
             mysqli_query($connect,
-                "ALTER TABLE cl_item ADD COLUMN ci_unit VARCHAR(20)"
-                . " CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' AFTER ci_hint"
+                "ALTER TABLE cl_job_item MODIFY COLUMN cji_result VARCHAR(700) " . $col . " NOT NULL DEFAULT ''"
             );
         }
 
-        // migrate: add ci_val_min / ci_val_max columns
-        $r_vmin = mysqli_query($connect,
-            "SELECT COUNT(*) AS n FROM information_schema.columns"
-            . " WHERE table_schema=DATABASE() AND table_name='cl_item' AND column_name='ci_val_min'"
-        );
-        if ($r_vmin && (int) mysqli_fetch_assoc($r_vmin)['n'] === 0) {
+        // migrate: columns ที่เพิ่มทีหลังใน cl_item
+        if (!maintenance_checklist_column_exists($connect, 'cl_item', 'ci_unit')) {
+            mysqli_query($connect, "ALTER TABLE cl_item ADD COLUMN ci_unit VARCHAR(20) " . $col . " NOT NULL DEFAULT '' AFTER ci_hint");
+        }
+        if (!maintenance_checklist_column_exists($connect, 'cl_item', 'ci_val_min')) {
             mysqli_query($connect,
-                "ALTER TABLE cl_item"
-                . " ADD COLUMN ci_val_min DECIMAL(7,2) NULL DEFAULT NULL AFTER ci_unit,"
-                . " ADD COLUMN ci_val_max DECIMAL(7,2) NULL DEFAULT NULL AFTER ci_val_min"
+                'ALTER TABLE cl_item ADD COLUMN ci_val_min DECIMAL(7,2) NULL DEFAULT NULL AFTER ci_unit,'
+                . ' ADD COLUMN ci_val_max DECIMAL(7,2) NULL DEFAULT NULL AFTER ci_val_min'
             );
         }
-
-        // migrate: add ci_opts column
-        $r_opts = mysqli_query($connect,
-            "SELECT COUNT(*) AS n FROM information_schema.columns"
-            . " WHERE table_schema=DATABASE() AND table_name='cl_item' AND column_name='ci_opts'"
-        );
-        if ($r_opts && (int) mysqli_fetch_assoc($r_opts)['n'] === 0) {
-            mysqli_query($connect,
-                "ALTER TABLE cl_item ADD COLUMN ci_opts TEXT"
-                . " CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL AFTER ci_val_max"
-            );
+        if (!maintenance_checklist_column_exists($connect, 'cl_item', 'ci_opts')) {
+            mysqli_query($connect, 'ALTER TABLE cl_item ADD COLUMN ci_opts TEXT ' . $col . ' NULL DEFAULT NULL AFTER ci_val_max');
+        }
+        if (!maintenance_checklist_column_exists($connect, 'cl_item', 'ci_auto_source')) {
+            mysqli_query($connect, 'ALTER TABLE cl_item ADD COLUMN ci_auto_source VARCHAR(50) ' . $col . ' NULL DEFAULT NULL AFTER ci_opts');
         }
 
-        // migrate: add ci_auto_source column
-        $r_auto = mysqli_query($connect,
-            "SELECT COUNT(*) AS n FROM information_schema.columns"
-            . " WHERE table_schema=DATABASE() AND table_name='cl_item' AND column_name='ci_auto_source'"
-        );
-        if ($r_auto && (int) mysqli_fetch_assoc($r_auto)['n'] === 0) {
-            mysqli_query($connect,
-                "ALTER TABLE cl_item ADD COLUMN ci_auto_source VARCHAR(50)"
-                . " CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL AFTER ci_opts"
+        // migrate: รายการซ่อมแยกตามตัวเลือก — ค่าเดิมทุกตัวเลือก (ยกเว้นตัวแรก) = ci_rate_on_fail
+        if (!maintenance_checklist_column_exists($connect, 'cl_item', 'ci_opt_rates')) {
+            mysqli_query($connect, 'ALTER TABLE cl_item ADD COLUMN ci_opt_rates TEXT ' . $col . ' NULL DEFAULT NULL AFTER ci_opts');
+            $r_or = mysqli_query($connect,
+                "SELECT ci_id, ci_opts, ci_rate_on_fail FROM cl_item WHERE ci_opts IS NOT NULL AND ci_opts <> '' AND ci_unit = ''"
             );
+            $upd = mysqli_prepare($connect, 'UPDATE cl_item SET ci_opt_rates = ? WHERE ci_id = ?');
+            while ($r_or && $upd && ($row = mysqli_fetch_assoc($r_or))) {
+                $n = count(explode('|', (string) $row['ci_opts']));
+                $rates = array();
+                for ($i = 0; $i < $n; $i++) { $rates[] = $i === 0 ? '' : (string) $row['ci_rate_on_fail']; }
+                $json = json_encode($rates, JSON_UNESCAPED_UNICODE);
+                $cid = (int) $row['ci_id'];
+                mysqli_stmt_bind_param($upd, 'si', $json, $cid);
+                mysqli_stmt_execute($upd);
+            }
+            if ($upd) { mysqli_stmt_close($upd); }
+        }
+
+        // migrate: สีของแต่ละตัวเลือก + ตัวเลือกแบบเลือกได้หลายค่า
+        if (!maintenance_checklist_column_exists($connect, 'cl_item', 'ci_opt_colors')) {
+            mysqli_query($connect, 'ALTER TABLE cl_item ADD COLUMN ci_opt_colors VARCHAR(200) ' . $col . ' NULL DEFAULT NULL AFTER ci_opt_rates');
+        }
+        if (!maintenance_checklist_column_exists($connect, 'cl_item', 'ci_multi')) {
+            mysqli_query($connect, 'ALTER TABLE cl_item ADD COLUMN ci_multi TINYINT(1) NOT NULL DEFAULT 0 AFTER ci_opt_colors');
+        }
+
+        // migrate: อาการแยกตามรุ่น — อาการเดิมทั้งหมดใช้กับ bitVisitor Plus
+        if (!maintenance_checklist_column_exists($connect, 'cl_symptom', 'cs_product')) {
+            mysqli_query($connect,
+                "ALTER TABLE cl_symptom ADD COLUMN cs_product VARCHAR(100) " . $col . " NOT NULL DEFAULT '' AFTER cs_id,"
+                . " ADD INDEX idx_cs_product (cs_product)"
+            );
+            mysqli_query($connect, "UPDATE cl_symptom SET cs_product = 'bitVisitor Plus' WHERE cs_product = ''");
+        }
+
+        // migrate: กลุ่มชิ้นส่วน — จัดกลุ่มตั้งต้นให้รุ่นที่มีข้อตรวจอยู่แล้ว
+        if (!maintenance_checklist_column_exists($connect, 'cl_item', 'ci_group_id')) {
+            mysqli_query($connect, 'ALTER TABLE cl_item ADD COLUMN ci_group_id INT NOT NULL DEFAULT 0 AFTER ci_symptom_id');
+            $r_p = mysqli_query($connect, 'SELECT DISTINCT ci_product FROM cl_item');
+            $prods = array();
+            while ($r_p && ($row = mysqli_fetch_assoc($r_p))) { $prods[] = (string) $row['ci_product']; }
+            foreach ($prods as $p) { maintenance_checklist_seed_groups_by_keyword($connect, $p); }
         }
 
         // migrate: widen unique key to (ch_trp_id, ch_symptom_id)
@@ -237,123 +359,75 @@ if (!function_exists('maintenance_checklist_ensure_tables')) {
             mysqli_query($connect, 'ALTER TABLE cl_job_header DROP INDEX uq_ch_trp');
             mysqli_query($connect, 'ALTER TABLE cl_job_header ADD UNIQUE KEY uq_ch_trp (ch_trp_id, ch_symptom_id)');
         }
+    }
+}
 
-        // seed symptoms ถ้ายังว่าง
-        $r = mysqli_query($connect, 'SELECT COUNT(*) AS n FROM cl_symptom');
-        $cnt = $r ? (int) mysqli_fetch_assoc($r)['n'] : 1;
-        if ($cnt === 0) {
-            mysqli_query($connect,
-                'INSERT INTO cl_symptom (cs_id, cs_name, cs_order) VALUES'
-                . " (1,'เปิดเครื่องไม่ติด',1),"
-                . " (2,'จอ / ทัชสกรีน',2),"
-                . " (3,'อ่านบัตรไม่ได้',3),"
-                . " (4,'กล้องมีปัญหา',4),"
-                . " (5,'ค้าง / รีสตาร์ทเอง',5),"
-                . " (6,'MA (บำรุงรักษา)',6),"
-                . " (7,'อัพเกรด / ติดตั้ง',7),"
-                . " (8,'อื่นๆ',8)"
-            );
-        }
+/**
+ * รุ่นที่ใช้ข้อตรวจจริง (ถ้าตั้ง "ใช้ร่วมกับรุ่น" ไว้ จะได้รุ่นต้นทาง)
+ */
+if (!function_exists('maintenance_checklist_effective_product')) {
+    function maintenance_checklist_effective_product($connect, $product)
+    {
+        $p = trim((string) $product);
+        $stmt = mysqli_prepare($connect, 'SELECT cp_share_from FROM cl_product WHERE cp_product = ?');
+        if (!$stmt) { return $p; }
+        mysqli_stmt_bind_param($stmt, 's', $p);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        $from = $row ? trim((string) $row['cp_share_from']) : '';
+        return ($from !== '' && $from !== $p) ? $from : $p;
+    }
+}
 
-        // seed cl_item สำหรับ bitVisitor Plus ถ้ายังว่าง
-        $r2 = mysqli_query($connect, "SELECT COUNT(*) AS n FROM cl_item WHERE ci_product='bitVisitor Plus'");
-        $cnt2 = $r2 ? (int) mysqli_fetch_assoc($r2)['n'] : 1;
-        if ($cnt2 === 0) {
-            mysqli_query($connect,
-                "INSERT INTO cl_item (ci_id,ci_product,ci_symptom_id,ci_step,ci_question,ci_rate_on_fail,ci_hint) VALUES"
-                . " (1,'bitVisitor Plus',1,1,'Adapter 12V 5A ทำงานปกติ','Adapter 12V 5A',''),"
-                . " (2,'bitVisitor Plus',1,2,'Jack Power 12VDC ไม่หลวม ไม่เสีย','Jack Power 12VDC',''),"
-                . " (3,'bitVisitor Plus',1,3,'Switch On-Off ทำงานปกติ','Switch On-Off',''),"
-                . " (4,'bitVisitor Plus',1,4,'IC Main Switch ทำงาน','IC Main Switch',''),"
-                . " (5,'bitVisitor Plus',1,5,'IC Step down 5VDC ทำงาน','IC Step down 5VDC',''),"
-                . " (6,'bitVisitor Plus',1,6,'Main Board (PI) บูตปกติ','Main Board (PI)',''),"
-                . " (7,'bitVisitor Plus',2,1,'สาย HDMI ไม่หลวม ไม่เสีย','สาย HDMI',''),"
-                . " (8,'bitVisitor Plus',2,2,'HDMI ข้องอ 270 ทำงาน','HDMI ข้องอ 270',''),"
-                . " (9,'bitVisitor Plus',2,3,'หน้าจอ 7 นิ้ว แสดงผลปกติ','หน้าจอ 7 นิ้ว',''),"
-                . " (10,'bitVisitor Plus',2,4,'IC BackLight จอ LCD 7\" ทำงาน','IC BackLight จอ LCD 7\"',''),"
-                . " (11,'bitVisitor Plus',2,5,'แผ่น Acrylic ไม่แตก ไม่รอย','แผ่น Acrylic รุ่น Plus',''),"
-                . " (12,'bitVisitor Plus',3,1,'Smart Card reader อ่านบัตรได้','Smart Card (ซื้อใหม่)',''),"
-                . " (13,'bitVisitor Plus',3,2,'Port USB ทำงานปกติ','Port USB',''),"
-                . " (14,'bitVisitor Plus',3,3,'Scanner 2D อ่าน QR Code ได้','Scanner 2D (ซื้อใหม่)',''),"
-                . " (15,'bitVisitor Plus',4,1,'ทำความสะอาดเลนส์กล้อง','ทำความสะอาดเลนส์กล้อง',''),"
-                . " (16,'bitVisitor Plus',4,2,'ปรับ Focus กล้องได้คมชัด','ปรับ Focus กล้อง',''),"
-                . " (17,'bitVisitor Plus',4,3,'กล้อง FeelTek 720P ทำงาน','กล้อง FeelTek 720P-Black (TH)',''),"
-                . " (18,'bitVisitor Plus',4,4,'Chip HUB FE2.1 ทำงานปกติ','Chip HUB FE2.1',''),"
-                . " (19,'bitVisitor Plus',5,1,'Micro SD ไม่เสียหาย อ่านได้ปกติ','Micro SD',''),"
-                . " (20,'bitVisitor Plus',5,2,'Write image ใหม่ (เมื่อ SD หรือ OS เสีย)','Write image ใหม่','ทำเมื่อ Micro SD เสียหายหรือ OS พัง'),"
-                . " (21,'bitVisitor Plus',5,3,'Crystal 12MHz ทำงาน','Crystal 12MHz',''),"
-                . " (22,'bitVisitor Plus',5,4,'IC Real Time Clock ทำงาน','IC Real Time Clock',''),"
-                . " (23,'bitVisitor Plus',5,5,'Main Board (PI) ทำงานเสถียร','Main Board (PI)',''),"
-                . " (24,'bitVisitor Plus',6,1,'MA ตรวจเช็คและทำความสะอาด','MA ตรวจเช็ค ทำความสะอาด',''),"
-                . " (25,'bitVisitor Plus',6,2,'MA เปลี่ยนอะไหล่พื้นฐาน','MA เปลียนอะไหล่พื้นฐาน','ถ่าน RTC, Choke filter, Connector ฯลฯ'),"
-                . " (26,'bitVisitor Plus',6,3,'Battery Backup RTC 3.2V มีประจุ','Battery Backup RTC 3.2V',''),"
-                . " (27,'bitVisitor Plus',7,1,'Write image ใหม่ตามเวอร์ชันที่กำหนด','Write image ใหม่',''),"
-                . " (28,'bitVisitor Plus',7,2,'แก้ไข File Config ตามข้อกำหนด','แก้ไข File Config',''),"
-                . " (29,'bitVisitor Plus',7,3,'เปลี่ยน Micro SD ใหม่ (ถ้าของเก่าเสีย)','Micro SD','')"
-            );
-        }
-
-        // seed/migrate การตรวจพื้นฐาน 8 ข้อ พร้อม ci_opts + ci_auto_source
-        // trigger: นับ item ที่มี ci_opts หรือ ci_auto_source set — ถ้า < 8 ให้ re-seed
-        $r3 = mysqli_query($connect,
-            "SELECT COUNT(*) AS n FROM cl_item"
-            . " WHERE ci_product='bitVisitor Plus' AND ci_symptom_id=0"
-            . " AND (ci_opts IS NOT NULL OR ci_auto_source IS NOT NULL)"
-        );
-        $cnt3 = $r3 ? (int) mysqli_fetch_assoc($r3)['n'] : 8;
-        if ($cnt3 < 8) {
-            mysqli_query($connect,
-                "DELETE cji FROM cl_job_item cji"
-                . " INNER JOIN cl_item ci ON cji.cji_item_id=ci.ci_id"
-                . " WHERE ci.ci_product='bitVisitor Plus' AND ci.ci_symptom_id=0"
-            );
-            mysqli_query($connect, "DELETE FROM cl_job_header WHERE ch_symptom_id=0");
-            mysqli_query($connect, "DELETE FROM cl_item WHERE ci_product='bitVisitor Plus' AND ci_symptom_id=0");
-            mysqli_query($connect,
-                "INSERT INTO cl_item"
-                . " (ci_product,ci_symptom_id,ci_step,ci_question,ci_rate_on_fail,ci_hint,ci_unit,ci_val_min,ci_val_max,ci_opts,ci_auto_source)"
-                . " VALUES"
-                . " ('bitVisitor Plus',0,1,'TouchScreen ตอบสนองครบทุกจุดไหม','หน้าจอ 7 นิ้ว','ทดสอบ 9 จุดตามกริด','',NULL,NULL,"
-                .   "'ใช้งานได้ปกติ|กดไม่ติดทั้งจอ|กดไม่ติดบางจุด:note',NULL),"
-                . " ('bitVisitor Plus',0,2,'จอแสดงผลปกติ ไม่มีเส้น/รอย/จุดดำไหม','หน้าจอ 7 นิ้ว','ดูที่หน้าจอขณะแสดงผล','',NULL,NULL,"
-                .   "'ปกติ|มีเส้น:note|จอมืด/backlight เสีย|จอแตก',NULL),"
-                . " ('bitVisitor Plus',0,3,'ค่าความสว่างจอ (LUX) อยู่ในช่วง 180–420 ไหม','หน้าจอ 7 นิ้ว','วัดด้วย LUX meter จ่อกลางหน้าจอ','LUX',180,420,"
-                .   "'ไม่สามารถวัดได้',NULL),"
-                . " ('bitVisitor Plus',0,4,'HUB ใช้งานได้ครบทุกช่องไหม','แผง HUB','ทดสอบ flash drive, ID card, keyboard','',NULL,NULL,"
-                .   "'ใช้ได้ทุกช่อง|เสียบางช่อง:note|เสียทั้งหมด',NULL),"
-                . " ('bitVisitor Plus',0,5,'อายุเครื่องน้อยกว่า 2 ปีไหม','','ดูวันที่ซื้อ / สติ๊กเกอร์ตัวเครื่อง','',NULL,NULL,"
-                .   "NULL,'buy_date'),"
-                . " ('bitVisitor Plus',0,6,'ประวัติ MA อะไหล่พื้นฐานล่าสุด ยังไม่เกิน 2 ปีไหม','MA เปลียนอะไหล่พื้นฐาน','ดูประวัติ MA','',NULL,NULL,"
-                .   "NULL,'last_ma'),"
-                . " ('bitVisitor Plus',0,7,'กล้องเปิดติดไหม','กล้อง Logitech Brio100-Graphite','เปิด app กล้อง','',NULL,NULL,"
-                .   "'เปิดติดปกติ|เปิดติดแต่ช้า/หน่วง|เปิดไม่ติด',NULL),"
-                . " ('bitVisitor Plus',0,8,'ภาพกล้องคมชัดไหม','ทำความสะอาดเลนส์กล้อง','ถ่ายภาพทดสอบ','',NULL,NULL,"
-                .   "'ภาพคมชัดปกติ|ภาพมัว/ฝ้า|ภาพผิดสี/ผิดปกติ',NULL)"
-            );
-        }
+if (!function_exists('maintenance_checklist_product_supported')) {
+    function maintenance_checklist_product_supported($connect, $product)
+    {
+        $eff = maintenance_checklist_effective_product($connect, $product);
+        if ($eff === '') { return false; }
+        $stmt = mysqli_prepare($connect, 'SELECT COUNT(*) AS n FROM cl_item WHERE ci_product = ? AND ci_enabled = 1');
+        if (!$stmt) { return false; }
+        mysqli_stmt_bind_param($stmt, 's', $eff);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        return $row && (int) $row['n'] > 0;
     }
 }
 
 if (!function_exists('maintenance_checklist_fetch_symptoms')) {
-    function maintenance_checklist_fetch_symptoms($connect)
+    function maintenance_checklist_fetch_symptoms($connect, $product)
     {
-        $r = mysqli_query($connect, 'SELECT cs_id, cs_name FROM cl_symptom ORDER BY cs_order ASC, cs_id ASC');
+        $eff = maintenance_checklist_effective_product($connect, $product);
+        $stmt = mysqli_prepare($connect,
+            'SELECT cs_id, cs_name FROM cl_symptom WHERE cs_product = ? ORDER BY cs_order ASC, cs_id ASC'
+        );
+        if (!$stmt) { return array(); }
+        mysqli_stmt_bind_param($stmt, 's', $eff);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
         $out = array();
-        if ($r) {
-            while ($row = mysqli_fetch_assoc($r)) { $out[] = $row; }
-        }
+        while ($res && ($row = mysqli_fetch_assoc($res))) { $out[] = $row; }
+        mysqli_stmt_close($stmt);
         return $out;
     }
 }
 
+/**
+ * ข้อตรวจที่เปิดใช้ของรุ่น (ส่งรุ่นที่ resolve แล้ว) เรียงตามกลุ่มชิ้นส่วน แล้วตามลำดับข้อ
+ */
 if (!function_exists('maintenance_checklist_fetch_items')) {
     function maintenance_checklist_fetch_items($connect, $product, $symptom_id)
     {
-        $sql = 'SELECT ci_id, ci_step, ci_question, ci_rate_on_fail, ci_hint,'
-            . ' ci_unit, ci_val_min, ci_val_max, ci_opts, ci_auto_source'
-            . ' FROM cl_item'
-            . ' WHERE ci_product = ? AND ci_symptom_id = ? AND ci_enabled = 1'
-            . ' ORDER BY ci_step ASC';
+        $sql = 'SELECT i.ci_id, i.ci_step, i.ci_question, i.ci_rate_on_fail, i.ci_hint,'
+            . ' i.ci_unit, i.ci_val_min, i.ci_val_max, i.ci_opts, i.ci_opt_rates, i.ci_opt_colors, i.ci_multi, i.ci_auto_source, i.ci_group_id,'
+            . ' COALESCE(g.cg_name, \'\') AS group_name, COALESCE(g.cg_order, 9999) AS group_order'
+            . ' FROM cl_item i'
+            . ' LEFT JOIN cl_group g ON g.cg_id = i.ci_group_id'
+            . ' WHERE i.ci_product = ? AND i.ci_symptom_id = ? AND i.ci_enabled = 1'
+            . ' ORDER BY group_order ASC, i.ci_step ASC, i.ci_id ASC';
         $stmt = mysqli_prepare($connect, $sql);
         if (!$stmt) { return array(); }
         $p = (string) $product;
@@ -362,11 +436,37 @@ if (!function_exists('maintenance_checklist_fetch_items')) {
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
         $out = array();
-        if ($res) {
-            while ($row = mysqli_fetch_assoc($res)) { $out[] = $row; }
-            mysqli_free_result($res);
-        }
+        while ($res && ($row = mysqli_fetch_assoc($res))) { $out[] = $row; }
         mysqli_stmt_close($stmt);
+        return $out;
+    }
+}
+
+/**
+ * รายการซ่อมที่ควรแนะนำจากผลตรวจ 1 ข้อ — ข้อแบบเลือกได้หลายค่าเก็บผลเป็น "ตัวเลือกA|ตัวเลือกB"
+ */
+if (!function_exists('maintenance_checklist_rates_for_result')) {
+    function maintenance_checklist_rates_for_result(array $item, $result)
+    {
+        $result = (string) $result;
+        if ($result === '' || $result === 'pass' || $result === 'na') { return array(); }
+        $opts = (isset($item['ci_opts']) && $item['ci_opts'] !== null && $item['ci_opts'] !== '')
+            ? array_map(function ($o) { return str_replace(':note', '', trim($o)); }, explode('|', (string) $item['ci_opts']))
+            : array();
+        $has_threshold = isset($item['ci_val_min']) && $item['ci_val_min'] !== null;
+        if (!$opts || $has_threshold) {
+            $r = $result === 'fail' ? trim((string) $item['ci_rate_on_fail']) : '';
+            return $r !== '' ? array($r) : array();
+        }
+        $picked = !empty($item['ci_multi']) ? explode('|', $result) : array($result);
+        $rates = json_decode((string) (isset($item['ci_opt_rates']) ? $item['ci_opt_rates'] : ''), true);
+        $out = array();
+        foreach ($picked as $label) {
+            $idx = array_search($label, $opts, true);
+            if ($idx === false || $idx === 0) { continue; }
+            $r = is_array($rates) ? (isset($rates[$idx]) ? trim((string) $rates[$idx]) : '') : trim((string) $item['ci_rate_on_fail']);
+            if ($r !== '') { $out[] = $r; }
+        }
         return $out;
     }
 }
@@ -449,8 +549,8 @@ if (!function_exists('maintenance_checklist_save')) {
         $suggested = array();
         foreach ($results as $ci_id => $data) {
             $item_id = (int) $ci_id;
-            $result  = substr(trim((string) ($data['result'] ?? '')), 0, 100);
-            $note    = substr(trim((string) ($data['note']   ?? '')), 0, 200);
+            $result  = mb_substr(trim((string) ($data['result'] ?? '')), 0, 700, 'UTF-8');
+            $note    = mb_substr(trim((string) ($data['note']   ?? '')), 0, 200, 'UTF-8');
 
             if ($result === '') { continue; }
 
@@ -458,31 +558,17 @@ if (!function_exists('maintenance_checklist_save')) {
             mysqli_stmt_bind_param($stmt_i, 'iiss', $t, $item_id_v, $result, $note);
             mysqli_stmt_execute($stmt_i);
 
-            // ตรวจสอบว่า result นี้ควร suggest rate ไหม
-            $r2 = mysqli_query($connect,
-                "SELECT ci_rate_on_fail, ci_opts, ci_val_min FROM cl_item WHERE ci_id=$item_id LIMIT 1"
+            $q = mysqli_prepare($connect,
+                'SELECT ci_rate_on_fail, ci_opts, ci_opt_rates, ci_multi, ci_val_min FROM cl_item WHERE ci_id = ?'
             );
-            if ($r2) {
-                $row2 = mysqli_fetch_assoc($r2);
-                mysqli_free_result($r2);
-                if ($row2 && $row2['ci_rate_on_fail'] !== '') {
-                    $has_opts      = ($row2['ci_opts'] !== null && $row2['ci_opts'] !== '');
-                    $has_threshold = ($row2['ci_val_min'] !== null);
-                    $is_bad = false;
-
-                    if ($has_opts && !$has_threshold) {
-                        // custom buttons: ตัวเลือกแรก = ดี, ที่เหลือ = แนะนำ rate
-                        $opts_parts = explode('|', $row2['ci_opts']);
-                        $first_opt  = str_replace(':note', '', trim($opts_parts[0]));
-                        $is_bad = ($result !== $first_opt && $result !== 'pass' && $result !== 'na');
-                    } else {
-                        // traditional หรือ auto-calc (LUX)
-                        $is_bad = ($result === 'fail');
-                    }
-
-                    if ($is_bad) {
-                        $suggested[] = $row2['ci_rate_on_fail'];
-                    }
+            if ($q) {
+                mysqli_stmt_bind_param($q, 'i', $item_id_v);
+                mysqli_stmt_execute($q);
+                $rq = mysqli_stmt_get_result($q);
+                $row2 = $rq ? mysqli_fetch_assoc($rq) : null;
+                mysqli_stmt_close($q);
+                if ($row2) {
+                    foreach (maintenance_checklist_rates_for_result($row2, $result) as $rate) { $suggested[] = $rate; }
                 }
             }
         }

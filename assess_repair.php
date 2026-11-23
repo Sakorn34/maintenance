@@ -34,14 +34,14 @@ if ($trp_id > 0) {
         $locked_ts_id = (int) (isset($ar_row['trp_ts_id']) ? $ar_row['trp_ts_id'] : 0);
         $locked       = maintenance_detail_job_repair_rate_edit_locked($connect, $trp_id);
         $product      = (string) (isset($ar_row['trp_product']) ? $ar_row['trp_product'] : '');
-        $supported    = maintenance_checklist_product_supported($product);
+        maintenance_checklist_ensure_tables($connect);
+        $supported    = maintenance_checklist_product_supported($connect, $product);
         if (!$locked && $supported) {
             $rate_options = maintenance_update_rate_fetch_rate_options(
                 $connect,
                 maintenance_update_rate_resolve_rate_product($product)
             );
-            maintenance_checklist_ensure_tables($connect);
-            $symptoms = maintenance_checklist_fetch_symptoms($connect);
+            $symptoms = maintenance_checklist_fetch_symptoms($connect, $product);
             foreach (maintenance_checklist_fetch_all_job_headers($connect, $trp_id) as $sid => $h) {
                 if ($sid > 0) { $saved_symptom_id = (int) $sid; break; }
             }
@@ -170,6 +170,7 @@ $sn = mn_ar_f($ar_row, 'trp_sn');
             <span class="mn-ar-top__sn">SN <?php echo mn_ar_h($sn !== '' ? $sn : '—'); ?></span>
           </div>
           <span class="mn-ar-top__count" id="mn_ar_stepcount">1/4</span>
+          <a class="mn-ar-top__back" href="checklist_settings?product=<?php echo rawurlencode($boot['product']); ?>" aria-label="ตั้งค่ารายการตรวจเช็คของรุ่นนี้" title="ตั้งค่ารายการตรวจเช็ค"><i class="fa fa-sliders" aria-hidden="true" style="font-size:16px"></i></a>
         </div>
         <ol class="mn-ar-steps" id="mn_ar_steps" aria-label="ขั้นตอน">
           <li class="mn-ar-steps__seg is-active" data-step="1"><span class="mn-ar-steps__fill"></span><span class="mn-ar-steps__lbl">ข้อมูลเครื่อง</span></li>

@@ -27,6 +27,13 @@
     saving: false
   };
 
+  var COLORS = {
+    green: ['#15803d', '#ecf8f0', '#9fd6b1'], teal: ['#0f766e', '#e6f6f4', '#99d5cd'],
+    blue: ['#1d4ed8', '#eaf1fe', '#a9c1f5'], violet: ['#6d28d9', '#f2ecfd', '#c9b3f2'],
+    amber: ['#a16207', '#fdf7e3', '#ead58c'], orange: ['#c2410c', '#fff4ec', '#f6c19f'],
+    red: ['#b91c1c', '#fdf0f0', '#f0b0b0'], gray: ['#475569', '#f1f4f8', '#c5cfdb']
+  };
+
   var rateSet = {};
   (B.rateOptions || []).forEach(function (r) { rateSet[r] = true; });
 
@@ -95,24 +102,35 @@
     return idx === 0 ? 'good' : (idx === 1 ? 'warn' : 'bad');
   }
 
+  // ข้อแบบเลือกได้หลายค่าเก็บผลเป็น "ตัวเลือกA|ตัวเลือกB"
+  function picked(item, res) {
+    if (!res || !res.result) { return []; }
+    return item.ci_multi ? res.result.split('|') : [res.result];
+  }
+
+  function optIndex(item, label) {
+    for (var i = 0; i < (item.ci_opts || []).length; i++) {
+      if (item.ci_opts[i].label === label) { return i; }
+    }
+    return -1;
+  }
+
   function itemTone(item, res) {
     if (!res || !res.result) { return ''; }
     var r = res.result;
     if (r === 'pass') { return 'good'; }
     if (r === 'fail') { return 'bad'; }
     if (r === 'na') { return 'na'; }
-    if (item.ci_opts) {
-      for (var i = 0; i < item.ci_opts.length; i++) {
-        if (item.ci_opts[i].label === r) { return optTone(item, i); }
-      }
-    }
-    return '';
+    var worst = -1;
+    picked(item, res).forEach(function (label) { worst = Math.max(worst, optIndex(item, label)); });
+    return worst >= 0 ? optTone(item, worst) : '';
   }
 
   function isBad(item, res) {
     if (!res || !res.result) { return false; }
     if (item.ci_opts && !hasThreshold(item)) {
-      return res.result !== item.ci_opts[0].label && res.result !== 'pass' && res.result !== 'na';
+      var first = item.ci_opts[0].label;
+      return picked(item, res).some(function (l) { return l !== first && l !== 'pass' && l !== 'na'; });
     }
     return res.result === 'fail';
   }
@@ -141,12 +159,21 @@
       return;
     }
     var html = '';
+    var grouped = items.some(function (it) { return it.group_name; });
+    var groupCount = {};
+    items.forEach(function (it) { groupCount[it.group_id] = (groupCount[it.group_id] || 0) + 1; });
+    var lastGroup = null;
     items.forEach(function (it, i) {
       var res = resMap[it.ci_id] || { result: '', note: '' };
       var tone = itemTone(it, res);
+      if (grouped && it.group_id !== lastGroup) {
+        lastGroup = it.group_id;
+        html += '<li class="mn-ar-group" style="animation-delay:' + Math.min(i * 40, 320) + 'ms"><span>'
+          + esc(it.group_name || 'อื่น ๆ') + '</span><small>' + groupCount[it.group_id] + ' ข้อ</small></li>';
+      }
       html += '<li class="mn-ar-item' + (tone ? ' is-answered is-' + tone : '') + '" data-id="' + it.ci_id
         + '" data-section="' + section + '" style="animation-delay:' + Math.min(i * 40, 320) + 'ms">';
-      html += '<div class="mn-ar-item__head"><span class="mn-ar-item__num">' + esc(it.ci_step) + '</span>'
+      html += '<div class="mn-ar-item__head"><span class="mn-ar-item__num">' + (i + 1) + '</span>'
         + '<div class="mn-ar-item__text"><div class="mn-ar-item__q">' + esc(it.ci_question) + '</div>'
         + (it.ci_hint ? '<div class="mn-ar-item__hint">' + esc(it.ci_hint) + '</div>' : '')
         + '</div></div>';
@@ -182,19 +209,25 @@
       { label: 'fail', text: 'ไม่ผ่าน', tone: 'bad' },
       { label: 'na', text: 'N/A', tone: 'na' }
     ];
-    html += '<div class="mn-ar-opts" role="group">';
-    var noteOpt = null;
+    var sel = picked(it, res);
+    var multi = !!it.ci_multi;
+    html += '<div class="mn-ar-opts' + (multi ? ' mn-ar-opts--multi' : '') + '" role="group">';
+    var hasNote = false;
+    var show = false;
     opts.forEach(function (o, i) {
       var tone = o.tone || optTone(it, i);
-      var on = res.result === o.label;
-      if (o.has_note) { noteOpt = o; }
-      html += '<button type="button" class="mn-ar-opt mn-ar-opt--' + tone + (on ? ' is-on' : '') + '" data-result="' + esc(o.label)
-        + '" data-note="' + (o.has_note ? '1' : '0') + '" aria-pressed="' + (on ? 'true' : 'false') + '">' + esc(o.text || o.label) + '</button>';
+      var on = sel.indexOf(o.label) !== -1;
+      var c = COLORS[o.color];
+      if (o.has_note) { hasNote = true; if (on) { show = true; } }
+      html += '<button type="button" class="mn-ar-opt mn-ar-opt--' + tone + (c ? ' mn-ar-opt--c' : '') + (on ? ' is-on' : '') + '" data-result="' + esc(o.label)
+        + '" data-note="' + (o.has_note ? '1' : '0') + '" aria-pressed="' + (on ? 'true' : 'false') + '"'
+        + (c ? ' style="--oc:' + c[0] + ';--oc-soft:' + c[1] + ';--oc-line:' + c[2] + '"' : '') + '>'
+        + (multi && i > 0 ? '<i class="fa fa-square-o mn-ar-opt__box" aria-hidden="true"></i><i class="fa fa-check-square mn-ar-opt__tick" aria-hidden="true"></i>' : '')
+        + esc(o.text || o.label) + '</button>';
     });
-    html += '</div>';
+    html += (multi ? '<span class="mn-ar-opts__multi">เลือกได้หลายข้อ</span>' : '') + '</div>';
 
-    if (noteOpt) {
-      var show = res.result === noteOpt.label;
+    if (hasNote) {
       html += '<input type="text" class="mn-ar-input mn-ar-note-in' + (show ? ' mn-ar-reveal' : '') + '" placeholder="ระบุรายละเอียด เช่น ตำแหน่งที่พบ"'
         + ' value="' + esc(show ? res.note : '') + '"' + (show ? '' : ' hidden') + ' />';
     }
@@ -239,23 +272,41 @@
     var map = resMapFor(section);
     var result = btn.getAttribute('data-result');
     var cur = map[id] || { result: '', note: '' };
+    var sel = picked(item, cur);
 
-    if (cur.result === result) {
-      map[id] = { result: '', note: '' };
+    if (item.ci_multi) {
+      var first = item.ci_opts[0].label;
+      if (result === first) {
+        sel = sel.indexOf(first) !== -1 ? [] : [first];
+      } else {
+        sel = sel.filter(function (l) { return l !== first; });
+        if (sel.indexOf(result) !== -1) {
+          sel = sel.filter(function (l) { return l !== result; });
+        } else {
+          sel.push(result);
+        }
+        sel.sort(function (a, b) { return optIndex(item, a) - optIndex(item, b); });
+      }
     } else {
-      map[id] = { result: result, note: btn.getAttribute('data-note') === '1' ? cur.note : '' };
+      sel = cur.result === result ? [] : [result];
     }
+    var onBtns = [];
+    li.querySelectorAll('.mn-ar-opt').forEach(function (b) {
+      if (sel.indexOf(b.getAttribute('data-result')) !== -1) { onBtns.push(b); }
+    });
+    var wantNote = onBtns.some(function (b) { return b.getAttribute('data-note') === '1'; });
+    map[id] = { result: sel.join('|'), note: wantNote ? cur.note : '' };
     state.dirty = true;
 
     li.querySelectorAll('.mn-ar-opt').forEach(function (b) {
-      var on = map[id].result !== '' && b.getAttribute('data-result') === map[id].result;
+      var on = onBtns.indexOf(b) !== -1;
       b.classList.toggle('is-on', on);
       b.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
 
     var noteIn = li.querySelector('.mn-ar-note-in');
     if (noteIn) {
-      var showNote = btn.getAttribute('data-note') === '1' && map[id].result !== '';
+      var showNote = wantNote;
       if (showNote && noteIn.hidden) {
         noteIn.hidden = false;
         restartAnim(noteIn, 'mn-ar-reveal');
@@ -454,7 +505,9 @@
       return item.ci_question + ' ' + note + ' ' + item.ci_unit + ' (นอกเกณฑ์ ' + item.ci_val_min + '–' + (item.ci_val_max !== null && item.ci_val_max !== undefined ? item.ci_val_max : '') + ')';
     }
     if (res.result === 'fail') { return item.ci_question + ' — ไม่ผ่าน'; }
-    return res.result + (note ? ' (' + note + ')' : '');
+    var first = item.ci_opts && item.ci_opts.length ? item.ci_opts[0].label : '';
+    var labels = picked(item, res).filter(function (l) { return !item.ci_multi || l !== first; });
+    return labels.join(', ') + (note ? ' (' + note + ')' : '');
   }
 
   function symptomName() {
@@ -483,15 +536,31 @@
     return { findings: findings, good: good, na: na };
   }
 
+  function ratesFor(item, res) {
+    if (!isBad(item, res)) { return []; }
+    if (item.ci_opts && !hasThreshold(item)) {
+      var out = [];
+      picked(item, res).forEach(function (label) {
+        var i = optIndex(item, label);
+        var r = i > 0 ? (item.ci_opts[i].rate || '').trim() : '';
+        if (r) { out.push(r); }
+      });
+      return out;
+    }
+    var f = (item.ci_rate_on_fail || '').trim();
+    return f ? [f] : [];
+  }
+
   function checklistRates() {
     var seen = {};
     var out = [];
     allChecked().forEach(function (c) {
-      var rate = (c.item.ci_rate_on_fail || '').trim();
-      if (rate && isBad(c.item, c.res) && !seen[rate]) {
-        seen[rate] = true;
-        out.push(rate);
-      }
+      ratesFor(c.item, c.res).forEach(function (rate) {
+        if (!seen[rate]) {
+          seen[rate] = true;
+          out.push(rate);
+        }
+      });
     });
     return out;
   }

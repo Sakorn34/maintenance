@@ -42,7 +42,11 @@ if ($trp_id > 0) {
 $cl_product   = ($trp_id > 0 && is_array($rate_row))
     ? (string) (isset($rate_row['trp_product']) ? $rate_row['trp_product'] : '')
     : '';
-$cl_supported = $cl_product !== '' && !$rate_edit_locked && maintenance_checklist_product_supported($cl_product);
+$cl_supported = false;
+if ($cl_product !== '' && !$rate_edit_locked) {
+    maintenance_checklist_ensure_tables($connect);
+    $cl_supported = maintenance_checklist_product_supported($connect, $cl_product);
+}
 
 maintenance_db_odbc_close($connect);
 
@@ -201,6 +205,10 @@ $has_prior_rate = $existing_user_rate !== ''
               <span>ตรวจทีละขั้น ระบบสรุปอาการและแนะนำอะไหล่ให้</span>
             </span>
             <i class="fa fa-angle-right mn-update-rate-assess-cta__go" aria-hidden="true"></i>
+          </a>
+          <?php elseif ($cl_product !== '' && !$rate_edit_locked): ?>
+          <a class="mn-update-rate-assess-setup" href="checklist_settings?product=<?php echo rawurlencode($cl_product); ?>">
+            <i class="fa fa-sliders" aria-hidden="true"></i> ตั้งค่ารายการตรวจเช็คของรุ่นนี้
           </a>
           <?php endif; ?>
           <?php if ($has_prior_rate) { ?>

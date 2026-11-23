@@ -22,12 +22,12 @@
     basicRes: {},
     symItems: [],
     symRes: {},
-    symptomId: 0,
+    symptomIds: [],
+    symCache: {},
+    symLoading: {},
     symptomChosen: false,
     parts: [],
     dismissed: {},
-    autoTech: '',
-    history: null,
     dirty: false,
     saving: false
   };
@@ -41,6 +41,10 @@
 
   var rateSet = {};
   (B.rateOptions || []).forEach(function (r) { rateSet[r] = true; });
+
+  // ชุดอะไหล่: ชื่อรายการชุด → รายการย่อยที่รวมอยู่แล้ว (ถ้ามีรายการชุดในใบงาน ไม่ต้องส่งรายการย่อยแยก)
+  var BUNDLES = {};
+  (B.bundles || []).forEach(function (b) { BUNDLES[b.bundle] = b.members || []; });
 
   // ---------- utils ----------
 
@@ -160,22 +164,35 @@
   // ---------- render items ----------
 
   function renderItems(wrap, items, resMap, section) {
-    if (!items.length) {
-      wrap.innerHTML = '';
-      return;
-    }
+    wrap.innerHTML = itemsHtml(items, resMap, section);
+  }
+
+  function itemsHtml(items, resMap, section) {
     var html = '';
     var grouped = items.some(function (it) { return it.group_name; });
     var groupCount = {};
     items.forEach(function (it) { groupCount[it.group_id] = (groupCount[it.group_id] || 0) + 1; });
     var lastGroup = null;
+    var okIds = function (list) {
+      return list.filter(function (x) { return !x.ci_auto_source && !x.ci_unit; }).map(function (x) { return x.ci_id; });
+    };
+    var allOkBtn = function (ids) {
+      return ids.length > 1
+        ? '<button type="button" class="mn-ar-allok" data-section="' + section + '" data-allok="' + ids.join(',') + '" title="ตอบข้อที่ยังไม่ได้ตอบในกลุ่มนี้ว่าปกติ"><i class="fa fa-check" aria-hidden="true"></i> ปกติทั้งหมด</button>'
+        : '';
+    };
+    if (!grouped) {
+      var all = okIds(items);
+      if (all.length > 1) { html += '<li class="mn-ar-group mn-ar-group--plain"><span>ข้อตรวจ</span><small>' + items.length + ' ข้อ</small>' + allOkBtn(all) + '</li>'; }
+    }
     items.forEach(function (it, i) {
       var res = resMap[it.ci_id] || { result: '', note: '' };
       var tone = itemTone(it, res);
       if (grouped && it.group_id !== lastGroup) {
         lastGroup = it.group_id;
         html += '<li class="mn-ar-group" style="animation-delay:' + Math.min(i * 40, 320) + 'ms"><span>'
-          + esc(it.group_name || 'อื่น ๆ') + '</span><small>' + groupCount[it.group_id] + ' ข้อ</small></li>';
+          + esc(it.group_name || 'อื่น ๆ') + '</span><small>' + groupCount[it.group_id] + ' ข้อ</small>'
+          + allOkBtn(okIds(items.filter(function (x) { return x.group_id === it.group_id; }))) + '</li>';
       }
       html += '<li class="mn-ar-item' + (tone ? ' is-answered is-' + tone : '') + '" data-id="' + it.ci_id
         + '" data-section="' + section + '" style="animation-delay:' + Math.min(i * 40, 320) + 'ms">';
@@ -183,10 +200,11 @@
         + '<div class="mn-ar-item__text"><div class="mn-ar-item__q">' + esc(it.ci_question) + '</div>'
         + (it.ci_hint ? '<div class="mn-ar-item__hint">' + esc(it.ci_hint) + '</div>' : '')
         + '</div></div>';
-      html += '<div class="mn-ar-item__body">' + renderControl(it, res) + '</div>';
+      html += '<div class="mn-ar-item__body' + (it.ci_unit && !it.ci_auto_source ? ' mn-ar-item__body--num' : '') + '">' + renderControl(it, res) + '</div>';
+      html += '<div class="mn-ar-photos" data-ci="' + it.ci_id + '">' + photoStripInner(it.ci_id) + '</div>';
       html += '</li>';
     });
-    wrap.innerHTML = html;
+    return html;
   }
 
   function renderControl(it, res) {
@@ -236,7 +254,7 @@
       var c = COLORS[o.color];
       if (o.has_note) { hasNote = true; if (on) { show = true; } }
       html += '<button type="button" class="mn-ar-opt mn-ar-opt--' + tone + (c ? ' mn-ar-opt--c' : '') + (on ? ' is-on' : '') + '" data-result="' + esc(o.label)
-        + '" data-note="' + (o.has_note ? '1' : '0') + '" aria-pressed="' + (on ? 'true' : 'false') + '"'
+        + '" data-note="' + (o.has_note ? '1' : '0') + '" data-note-def="' + esc(o.note_default || '') + '" aria-pressed="' + (on ? 'true' : 'false') + '"'
         + (c ? ' style="--oc:' + c[0] + ';--oc-soft:' + c[1] + ';--oc-line:' + c[2] + '"' : '') + '>'
         + (multi && i > 0 ? '<i class="fa fa-square-o mn-ar-opt__box" aria-hidden="true"></i><i class="fa fa-check-square mn-ar-opt__tick" aria-hidden="true"></i>' : '')
         + esc(o.text || o.label) + '</button>';
@@ -244,7 +262,7 @@
     html += (multi ? '<span class="mn-ar-opts__multi">เลือกได้หลายข้อ</span>' : '') + '</div>';
 
     if (hasNote) {
-      html += '<input type="text" class="mn-ar-input mn-ar-note-in' + (show ? ' mn-ar-reveal' : '') + '" placeholder="ระบุรายละเอียด เช่น ตำแหน่งที่พบ"'
+      html += '<input type="text" class="mn-ar-input mn-ar-note-in' + (show ? ' mn-ar-reveal' : '') + '" placeholder="ระบุรายละเอียด เช่น ตำแหน่งที่พบ" aria-label="รายละเอียด: ' + esc(it.ci_question) + '"'
         + ' value="' + esc(show ? res.note : '') + '"' + (show ? '' : ' hidden') + ' />';
     }
     return html;
@@ -278,7 +296,45 @@
     updateProgress();
   }
 
+  // ใส่ค่าเริ่มต้นของช่องรายละเอียด เมื่อช่องว่าง หรือยังเป็นค่าเริ่มต้นของตัวเลือกอื่นที่ช่างยังไม่ได้แก้
+  function noteWithDefault(item, note, onBtns, clicked) {
+    var defs = (item.ci_opts || []).map(function (o) { return o.note_default || ''; });
+    if (note !== '' && defs.indexOf(note) === -1) { return note; }
+    var src = onBtns.indexOf(clicked) !== -1 && clicked.getAttribute('data-note-def') ? clicked : null;
+    if (!src) {
+      src = onBtns.filter(function (b) { return b.getAttribute('data-note-def'); })[0] || null;
+    }
+    return src ? src.getAttribute('data-note-def') : note;
+  }
+
+  // กลุ่มของตัวเลือก (0 = เลือกร่วมกับข้ออื่นได้) — ตัวเลือกกลุ่มเดียวกันเลือกได้ทีละข้อ
+  function optGroup(item, label) {
+    var i = optIndex(item, label);
+    return i > 0 && item.ci_opts[i] ? (parseInt(item.ci_opts[i].group, 10) || 0) : 0;
+  }
+
+  // ตอบ "ปกติ" ให้ข้อที่ยังไม่ได้ตอบ (ข้อที่ตอบแล้วไม่ถูกแตะ · ข้อค่าตัวเลข/อัตโนมัติไม่รวม)
+  function fillNormal(btn) {
+    var section = btn.getAttribute('data-section') === 'basic' ? 'basic' : 'sym';
+    var map = resMapFor(section);
+    var n = 0;
+    btn.getAttribute('data-allok').split(',').forEach(function (s) {
+      var id = parseInt(s, 10);
+      var it = findItem(section, id);
+      if (!it || isAnswered(it, map[id])) { return; }
+      map[id] = { result: it.ci_opts && it.ci_opts.length ? it.ci_opts[0].label : 'pass', note: '' };
+      n++;
+    });
+    if (!n) { return; }
+    state.dirty = true;
+    if (section === 'basic') { renderItems($('mn_ar_basic'), state.basicItems, state.basicRes, 'basic'); } else { renderSymItems(); }
+    updateProgress();
+    queueDraft();
+  }
+
   function onItemsClick(e) {
+    var allOk = e.target.closest('.mn-ar-allok');
+    if (allOk) { fillNormal(allOk); return; }
     var btn = e.target.closest('.mn-ar-opt');
     if (!btn) { return; }
     var li = btn.closest('.mn-ar-item');
@@ -300,6 +356,8 @@
           sel = sel.filter(function (l) { return l !== result; });
         } else {
           sel.push(result);
+          var grp = optGroup(item, result);
+          if (grp) { sel = sel.filter(function (l) { return l === result || optGroup(item, l) !== grp; }); }
         }
         sel.sort(function (a, b) { return optIndex(item, a) - optIndex(item, b); });
       }
@@ -311,7 +369,7 @@
       if (sel.indexOf(b.getAttribute('data-result')) !== -1) { onBtns.push(b); }
     });
     var wantNote = onBtns.some(function (b) { return b.getAttribute('data-note') === '1'; });
-    map[id] = { result: sel.join('|'), note: wantNote ? cur.note : '' };
+    map[id] = { result: sel.join('|'), note: wantNote ? noteWithDefault(item, cur.note, onBtns, btn) : '' };
     state.dirty = true;
 
     li.querySelectorAll('.mn-ar-opt').forEach(function (b) {
@@ -323,10 +381,14 @@
     var noteIn = li.querySelector('.mn-ar-note-in');
     if (noteIn) {
       var showNote = wantNote;
+      if (showNote && noteIn.value !== map[id].note) {
+        noteIn.value = map[id].note;
+      }
       if (showNote && noteIn.hidden) {
         noteIn.hidden = false;
         restartAnim(noteIn, 'mn-ar-reveal');
         noteIn.focus();
+        noteIn.setSelectionRange(noteIn.value.length, noteIn.value.length);
       } else if (!showNote) {
         noteIn.hidden = true;
         noteIn.value = '';
@@ -367,12 +429,17 @@
         map[id].result = (!isNaN(n) && n >= item.ci_val_min && n <= max) ? 'pass' : 'fail';
         out.innerHTML = measureLabel(map[id].result);
         li.querySelectorAll('.mn-ar-opt').forEach(function (b) {
-          b.classList.remove('is-on');
-          b.setAttribute('aria-pressed', 'false');
+          var on = b.getAttribute('data-result') === map[id].result;
+          b.classList.toggle('is-on', on);
+          b.setAttribute('aria-pressed', on ? 'true' : 'false');
         });
       } else {
         map[id].result = '';
         out.innerHTML = '';
+        li.querySelectorAll('.mn-ar-opt').forEach(function (b) {
+          b.classList.remove('is-on');
+          b.setAttribute('aria-pressed', 'false');
+        });
       }
       refreshItemState(li, item, map[id]);
     }
@@ -411,60 +478,102 @@
       });
   }
 
-  function loadSymptom(id) {
-    var wrap = $('mn_ar_sym_items');
+  // ---------- อาการ (เลือกได้หลายอาการ — แต่ละอาการมีข้อตรวจของตัวเอง) ----------
+
+  function symOrder(sid) {
+    var list = B.symptoms || [];
+    for (var i = 0; i < list.length; i++) { if (list[i].id === sid) { return i; } }
+    return 999;
+  }
+
+  function symName(sid) {
+    var s = (B.symptoms || [])[symOrder(sid)];
+    return s ? s.name : '';
+  }
+
+  function rebuildSymItems() {
     state.symItems = [];
-    state.symRes = {};
+    state.symptomIds.forEach(function (sid) { state.symItems = state.symItems.concat(state.symCache[sid] || []); });
+  }
+
+  function renderSymItems() {
+    var multi = state.symptomIds.length > 1;
+    var html = '';
+    state.symptomIds.forEach(function (sid) {
+      if (multi) {
+        html += '<li class="mn-ar-symhead"><span>' + esc(symName(sid)) + '</span>'
+          + (state.symCache[sid] ? '<small>' + state.symCache[sid].length + ' ข้อ</small>' : '') + '</li>';
+      }
+      if (!state.symCache[sid]) {
+        html += '<li class="mn-ar-skeleton"></li><li class="mn-ar-skeleton"></li>';
+        return;
+      }
+      if (multi && !state.symCache[sid].length) {
+        html += '<li class="mn-ar-symempty">อาการนี้ยังไม่มีข้อตรวจ</li>';
+      }
+      html += itemsHtml(state.symCache[sid], state.symRes, 'sym');
+    });
+    $('mn_ar_sym_items').innerHTML = html;
     updateProgress();
-    if (!id) {
-      wrap.innerHTML = '';
-      return Promise.resolve();
-    }
-    wrap.innerHTML = '<li class="mn-ar-skeleton"></li><li class="mn-ar-skeleton"></li>';
-    return getJSON('checklist_items', { product: B.product, symptom_id: id, trp_id: B.trpId })
+  }
+
+  function ensureSymptom(sid) {
+    if (state.symCache[sid] || state.symLoading[sid]) { return; }
+    state.symLoading[sid] = true;
+    getJSON('checklist_items', { product: B.product, symptom_id: sid, trp_id: B.trpId })
       .then(function (data) {
-        if (state.symptomId !== id) { return; }
-        state.symItems = data.items || [];
-        state.symRes = initResults(state.symItems);
-        renderItems(wrap, state.symItems, state.symRes, 'sym');
-        updateProgress();
+        var items = data.items || [];
+        state.symCache[sid] = items;
+        var init = initResults(items);
+        Object.keys(init).forEach(function (k) { if (!state.symRes[k]) { state.symRes[k] = init[k]; } });
       })
       .catch(function () {
-        wrap.innerHTML = '';
-        alertMsg('โหลดรายการตรวจตามอาการไม่สำเร็จ');
+        state.symptomIds = state.symptomIds.filter(function (x) { return x !== sid; });
+        state.symptomChosen = state.symptomIds.length > 0;
+        renderSymptoms();
+        alertMsg('โหลดรายการตรวจของอาการ “' + symName(sid) + '” ไม่สำเร็จ');
+      })
+      .then(function () {
+        delete state.symLoading[sid];
+        rebuildSymItems();
+        renderSymItems();
       });
   }
 
   function renderSymptoms() {
     var html = '';
     (B.symptoms || []).forEach(function (s) {
-      var on = state.symptomChosen && state.symptomId === s.id;
-      html += '<button type="button" class="mn-ar-chip' + (on ? ' is-on' : '') + '" role="radio" aria-checked="' + (on ? 'true' : 'false')
-        + '" data-sid="' + s.id + '">' + esc(s.name) + '</button>';
+      var on = state.symptomIds.indexOf(s.id) !== -1;
+      html += '<button type="button" class="mn-ar-chip' + (on ? ' is-on' : '') + '" role="checkbox" aria-checked="' + (on ? 'true' : 'false')
+        + '" data-sid="' + s.id + '">' + (on ? '<i class="fa fa-check mn-ar-chip__tick" aria-hidden="true"></i>' : '') + esc(s.name) + '</button>';
     });
-    var none = state.symptomChosen && state.symptomId === 0;
-    html += '<button type="button" class="mn-ar-chip mn-ar-chip--ghost' + (none ? ' is-on' : '') + '" role="radio" aria-checked="'
+    var none = state.symptomChosen && !state.symptomIds.length;
+    html += '<button type="button" class="mn-ar-chip mn-ar-chip--ghost' + (none ? ' is-on' : '') + '" role="checkbox" aria-checked="'
       + (none ? 'true' : 'false') + '" data-sid="0">ไม่มีอาการเฉพาะ</button>';
     $('mn_ar_symptoms').innerHTML = html;
+    var cnt = $('mn_ar_sym_count');
+    if (cnt) { cnt.textContent = state.symptomIds.length > 1 ? 'เลือก ' + state.symptomIds.length + ' อาการ' : ''; }
   }
 
   function onSymptomClick(e) {
     var chip = e.target.closest('.mn-ar-chip');
     if (!chip) { return; }
     var sid = parseInt(chip.getAttribute('data-sid'), 10);
-    if (state.symptomChosen && state.symptomId === sid) { return; }
-    state.symptomId = sid;
-    state.symptomChosen = true;
+    if (sid === 0) {
+      if (state.symptomChosen && !state.symptomIds.length) { return; }
+      state.symptomIds = [];
+      state.symptomChosen = true;
+    } else {
+      var i = state.symptomIds.indexOf(sid);
+      if (i === -1) { state.symptomIds.push(sid); } else { state.symptomIds.splice(i, 1); }
+      state.symptomIds.sort(function (a, b) { return symOrder(a) - symOrder(b); });
+      state.symptomChosen = state.symptomIds.length > 0;
+    }
     state.dirty = true;
     renderSymptoms();
-    loadSymptom(sid);
-  }
-
-  function loadHistory() {
-    if (state.history) { return Promise.resolve(state.history); }
-    return getJSON('suggest_rates', { product: B.product, trp_id: B.trpId })
-      .then(function (d) { state.history = d.top || []; return state.history; })
-      .catch(function () { state.history = []; return state.history; });
+    state.symptomIds.forEach(ensureSymptom);
+    rebuildSymItems();
+    renderSymItems();
   }
 
   // ---------- validation ----------
@@ -495,7 +604,11 @@
       if (!state.symptomChosen) {
         var chips = $('mn_ar_symptoms');
         restartAnim(chips, 'mn-ar-reveal');
-        alertMsg('เลือกอาการที่พบ หรือกด “ไม่มีอาการเฉพาะ”');
+        alertMsg('เลือกอาการที่พบ (เลือกได้หลายอาการ) หรือกด “ไม่มีอาการเฉพาะ”');
+        return false;
+      }
+      if (Object.keys(state.symLoading).length) {
+        alertMsg('กำลังโหลดข้อตรวจของอาการ รอสักครู่');
         return false;
       }
       return markMissing(state.symItems, state.symRes, $('mn_ar_sym_items')) === 0;
@@ -508,9 +621,7 @@
   function allChecked() {
     var out = [];
     state.basicItems.forEach(function (it) { out.push({ item: it, res: state.basicRes[it.ci_id] }); });
-    if (state.symptomId > 0) {
-      state.symItems.forEach(function (it) { out.push({ item: it, res: state.symRes[it.ci_id] }); });
-    }
+    state.symItems.forEach(function (it) { out.push({ item: it, res: state.symRes[it.ci_id] }); });
     return out;
   }
 
@@ -528,16 +639,7 @@
   }
 
   function symptomName() {
-    var name = '';
-    (B.symptoms || []).forEach(function (s) { if (s.id === state.symptomId) { name = s.name; } });
-    return name;
-  }
-
-  function buildDescription(findings) {
-    var sym = state.symptomId > 0 ? symptomName() : '';
-    var texts = findings.map(function (f) { return f.text; });
-    if (!texts.length) { return sym ? sym + ' — ตรวจเช็คแล้วไม่พบจุดผิดปกติเพิ่มเติม' : 'ตรวจเช็คแล้วไม่พบจุดผิดปกติ'; }
-    return (sym ? sym + ' — ตรวจพบ: ' : 'ตรวจพบ: ') + texts.join(', ');
+    return state.symptomIds.map(symName).filter(function (n) { return n; }).join(', ');
   }
 
   function collectFindings() {
@@ -585,43 +687,279 @@
   function renderFindings(sum) {
     var bad = sum.findings.length;
     var html = '<div class="mn-ar-findings__head">'
-      + '<div class="mn-ar-stat mn-ar-stat--bad"><span class="mn-ar-stat__n">' + bad + '</span><span class="mn-ar-stat__l">พบปัญหา</span></div>'
-      + '<div class="mn-ar-stat mn-ar-stat--good"><span class="mn-ar-stat__n">' + sum.good + '</span><span class="mn-ar-stat__l">ปกติ</span></div>'
-      + '<div class="mn-ar-stat"><span class="mn-ar-stat__n">' + sum.na + '</span><span class="mn-ar-stat__l">N/A</span></div>'
+      + '<div class="mn-ar-stat mn-ar-stat--bad' + (bad ? '' : ' is-zero') + '"><span class="mn-ar-stat__n">' + bad + '</span><span class="mn-ar-stat__l"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> พบปัญหา</span></div>'
+      + '<div class="mn-ar-stat mn-ar-stat--good"><span class="mn-ar-stat__n">' + sum.good + '</span><span class="mn-ar-stat__l"><i class="fa fa-check" aria-hidden="true"></i> ปกติ</span></div>'
+      + '<div class="mn-ar-stat"><span class="mn-ar-stat__n">' + sum.na + '</span><span class="mn-ar-stat__l"><i class="fa fa-minus" aria-hidden="true"></i> N/A</span></div>'
       + '</div>';
-    if (bad) {
-      html += '<ul class="mn-ar-findings__list">';
-      sum.findings.forEach(function (f, i) {
-        html += '<li style="animation-delay:' + (i * 60) + 'ms"><span class="mn-ar-dot mn-ar-dot--' + (f.tone === 'warn' ? 'warn' : 'bad') + '"></span>'
-          + '<span><span class="mn-ar-findings__q">' + esc(f.q) + '</span>' + esc(f.text) + '</span></li>';
-      });
-      html += '</ul>';
-    } else {
-      html += '<p class="mn-ar-findings__ok"><i class="fa fa-check-circle" aria-hidden="true"></i> ไม่พบจุดผิดปกติจากการตรวจเช็ค</p>';
-    }
     $('mn_ar_findings').innerHTML = html;
   }
 
   function enterSummary() {
-    var sum = collectFindings();
-    renderFindings(sum);
-
-    var tech = $('mn_ar_tech');
-    var desc = buildDescription(sum.findings);
-    var cur = tech.value.trim();
-    if (cur === '' || cur === state.autoTech) {
-      if (cur !== desc) {
-        tech.value = desc;
-        restartAnim(tech, 'is-flash');
-      }
-    }
-    state.autoTech = desc;
-
+    renderFindings(collectFindings());
+    state.step = 4;
     checklistRates().forEach(function (r) {
       if (rateSet[r] && !state.dismissed[r]) { addPart(r, 'check', true); }
     });
     renderParts();
-    loadHistory().then(renderSuggest);
+  }
+
+  // ---------- สรุปการประเมิน (ข้อความที่ส่งต่อฝ่ายเสนอราคา) ----------
+  // หัวข้อหลัก = กลุ่มชิ้นส่วน | หัวข้อย่อย = ข้อที่ตรวจ: ผล (ส่วนที่เสียขึ้นก่อน) | "เสนอ:" ท้ายกลุ่ม
+  // ปิดท้ายด้วยสรุปรายการที่เสนอเปลี่ยน/ซ่อมทั้งหมด | ความเห็นช่างต่อท้ายหลัง "//"
+
+  var COMMENT_SEP = '\n// ';
+  var SUB = '   - ';
+
+  // วลีของข้อมูลอัตโนมัติ ให้อ่านเหมือนที่ช่างเขียน
+  var AUTO_PHRASE = {
+    buy_date: { pass: 'ยังไม่เกิน 2 ปี', fail: 'เกิน 2 ปี' },
+    last_ma: { pass: 'เคยเปลี่ยนอะไหล่พื้นฐานไปยังไม่เกิน 2 ปี', fail: 'เคยเปลี่ยนอะไหล่พื้นฐานเกิน 2 ปี' }
+  };
+
+  function rangeText(item) {
+    var max = item.ci_val_max;
+    return (max !== null && max !== undefined) ? item.ci_val_min + '-' + max : 'ตั้งแต่ ' + item.ci_val_min;
+  }
+
+  function autoPhrase(item, res) {
+    var src = item.ci_auto_source;
+    if (res.result === 'na') { return ''; }
+    var base = (AUTO_PHRASE[src] || {})[res.result] || '';
+    if (B.demo) { return base || ((DEMO_AUTO[src] || {})[res.result]) || ''; }
+    var detail = (res.note || '').trim() || (item.auto_detail || '');
+    if (!detail) { return base && !/ไม่พบ|ไม่ถูกต้อง|ไม่ทราบ/.test(item.auto_label || '') ? base : (item.auto_label || base); }
+    return (base || item.auto_label || '') + ' (' + detail.replace(/\s*\((.*)\)\s*$/, ' $1') + ')';
+  }
+
+  // ผลของข้อตรวจหนึ่งข้อ → { label: ชื่อข้อ, text: ผล }
+  function itemLine(it, res, tone) {
+    var q = it.ci_question;
+    var note = (res.note || '').trim();
+    if (it.ci_auto_source) { return { label: q, text: autoPhrase(it, res) }; }
+    if (it.ci_unit && hasThreshold(it) && note !== '' && !isNaN(parseFloat(note)) && (res.result === 'pass' || res.result === 'fail')) {
+      var n = parseFloat(note);
+      var where = res.result === 'pass' ? 'อยู่ในค่ามาตรฐาน' : (n < it.ci_val_min ? 'ต่ำกว่าค่ามาตรฐาน' : 'สูงกว่าค่ามาตรฐาน');
+      return { label: q, text: 'วัดได้ ' + note + ' ' + it.ci_unit + ' ' + where + ' (' + rangeText(it) + ' ' + it.ci_unit + ')' };
+    }
+    if (tone === 'na' || !tone) {
+      var naLabel = it.ci_opts && res.result && res.result !== 'na' ? picked(it, res).join(' ') : '';
+      return { label: q, text: naLabel || 'ไม่ได้ตรวจ (N/A)' };
+    }
+    if (!it.ci_opts) { return { label: q, text: (res.result === 'pass' ? 'ปกติ' : 'ไม่ผ่าน') + (note ? ' ' + note : '') }; }
+    var first = it.ci_opts[0].label;
+    var labels = picked(it, res);
+    if (tone !== 'good') { labels = labels.filter(function (l) { return l !== first; }); }
+    return { label: q, text: labels.join(' และ ') + (note ? ' - ' + note : '') };
+  }
+
+  var TONE_INK = { good: '#15803d', warn: '#c2410c', bad: '#b91c1c', na: '#64748b' };
+
+  // สีของผลแต่ละข้อ = สีเดียวกับปุ่มที่ช่างกดในขั้นตรวจ (ตัวเลือกที่แย่ที่สุดถ้าเลือกหลายค่า)
+  function lineColor(it, res, tone) {
+    if (it.ci_opts && !it.ci_auto_source && !(it.ci_unit && hasThreshold(it) && (res.result === 'pass' || res.result === 'fail'))) {
+      var worst = -1;
+      picked(it, res).forEach(function (l) { var i = optIndex(it, l); if (i > worst) { worst = i; } });
+      if (worst >= 0) {
+        var o = it.ci_opts[worst];
+        if (COLORS[o.color]) { return COLORS[o.color][0]; }
+        tone = o.tone || optTone(it, worst);
+      }
+    }
+    return TONE_INK[tone] || TONE_INK.na;
+  }
+
+  // รายการซ่อมจริงในใบงานที่มาจากข้อนี้ (ถ้าถูกรวมในชุดจะชี้ไปที่รายการชุด)
+  function partsForItem(it, res) {
+    var out = [];
+    ratesFor(it, res).forEach(function (r) {
+      if (hasPart(r)) { pushOnce(out, r); return; }
+      var cover = coveredBy(r);
+      if (cover) { pushOnce(out, cover); }
+    });
+    return out;
+  }
+
+  function pushOnce(list, v) { if (v && list.indexOf(v) === -1) { list.push(v); } }
+
+  function buildReport() {
+    var groups = [];
+    var byKey = {};
+    var from = {};
+    allChecked().forEach(function (c) {
+      var it = c.item;
+      var res = c.res || { result: '', note: '' };
+      var key = it.group_id ? 'g' + it.group_id : 'none';
+      var g = byKey[key];
+      if (!g) {
+        g = byKey[key] = { name: it.group_id ? (it.group_name || 'อื่น ๆ') : 'อื่น ๆ', bad: [], good: [], parts: [], seen: {} };
+        groups.push(g);
+      }
+      var tone = it.ci_auto_source ? (res.result === 'fail' ? 'bad' : 'good') : itemTone(it, res);
+      var line = itemLine(it, res, tone);
+      line.ci = it.ci_id;
+      if (!line.text) { return; }
+      var k = line.label + '|' + line.text;
+      if (g.seen[k]) { return; }
+      g.seen[k] = true;
+      line.bad = tone === 'warn' || tone === 'bad';
+      line.color = lineColor(it, res, tone);
+      (line.bad ? g.bad : g.good).push(line);
+      partsForItem(it, res).forEach(function (p) {
+        pushOnce(g.parts, p);
+        from[p] = from[p] || [];
+        pushOnce(from[p], g.name);
+      });
+    });
+    var ordered = groups.filter(function (g) { return g.bad.length; }).concat(groups.filter(function (g) { return !g.bad.length && g.good.length; }));
+    var parts = state.parts.map(function (p) {
+      return { name: p.name, from: from[p.name] || [], members: BUNDLES[p.name] || null };
+    });
+    return { groups: ordered.map(function (g) { return { name: g.name, lines: g.bad.concat(g.good), parts: g.parts }; }), parts: parts };
+  }
+
+  function partLine(p) {
+    return p.name
+      + (p.from.length ? ' (จาก ' + p.from.join(', ') + ')' : ' (ช่างเพิ่มเอง)');
+  }
+
+  function reportText(rep) {
+    var out = [];
+    rep.groups.forEach(function (g, i) {
+      out.push((i + 1) + ') ' + g.name);
+      g.lines.forEach(function (l) { out.push(SUB + l.label + ': ' + l.text); });
+      if (g.parts.length) { out.push('   เสนอ: ' + g.parts.join(', ')); }
+    });
+    out.push('');
+    if (rep.parts.length) {
+      out.push('สรุปรายการที่เสนอเปลี่ยน/ซ่อม ' + rep.parts.length + ' รายการ');
+      rep.parts.forEach(function (p) { out.push(SUB + partLine(p)); });
+    } else {
+      out.push('สรุป: ไม่เสนอเปลี่ยนอะไหล่');
+    }
+    return out.join('\n');
+  }
+
+  function composeTech() {
+    var comment = $('mn_ar_tech').value.trim();
+    return reportText(buildReport()) + (comment ? COMMENT_SEP + comment : '');
+  }
+
+  function renderReport() {
+    var box = $('mn_ar_report');
+    if (!box) { return; }
+    var rep = buildReport();
+    if (!rep.groups.length) { box.innerHTML = ''; return; }
+    var html = '<ol class="mn-ar-report__list">' + rep.groups.map(function (g) {
+      return '<li><b class="mn-ar-report__g">' + esc(g.name) + '</b><ul class="mn-ar-report__sub">'
+        + g.lines.map(function (l) {
+          var pics = photosOf(l.ci).length;
+          return '<li style="--rc:' + l.color + '"' + (l.bad ? ' class="is-bad"' : '') + '><span>' + esc(l.label) + ':</span> ' + esc(l.text)
+            + (pics ? ' <button type="button" class="mn-ar-report__pic" data-ci="' + l.ci + '" aria-label="ดูรูป ' + pics + ' รูป"><i class="fa fa-camera" aria-hidden="true"></i> ' + pics + '</button>' : '') + '</li>';
+        }).join('') + '</ul>'
+        + (g.parts.length ? '<div class="mn-ar-report__prop"><i class="fa fa-wrench" aria-hidden="true"></i> เสนอ: ' + esc(g.parts.join(', ')) + '</div>' : '')
+        + '</li>';
+    }).join('') + '</ol>';
+    html += '<div class="mn-ar-report__sum"><b>' + (rep.parts.length ? 'สรุปรายการที่เสนอเปลี่ยน/ซ่อม ' + rep.parts.length + ' รายการ' : 'สรุป: ไม่เสนอเปลี่ยนอะไหล่') + '</b>'
+      + (rep.parts.length ? '<ul>' + rep.parts.map(function (p) { return '<li>' + esc(partLine(p)) + '</li>'; }).join('') + '</ul>' : '') + '</div>';
+    box.innerHTML = html;
+  }
+
+  // ---------- ร่าง "ความเห็นช่าง" = เหตุผลการเสนอเปลี่ยนอะไหล่ (กระชับแบบที่ช่างเขียน แก้ไขต่อได้) ----------
+
+  // วลีสั้นของข้อมูลอัตโนมัติ แบบที่ช่างเขียน
+  var AUTO_SHORT = {
+    buy_date: { fail: 'เครื่องอายุเกิน 2 ปี', pass: 'เครื่องอายุยังไม่เกิน 2 ปี' },
+    last_ma: { fail: 'เปลี่ยนอะไหล่พื้นฐานล่าสุดเกิน 2 ปี', pass: 'เปลี่ยนอะไหล่พื้นฐานล่าสุดยังไม่เกิน 2 ปี' }
+  };
+
+  // สิ่งที่ตรวจพบแบบสั้น เช่น "การ TouchScreen กดไม่ติดทั้งจอ", "ความสว่างจอ 39 LUX ต่ำกว่ามาตรฐาน (180-420)"
+  // ประธานของประโยค: ชื่อข้อที่ซ้ำกันหลายกลุ่ม (เช่น "ลักษณะกายภาพ", "การเชื่อมต่อ") ใช้ชื่อกลุ่มแทน เช่น "HUB / USB", "กล้อง"
+  function findingSubject(it, qCount) {
+    return qCount[it.ci_question] > 1 && it.group_name ? it.group_name : it.ci_question;
+  }
+
+  // รายละเอียดที่พิมพ์เป็นประโยคเต็มอยู่แล้ว (มีคำของประธานอยู่ในนั้น) ใช้ตามที่พิมพ์ ไม่เติมประธานซ้ำ
+  function noteHasSubject(note, subject) {
+    return subject.split(/[\s/]+/).some(function (w) { return w.length >= 3 && w !== 'การ' && note.indexOf(w) !== -1; });
+  }
+
+  function shortFinding(it, res, tone, qCount) {
+    var note = (res.note || '').trim();
+    if (it.ci_auto_source) { return (AUTO_SHORT[it.ci_auto_source] || {})[res.result] || autoPhrase(it, res); }
+    if (it.ci_unit && hasThreshold(it) && note !== '' && !isNaN(parseFloat(note)) && res.result === 'fail') {
+      var low = parseFloat(note) < it.ci_val_min;
+      return it.ci_question + ' ' + note + ' ' + it.ci_unit + (low ? ' ต่ำกว่ามาตรฐาน' : ' สูงกว่ามาตรฐาน') + ' (' + rangeText(it) + ')';
+    }
+    var subject = findingSubject(it, qCount);
+    if (!it.ci_opts) { return subject + ' ไม่ผ่าน' + (note ? ' ' + note : ''); }
+    if (note && noteHasSubject(note, subject)) { return note; }
+    var first = it.ci_opts[0].label;
+    var labels = picked(it, res).filter(function (l) { return tone === 'good' || l !== first; });
+    return subject + ' ' + (note || labels.join(' และ '));
+  }
+
+  // "เสนอเปลี่ยน" สำหรับอะไหล่ที่ต้องเปลี่ยนชิ้น · "เสนอ" สำหรับงานบริการ/MA/ซื้อใหม่
+  var SERVICE_RE = /^(MA\b|ทำความสะอาด|ปรับ|ซ่อม|บัดกรี|ฉีด|ล้าง|เคลือบ|กู้|ตรวจ|ติดตั้ง|อัพ|อัป|ลค\.|Write|Up\b|Update|Upgrade|Reset|Format|Config|ตั้งค่า)/i;
+  function proposeVerb(part) {
+    return SERVICE_RE.test(part.trim()) || part.indexOf('ซื้อใหม่') !== -1 ? 'เสนอ' : 'เสนอเปลี่ยน';
+  }
+
+  // ความเห็นช่างแบบกระชับ: ข้อละเรื่อง "สิ่งที่พบ เสนอ รายการซ่อม" เหมือนที่ช่างเคยเขียน
+  function rationaleText() {
+    var byPart = {};
+    var orphan = [];
+    var qCount = {};
+    allChecked().forEach(function (c) { qCount[c.item.ci_question] = (qCount[c.item.ci_question] || 0) + 1; });
+    allChecked().forEach(function (c) {
+      var it = c.item;
+      var res = c.res || { result: '', note: '' };
+      var tone = it.ci_auto_source ? (res.result === 'fail' ? 'bad' : 'good') : itemTone(it, res);
+      if (tone !== 'warn' && tone !== 'bad') { return; }
+      var desc = shortFinding(it, res, tone, qCount);
+      if (!desc) { return; }
+      var ps = partsForItem(it, res);
+      if (!ps.length) { pushOnce(orphan, desc); return; }
+      ps.forEach(function (p) { byPart[p] = byPart[p] || []; pushOnce(byPart[p], desc); });
+    });
+    var reasons = B.rateReasons || {};
+    var points = [];
+    state.parts.forEach(function (p) {
+      var found = byPart[p.name] || [];
+      var why = (reasons[p.name] || '').trim();
+      var said = found.join(' ');
+      // ประโยคที่พิมพ์ไว้บอก "เสนอ…" แล้ว (เช่น "…เสนอเปลี่ยนจอใหม่") ไม่ต่อท้ายซ้ำ
+      var propose = said.indexOf('เสนอ') !== -1 ? '' : proposeVerb(p.name) + ' ' + p.name;
+      points.push([found.join(', '), propose].filter(function (x) { return x; }).join(' ') + (why ? ' (' + why + ')' : ''));
+    });
+    orphan.forEach(function (o) { points.push(o); });
+    var normal = buildReport().groups.filter(function (g) { return !g.lines.some(function (l) { return l.bad; }); }).map(function (g) { return g.name; });
+    if (normal.length) { points.push(normal.join(', ') + ' ปกติ'); }
+    if (!points.length) { return ''; }
+    return points.map(function (p, i) { return (i + 1) + ') ' + p; }).join('\n');
+  }
+
+  var autoComment = '';
+
+  // เติมร่างให้เองเมื่อช่องว่าง หรือยังเป็นร่างเดิมที่ช่างไม่ได้แก้ · force = กดปุ่มร่างใหม่
+  function syncComment(force) {
+    var el = $('mn_ar_tech');
+    if (!el) { return; }
+    var cur = el.value.trim();
+    if (!force && cur !== '' && cur !== autoComment.trim()) { return; }
+    var txt = rationaleText();
+    if (el.value !== txt) {
+      el.value = txt;
+      restartAnim(el, 'is-flash');
+    }
+    autoComment = txt;
+  }
+
+  // เปิดใบงานที่เคยบันทึกจากหน้านี้: ดึงเฉพาะความเห็นช่าง (หลัง "//") กลับเข้าช่อง | ใบงานเก่าที่พิมพ์เอง ใส่ทั้งข้อความไว้ไม่ให้หาย
+  function commentFromSaved(t) {
+    t = String(t || '');
+    if (!B.checklistSaved) { return t; }
+    var k = t.indexOf(COMMENT_SEP);
+    return k === -1 ? '' : t.slice(k + COMMENT_SEP.length);
   }
 
   // ---------- parts ----------
@@ -633,12 +971,29 @@
     return false;
   }
 
+  // รายการชุดในใบงานที่รวมรายการนี้ไว้แล้ว ('' = ไม่มี)
+  function coveredBy(name) {
+    for (var i = 0; i < state.parts.length; i++) {
+      var p = state.parts[i].name;
+      if (p !== name && BUNDLES[p] && BUNDLES[p].indexOf(name) !== -1) { return p; }
+    }
+    return '';
+  }
+
   function addPart(name, src, silent) {
     if (!name || hasPart(name)) { return false; }
-    if (state.parts.length >= MAX_PARTS) {
+    var cover = coveredBy(name);
+    if (cover) {
+      if (!silent) { alertMsg('“' + name + '” รวมอยู่ใน “' + cover + '” แล้ว ไม่ต้องเพิ่มแยก', 'info'); }
+      return false;
+    }
+    var members = BUNDLES[name];
+    var keep = members ? state.parts.filter(function (p) { return members.indexOf(p.name) === -1; }) : state.parts;
+    if (keep.length >= MAX_PARTS) {
       if (!silent) { alertMsg('เพิ่มได้สูงสุด ' + MAX_PARTS + ' รายการ'); }
       return false;
     }
+    state.parts = keep;
     state.parts.push({ name: name, src: src, fresh: true });
     delete state.dismissed[name];
     state.dirty = true;
@@ -649,9 +1004,17 @@
 
   function renderParts() {
     var html = '';
+    var found = {};
+    checklistRates().forEach(function (r) { found[r] = true; });
     state.parts.forEach(function (p, i) {
-      html += '<li class="mn-ar-part"' + (p.fresh ? '' : ' style="animation:none"') + ' data-i="' + i + '">'
-        + '<span class="mn-ar-part__name">' + esc(p.name) + '</span>'
+      var members = BUNDLES[p.name];
+      var sub = members && members.length
+        ? '<small class="mn-ar-part__sub"><i class="fa fa-cubes" aria-hidden="true"></i> รวมในชุด: ' + members.map(function (m) {
+          return found[m] ? '<b title="พบจากผลตรวจ">' + esc(m) + '</b>' : esc(m);
+        }).join(', ') + '</small>'
+        : '';
+      html += '<li class="mn-ar-part' + (members ? ' mn-ar-part--bundle' : '') + '"' + (p.fresh ? '' : ' style="animation:none"') + ' data-i="' + i + '">'
+        + '<span class="mn-ar-part__name">' + esc(p.name) + sub + '</span>'
         + (SRC_LABEL[p.src] ? '<span class="mn-ar-part__src">' + SRC_LABEL[p.src] + '</span>' : '')
         + '<button type="button" class="mn-ar-part__act" data-act="up" aria-label="เลื่อนขึ้น"' + (i === 0 ? ' disabled' : '') + '><i class="fa fa-arrow-up" aria-hidden="true"></i></button>'
         + '<button type="button" class="mn-ar-part__act mn-ar-part__act--del" data-act="del" aria-label="ลบ ' + esc(p.name) + '"><i class="fa fa-times" aria-hidden="true"></i></button>'
@@ -661,16 +1024,15 @@
     $('mn_ar_parts').innerHTML = html;
     $('mn_ar_parts_count').textContent = state.parts.length + '/' + MAX_PARTS;
     renderSuggest();
+    renderReport();
+    if (state.step === 4) { syncComment(false); }
   }
 
   function renderSuggest() {
     var chips = [];
     var seen = {};
     checklistRates().forEach(function (r) {
-      if (rateSet[r] && !hasPart(r) && !seen[r]) { seen[r] = true; chips.push({ rate: r, src: 'check', label: 'ผลตรวจ' }); }
-    });
-    (state.history || []).forEach(function (h) {
-      if (rateSet[h.rate] && !hasPart(h.rate) && !seen[h.rate]) { seen[h.rate] = true; chips.push({ rate: h.rate, src: 'history', label: h.count + ' ครั้ง' }); }
+      if (rateSet[r] && !hasPart(r) && !coveredBy(r) && !seen[r]) { seen[r] = true; chips.push({ rate: r, src: 'check', label: 'ผลตรวจ' }); }
     });
     chips = chips.slice(0, 8);
     var wrap = $('mn_ar_suggest_wrap');
@@ -700,6 +1062,12 @@
       setTimeout(function () {
         var removed = state.parts.splice(i, 1)[0];
         if (removed) { state.dismissed[removed.name] = true; }
+        // เอารายการชุดออก → ส่งรายการย่อยแยกตามผลตรวจแทน
+        if (removed && BUNDLES[removed.name]) {
+          checklistRates().forEach(function (r) {
+            if (rateSet[r] && !state.dismissed[r] && BUNDLES[removed.name].indexOf(r) !== -1) { addPart(r, 'check', true); }
+          });
+        }
         state.dirty = true;
         renderParts();
       }, 200);
@@ -735,7 +1103,9 @@
     list.innerHTML = hits.map(function (r) {
       var at = r.toLowerCase().indexOf(q);
       var shown = esc(r.slice(0, at)) + '<mark>' + esc(r.slice(at, at + q.length)) + '</mark>' + esc(r.slice(at + q.length));
-      return '<li role="option" data-rate="' + esc(r) + '">' + shown + '</li>';
+      var cover = coveredBy(r);
+      return '<li role="option" data-rate="' + esc(r) + '"' + (cover ? ' class="is-covered"' : '') + '>' + shown
+        + (cover ? '<small class="mn-ar-covered">อยู่ในชุด ' + esc(cover) + '</small>' : '') + '</li>';
     }).join('');
   }
 
@@ -826,15 +1196,8 @@
   }
 
   function save() {
-    var tech = $('mn_ar_tech');
-    if (tech.value.trim() === '') {
-      alertMsg('กรอกอาการที่ประเมินก่อนบันทึก');
-      shake(tech);
-      return;
-    }
-    if (!state.parts.length) {
-      alertMsg('เพิ่มรายการซ่อมอย่างน้อย 1 รายการ');
-      $('mn_ar_part_search').focus();
+    if (state.photos.some(function (p) { return p.pending; })) {
+      alertMsg('รอให้อัปโหลดรูปเสร็จก่อนบันทึก');
       return;
     }
     if (B.demo) {
@@ -845,7 +1208,9 @@
       alertMsg('ไม่พบชื่อผู้ประเมินจาก session — ติดต่อผู้ดูแลระบบ');
       return;
     }
-    confirmMsg('บันทึกการประเมิน พร้อมรายการซ่อม ' + state.parts.length + ' รายการ?', doSave);
+    confirmMsg(state.parts.length
+      ? 'บันทึกการประเมิน พร้อมรายการซ่อม ' + state.parts.length + ' รายการ?'
+      : 'บันทึกการประเมิน โดยไม่มีรายการซ่อม?', doSave);
   }
 
   function doSave() {
@@ -855,17 +1220,21 @@
     btn.querySelector('.fa').className = 'fa fa-circle-o-notch';
     btn.querySelector('.mn-ar-btn__txt').textContent = 'กำลังบันทึก…';
 
-    var jobs = [postJSON('save_checklist', { trp_id: B.trpId, symptom_id: 0, results: state.basicRes })];
-    if (state.symptomId > 0) {
-      jobs.push(postJSON('save_checklist', { trp_id: B.trpId, symptom_id: state.symptomId, results: state.symRes }));
-    }
+    // keep_symptoms: อาการที่ไม่ได้เลือกแล้ว (เคยบันทึกไว้) จะถูกลบผลตรวจออก
+    var jobs = [postJSON('save_checklist', { trp_id: B.trpId, symptom_id: 0, results: state.basicRes, keep_symptoms: state.symptomIds })];
+    state.symptomIds.forEach(function (sid) {
+      var res = {};
+      (state.symCache[sid] || []).forEach(function (it) { if (state.symRes[it.ci_id]) { res[it.ci_id] = state.symRes[it.ci_id]; } });
+      jobs.push(postJSON('save_checklist', { trp_id: B.trpId, symptom_id: sid, results: res }));
+    });
 
     Promise.all(jobs).then(function (resps) {
       for (var i = 0; i < resps.length; i++) {
         if (!resps[i] || !resps[i].ok) { throw new Error('save_checklist'); }
       }
       global.removeEventListener('beforeunload', onBeforeUnload);
-      global.location.href = 'save_rate?' + buildRateQuery();
+      clearDraft();
+      postRate();
     }).catch(function (err) {
       state.saving = false;
       btn.classList.remove('is-busy');
@@ -880,12 +1249,7 @@
   function showDemoResult() {
     var extra = ['trp_clean', 'trp_repeat_solder', 'trp_spray'].map(checkVal).filter(function (v) { return v; })
       .map(function (v) { return v.trim(); });
-    var lines = [
-      'อาการที่ประเมิน',
-      $('mn_ar_tech').value.trim(),
-      '',
-      'รายการซ่อม (' + state.parts.length + ')'
-    ].concat(state.parts.map(function (p, i) { return (i + 1) + '. ' + p.name; }));
+    var lines = [composeTech()];
     if (extra.length) { lines.push('', 'งานเพิ่มเติม: ' + extra.join(', ')); }
     if ($('trp_fw').value.trim()) { lines.push('UP FW: ' + $('trp_fw').value.trim()); }
     if ($('trp_repair_remarks').value.trim()) { lines.push('หมายเหตุ: ' + $('trp_repair_remarks').value.trim()); }
@@ -905,10 +1269,28 @@
     return el && el.checked ? el.value : '';
   }
 
-  function buildRateQuery() {
+  // ส่งแบบ POST (ข้อความสรุปยาว ส่งทาง URL อาจเกินขนาดที่ server รับ)
+  function postRate() {
+    var p = rateParams();
+    var form = doc.createElement('form');
+    form.method = 'post';
+    form.action = 'save_rate';
+    form.style.display = 'none';
+    Object.keys(p).forEach(function (k) {
+      var inp = doc.createElement('input');
+      inp.type = 'hidden';
+      inp.name = k;
+      inp.value = p[k];
+      form.appendChild(inp);
+    });
+    doc.body.appendChild(form);
+    form.submit();
+  }
+
+  function rateParams() {
     var p = {
       trp_id: B.trpId,
-      trp_repair_technician: $('mn_ar_tech').value,
+      trp_repair_technician: composeTech(),
       trp_rate_date: $('trp_rate_date').value,
       trp_clean: checkVal('trp_clean'),
       trp_repeat_solder: checkVal('trp_repeat_solder'),
@@ -922,9 +1304,7 @@
     p.trp_user_rate = B.userRate || '';
     p.trp_insurance = B.insurance || '';
     p.trp_status_job = B.statusJob || '';
-    return Object.keys(p).map(function (k) {
-      return encodeURIComponent(k) + '=' + encodeURIComponent(p[k]);
-    }).join('&');
+    return p;
   }
 
   function onBeforeUnload(e) {
@@ -958,9 +1338,289 @@
 
   // ---------- init ----------
 
+  // ---------- ร่างคำตอบ (กันงานหายเมื่อรีเฟรช/ปิดแท็บ) + กัน session หมดอายุ ----------
+
+  var DRAFT_KEY = 'mn_ar_draft_' + B.trpId;
+  var DRAFT_DAYS = 7;
+  var draftReady = false;
+  var draftTimer = null;
+
+  function saveDraft() {
+    if (B.demo || !draftReady || !state.dirty || state.saving) { return; }
+    var d = {
+      at: Date.now(),
+      basicRes: state.basicRes,
+      symRes: state.symRes,
+      symptomIds: state.symptomIds,
+      symptomChosen: state.symptomChosen,
+      parts: state.parts.map(function (p) { return { name: p.name, src: p.src }; }),
+      dismissed: state.dismissed,
+      tech: $('mn_ar_tech').value,
+      fw: $('trp_fw').value,
+      remarks: $('trp_repair_remarks').value,
+      rateDate: $('trp_rate_date').value,
+      clean: $('trp_clean').checked,
+      solder: $('trp_repeat_solder').checked,
+      spray: $('trp_spray').checked
+    };
+    try { global.localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch (err) { /* พื้นที่เต็ม/ปิด storage */ }
+  }
+
+  function queueDraft() {
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(saveDraft, 400);
+  }
+
+  function clearDraft() {
+    clearTimeout(draftTimer);
+    try { global.localStorage.removeItem(DRAFT_KEY); } catch (err) { /* ignore */ }
+  }
+
+  function readDraft() {
+    if (B.demo) { return null; }
+    try {
+      var d = JSON.parse(global.localStorage.getItem(DRAFT_KEY) || 'null');
+      if (!d || !d.at || Date.now() - d.at > DRAFT_DAYS * 86400000) { clearDraft(); return null; }
+      return d;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function applyDraft(d) {
+    Object.keys(d.basicRes || {}).forEach(function (k) { state.basicRes[k] = d.basicRes[k]; });
+    renderItems($('mn_ar_basic'), state.basicItems, state.basicRes, 'basic');
+    state.symRes = d.symRes || {};
+    state.symptomIds = (d.symptomIds || []).slice();
+    state.symptomChosen = !!d.symptomChosen;
+    state.symptomIds.forEach(ensureSymptom);
+    rebuildSymItems();
+    renderSymItems();
+    renderSymptoms();
+    state.parts = (d.parts || []).map(function (p) { return { name: p.name, src: p.src, fresh: false }; });
+    state.dismissed = d.dismissed || {};
+    $('mn_ar_tech').value = d.tech || '';
+    $('trp_fw').value = d.fw || '';
+    $('trp_repair_remarks').value = d.remarks || '';
+    if (d.rateDate) { $('trp_rate_date').value = d.rateDate; }
+    [['trp_clean', d.clean], ['trp_repeat_solder', d.solder], ['trp_spray', d.spray]].forEach(function (x) {
+      var cb = $(x[0]);
+      cb.checked = !!x[1];
+      cb.closest('.mn-ar-toggle').classList.toggle('is-on', cb.checked);
+    });
+    renderParts();
+    updateProgress();
+    syncMore();
+    state.dirty = true;
+  }
+
+  // เปิดส่วน “เพิ่มเติม” ให้เองเมื่อมีข้อมูล UP FW / หมายเหตุอยู่แล้ว
+  function syncMore() {
+    var more = doc.querySelector('.mn-ar-more');
+    if (more && ($('trp_fw').value.trim() || $('trp_repair_remarks').value.trim())) { more.open = true; }
+  }
+
+  function offerDraft() {
+    var d = readDraft();
+    if (!d) { draftReady = true; return; }
+    var when = new Date(d.at);
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    var txt = pad(when.getDate()) + '/' + pad(when.getMonth() + 1) + '/' + when.getFullYear() + ' ' + pad(when.getHours()) + ':' + pad(when.getMinutes());
+    var done = function (use) {
+      if (use) { applyDraft(d); } else { clearDraft(); }
+      draftReady = true;
+    };
+    if (typeof global.mnModalConfirm !== 'function') { done(global.confirm('พบผลตรวจที่ยังไม่ได้บันทึก (' + txt + ') ใช้ต่อไหม?')); return; }
+    global.mnModalConfirm('พบผลตรวจของใบงานนี้ที่ทำค้างไว้แต่ยังไม่ได้บันทึก (ล่าสุด ' + txt + ')\n\nใช้ต่อจากที่ค้างไว้ไหม? ถ้าเริ่มใหม่ ร่างนี้จะถูกลบ', {
+      title: 'มีงานที่ทำค้างไว้', variant: 'info', okLabel: 'ใช้ต่อ', cancelLabel: 'เริ่มใหม่',
+      onConfirm: function () { done(true); },
+      onCancel: function () { done(false); }
+    });
+  }
+
+  // ---------- รูปประกอบ (ย่อในเบราว์เซอร์ → อัปโหลด · โหมดทดลองแสดงในเครื่องอย่างเดียว) ----------
+
+  var photoSeq = 0;
+  state.photos = (B.photos || []).map(photoFromServer);
+
+  function photoFromServer(o) {
+    return { key: 'p' + o.id, id: o.id, ci: o.ci, by: o.by || '', at: o.at || '',
+      url: 'checklist_photo?id=' + o.id + '&s=f', thumb: 'checklist_photo?id=' + o.id + '&s=t' };
+  }
+
+  function photosOf(ci) {
+    return state.photos.filter(function (p) { return p.ci === ci && !p.pending; });
+  }
+
+  function photoStripInner(ci) {
+    var list = state.photos.filter(function (p) { return p.ci === ci; });
+    return list.map(function (p) {
+      return '<span class="mn-ar-photo' + (p.pending ? ' is-pending' : '') + '" data-key="' + p.key + '">'
+        + (p.pending
+          ? '<i class="fa fa-circle-o-notch fa-spin" aria-hidden="true"></i>'
+          : '<img src="' + esc(p.thumb) + '" alt="รูปประกอบ" loading="lazy" /><button type="button" class="mn-ar-photo__del" aria-label="ลบรูป"><i class="fa fa-times" aria-hidden="true"></i></button>')
+        + '</span>';
+    }).join('')
+      + '<label class="mn-ar-photo-add' + (list.length ? ' is-compact' : '') + '" title="แนบรูป (ถ่ายหรือเลือกจากเครื่อง)">'
+      + '<input type="file" accept="image/*" multiple data-ci="' + ci + '" hidden />'
+      + '<i class="fa fa-camera" aria-hidden="true"></i><span>' + (list.length ? 'เพิ่ม' : 'แนบรูป') + '</span></label>';
+  }
+
+  function refreshPhotos(ci) {
+    doc.querySelectorAll('.mn-ar-photos[data-ci="' + ci + '"]').forEach(function (el) { el.innerHTML = photoStripInner(ci); });
+    renderReport();
+  }
+
+  function loadImage(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('decode')); };
+      img.src = url;
+    });
+  }
+
+  // ย่อรูปให้ด้านยาวไม่เกิน max แล้วบีบเป็น JPEG (ข้อมูล GPS/EXIF หายไปด้วย)
+  function resizeImage(file, max, quality) {
+    var src = global.createImageBitmap
+      ? global.createImageBitmap(file, { imageOrientation: 'from-image' }).catch(function () { return loadImage(file); })
+      : loadImage(file);
+    return src.then(function (img) {
+      var w = img.width;
+      var h = img.height;
+      var s = Math.min(1, max / Math.max(w, h));
+      var c = doc.createElement('canvas');
+      c.width = Math.max(1, Math.round(w * s));
+      c.height = Math.max(1, Math.round(h * s));
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      return new Promise(function (resolve, reject) {
+        c.toBlob(function (b) { if (b) { resolve(b); } else { reject(new Error('decode')); } }, 'image/jpeg', quality);
+      });
+    });
+  }
+
+  function addPhotos(ci, files) {
+    var list = Array.prototype.slice.call(files || []);
+    if (list.length > 10) {
+      alertMsg('แนบได้ครั้งละไม่เกิน 10 รูป');
+      list = list.slice(0, 10);
+    }
+    list.forEach(function (file) {
+      if (file.type && file.type.indexOf('image/') !== 0) {
+        alertMsg('ไฟล์ “' + file.name + '” ไม่ใช่รูป');
+        return;
+      }
+      var p = { key: 'tmp' + (++photoSeq), ci: ci, pending: true };
+      state.photos.push(p);
+      refreshPhotos(ci);
+      Promise.all([resizeImage(file, 1600, 0.82), resizeImage(file, 320, 0.72)]).then(function (blobs) {
+        if (B.demo) {
+          p.url = URL.createObjectURL(blobs[0]);
+          p.thumb = URL.createObjectURL(blobs[1]);
+          p.pending = false;
+          return null;
+        }
+        var fd = new FormData();
+        fd.append('action', 'upload');
+        fd.append('trp_id', B.trpId);
+        fd.append('ci_id', ci);
+        fd.append('photo', blobs[0], 'photo.jpg');
+        fd.append('thumb', blobs[1], 'thumb.jpg');
+        return fetch('checklist_photo', { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+          .then(function (r) {
+            if (r.status === 401) { throw new Error('auth'); }
+            if (!r.ok) { throw new Error('อัปโหลดไม่สำเร็จ (' + r.status + ')'); }
+            return r.json();
+          })
+          .then(function (res) {
+            if (!res.ok) { throw new Error(res.error || 'อัปโหลดไม่สำเร็จ'); }
+            var s = photoFromServer(res.photo);
+            Object.keys(s).forEach(function (k) { p[k] = s[k]; });
+            p.pending = false;
+          });
+      }).catch(function (err) {
+        state.photos = state.photos.filter(function (x) { return x !== p; });
+        var m = err && err.message;
+        alertMsg(m === 'auth' ? 'หมดเวลาเข้าสู่ระบบ — ล็อกอินใหม่ในแท็บอื่นแล้วแนบรูปอีกครั้ง'
+          : (m === 'decode' ? 'เปิดไฟล์รูปนี้ไม่ได้ (เช่น HEIC) ลองถ่ายใหม่ หรือแปลงเป็น JPG ก่อน' : (m || 'อัปโหลดไม่สำเร็จ')), 'danger');
+      }).then(function () { refreshPhotos(ci); });
+    });
+  }
+
+  function findPhoto(key) {
+    for (var i = 0; i < state.photos.length; i++) { if (state.photos[i].key === key) { return state.photos[i]; } }
+    return null;
+  }
+
+  function deletePhoto(key) {
+    var p = findPhoto(key);
+    if (!p) { return; }
+    var go = function () {
+      var done = function () {
+        state.photos = state.photos.filter(function (x) { return x !== p; });
+        refreshPhotos(p.ci);
+      };
+      if (B.demo) { done(); return; }
+      var fd = new FormData();
+      fd.append('action', 'delete');
+      fd.append('trp_id', B.trpId);
+      fd.append('id', p.id);
+      fetch('checklist_photo', { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { return r.json(); })
+        .then(function (res) { if (!res.ok) { throw new Error(res.error); } done(); })
+        .catch(function (err) { alertMsg((err && err.message) || 'ลบรูปไม่สำเร็จ', 'danger'); });
+    };
+    if (typeof global.mnModalConfirm === 'function') {
+      global.mnModalConfirm('ลบรูปนี้ออกจากใบงาน?', { title: 'ลบรูป', variant: 'danger', okLabel: 'ลบรูป', cancelLabel: 'ยกเลิก', onConfirm: go });
+    } else if (global.confirm('ลบรูปนี้ออกจากใบงาน?')) {
+      go();
+    }
+  }
+
+  function photoTitle(ci) {
+    if (!ci) { return 'รูปประกอบเพิ่มเติม'; }
+    var it = findItem('basic', ci) || findItem('sym', ci);
+    return it ? it.ci_question : 'รูปประกอบ';
+  }
+
+  // ดูรูปขนาดใหญ่ — ใช้หน้าต่างกลาง js/mn-photo-lightbox.js (เลื่อนดูรูปอื่นของข้อเดียวกัน)
+  function openLightbox(ci, key) {
+    var list = photosOf(ci);
+    if (!list.length || typeof global.mnPhotoLightbox !== 'function') { return; }
+    var start = 0;
+    list.forEach(function (p, i) { if (p.key === key) { start = i; } });
+    global.mnPhotoLightbox(list.map(function (p) {
+      return { url: p.url, caption: photoTitle(ci) + (p.by ? '  | ' + p.by : '') };
+    }), start);
+  }
+
+  function onPhotoClick(e) {
+    var del = e.target.closest('.mn-ar-photo__del');
+    if (del) { deletePhoto(del.closest('.mn-ar-photo').getAttribute('data-key')); return; }
+    var img = e.target.closest('.mn-ar-photo img');
+    if (img) {
+      var ph = findPhoto(img.closest('.mn-ar-photo').getAttribute('data-key'));
+      if (ph) { openLightbox(ph.ci, ph.key); }
+      return;
+    }
+    var pic = e.target.closest('.mn-ar-report__pic');
+    if (pic) { openLightbox(parseInt(pic.getAttribute('data-ci'), 10) || 0); }
+  }
+
+  function onPhotoInput(e) {
+    var t = e.target;
+    if (t.type !== 'file' || !t.hasAttribute('data-ci')) { return; }
+    addPhotos(parseInt(t.getAttribute('data-ci'), 10) || 0, t.files);
+    t.value = '';
+  }
+
   function initForm() {
     var s = B.saved || {};
-    $('mn_ar_tech').value = s.tech || '';
+    $('mn_ar_tech').value = commentFromSaved(s.tech);
     $('trp_fw').value = s.fw || '';
     $('trp_repair_remarks').value = s.remarks || '';
     $('trp_clean').checked = !!s.clean;
@@ -984,21 +1644,43 @@
   }
 
   function init() {
+    var regen = $('mn_ar_regen_comment');
+    if (regen) {
+      regen.addEventListener('click', function () {
+        var go = function () { syncComment(true); state.dirty = true; queueDraft(); };
+        var el = $('mn_ar_tech');
+        if (el.value.trim() !== '' && el.value.trim() !== autoComment.trim() && typeof global.mnModalConfirm === 'function') {
+          global.mnModalConfirm('ข้อความในช่องความเห็นช่างที่แก้ไว้จะถูกแทนที่ด้วยร่างใหม่จากผลตรวจ', { title: 'ร่างใหม่จากผลตรวจ', variant: 'warning', okLabel: 'ร่างใหม่', cancelLabel: 'ยกเลิก', onConfirm: go });
+          return;
+        }
+        go();
+      });
+    }
     syncHeaderOffset();
     global.addEventListener('resize', syncHeaderOffset);
     global.addEventListener('scroll', syncStuck, { passive: true });
     global.addEventListener('beforeunload', onBeforeUnload);
 
     initForm();
+    refreshPhotos(0);
+    $('mn_ar').addEventListener('click', onPhotoClick);
+    $('mn_ar').addEventListener('change', onPhotoInput);
+    syncMore();
     renderParts();
 
-    if (B.savedSymptomId > 0) {
-      state.symptomId = B.savedSymptomId;
+    var savedSyms = B.savedSymptomIds || (B.savedSymptomId > 0 ? [B.savedSymptomId] : []);
+    if (savedSyms.length) {
+      state.symptomIds = savedSyms.slice().sort(function (a, b) { return symOrder(a) - symOrder(b); });
       state.symptomChosen = true;
-      loadSymptom(B.savedSymptomId);
+      state.symptomIds.forEach(ensureSymptom);
+      renderSymItems();
     }
     renderSymptoms();
-    loadBasic();
+    loadBasic().then(offerDraft);
+
+    // เก็บร่างทุกครั้งที่ช่างกด/พิมพ์ และส่งสัญญาณทุก 5 นาที กัน session หมดอายุระหว่างตรวจ
+    ['click', 'input', 'change'].forEach(function (ev) { $('mn_ar').addEventListener(ev, queueDraft); });
+    setInterval(function () { getJSON('checklist_settings_api', { action: 'ping' }).catch(function () {}); }, 5 * 60 * 1000);
 
     ['mn_ar_basic', 'mn_ar_sym_items'].forEach(function (id) {
       $(id).addEventListener('click', onItemsClick);
@@ -1032,15 +1714,6 @@
       });
     }
 
-    $('mn_ar_regen').addEventListener('click', function () {
-      var tech = $('mn_ar_tech');
-      var desc = buildDescription(collectFindings().findings);
-      tech.value = desc;
-      state.autoTech = desc;
-      state.dirty = true;
-      restartAnim(this, 'is-spin');
-      restartAnim(tech, 'is-flash');
-    });
 
     goTo(1, false, true);
   }

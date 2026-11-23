@@ -519,3 +519,82 @@
 .mn-checklist-settings-page a.mn-cls-btn--try { text-decoration: none; color: var(--cls-accent); border-color: #b9dbf1; background: var(--cls-accent-soft); }
 .mn-checklist-settings-page a.mn-cls-btn--try:hover { background: #d9ebf8; }
 .mn-checklist-settings-page a.mn-cls-btn--try .fa { font-size: 15px; }
+
+/* ค่าเริ่มต้นของช่องรายละเอียด (แสดงเมื่อติ๊ก “ให้พิมพ์รายละเอียด”) */
+.mn-checklist-settings-page .mn-cls-notedef { resize: vertical; min-height: 34px; line-height: 1.45; font-size: 12.5px; animation: mnClsRise 0.2s var(--cls-ease) both; }
+.mn-checklist-settings-page .mn-cls-notedef[hidden] { display: none; }
+
+/* ---------- ชุดอะไหล่ (bundles pane) ---------- */
+
+.mn-checklist-settings-page .mn-cls-bundles { display: flex; flex-direction: column; gap: 10px; }
+.mn-checklist-settings-page .mn-cls-bundles .mn-cls-card__head p { margin-bottom: 0; max-width: 72ch; line-height: 1.55; }
+.mn-checklist-settings-page .mn-cls-bempty { padding: 18px; text-align: center; color: var(--cls-ink-3); font-size: 13px; background: var(--cls-bg); border-radius: 10px; }
+.mn-checklist-settings-page .mn-cls-bempty .fa { margin-right: 4px; }
+.mn-checklist-settings-page .mn-cls-bundle { border: 1px solid var(--cls-line); border-radius: 10px; padding: 10px 12px; animation: mnClsRise 0.25s var(--cls-ease) both; }
+.mn-checklist-settings-page .mn-cls-bundle__head { display: flex; align-items: center; gap: 8px; }
+.mn-checklist-settings-page .mn-cls-bundle__ic { color: var(--cls-accent); font-size: 15px; }
+.mn-checklist-settings-page .mn-cls-bundle__name { flex: 1; min-width: 0; font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mn-checklist-settings-page .mn-cls-bundle__members { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 0 23px; }
+.mn-checklist-settings-page .mn-cls-bchip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; line-height: 1.3;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #f1f4f8; color: var(--cls-ink-2);
+}
+.mn-checklist-settings-page .mn-cls-bchip.is-missing { background: var(--cls-bad-soft); color: var(--cls-bad); text-decoration: line-through; }
+.mn-checklist-settings-page .mn-cls-bchip.is-on { background: var(--cls-accent-soft); color: #0c4a6e; padding-right: 4px; animation: mnClsRise 0.2s var(--cls-ease) both; }
+.mn-checklist-settings-page .mn-cls-bchip button {
+  appearance: none; -webkit-appearance: none; border: 0; background: transparent;
+  width: 18px; height: 18px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: inherit; font-size: 11px; cursor: pointer; opacity: 0.6;
+}
+.mn-checklist-settings-page .mn-cls-bchip button:hover { opacity: 1; background: rgba(3, 105, 161, 0.12); }
+.mn-checklist-settings-page .mn-cls-bundle--edit { border-color: #9fcbe8; box-shadow: 0 0 0 3px var(--cls-accent-soft); display: flex; flex-direction: column; gap: 2px; }
+.mn-checklist-settings-page .mn-cls-bundle--edit .mn-cls-label .mn-cls-pill { margin-left: 4px; font-weight: 500; }
+.mn-checklist-settings-page .mn-cls-bsel { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; min-height: 24px; align-items: center; }
+.mn-checklist-settings-page .mn-cls-bpick {
+  list-style: none; margin: 6px 0 0; padding: 4px;
+  max-height: 260px; overflow: auto;
+  border: 1px solid var(--cls-line); border-radius: 8px;
+}
+.mn-checklist-settings-page .mn-cls-bpick__row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; border-radius: 6px;
+  font-size: 13px; color: var(--cls-ink); cursor: pointer;
+  transition: background 0.12s;
+}
+.mn-checklist-settings-page .mn-cls-bpick__row:hover { background: var(--cls-bg); }
+.mn-checklist-settings-page .mn-cls-bpick__row.is-on { background: var(--cls-accent-soft); }
+.mn-checklist-settings-page .mn-cls-bpick__row input { margin: 0; flex-shrink: 0; }
+.mn-checklist-settings-page .mn-cls-bundles .mn-cls-add:disabled { opacity: 0.45; cursor: default; background: transparent; }
+@media (prefers-reduced-motion: reduce) {
+  .mn-checklist-settings-page .mn-cls-bundle,
+  .mn-checklist-settings-page .mn-cls-bchip.is-on { animation: none; }
+}
+.mn-checklist-settings-page .mn-cls-bundle--edit .mn-cls-actions { position: static; margin: 6px 0 0; padding: 10px 0 0; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* กลุ่มตัวเลือกที่เลือกได้ข้อเดียว */
+.mn-checklist-settings-page .mn-cls-optgrp { color: var(--cls-ink-3); }
+.mn-checklist-settings-page .mn-cls-optgrp.is-set { color: #6d28d9; background: #f2ecfd; border-color: #c9b3f2; font-weight: 500; }
+.mn-checklist-settings-page .mn-cls-pv-grp { margin-left: 3px; font-size: 10px; font-weight: 700; color: #6d28d9; }
+
+/* ปุ่มดึงการตั้งค่าจาก server (แสดงเฉพาะเครื่องที่มี config/checklist_sync.local.php) */
+.mn-checklist-settings-page .mn-cls-btn--sync { width: 100%; justify-content: center; margin: -2px 0 10px; color: var(--cls-accent); border-style: dashed; }
+.mn-checklist-settings-page .mn-cls-btn--sync:hover { background: var(--cls-accent-soft); border-color: #9fcbe8; }
+.mn-checklist-settings-page .mn-cls-btn--sync.is-busy { opacity: 0.7; cursor: progress; }
+
+/* ---------- เหตุผลเปลี่ยนอะไหล่ (reasons pane) ---------- */
+.mn-checklist-settings-page .mn-cls-reasons { display: flex; flex-direction: column; gap: 10px; }
+.mn-checklist-settings-page .mn-cls-reasons .mn-cls-card__head p { margin-bottom: 0; max-width: 78ch; line-height: 1.6; }
+.mn-checklist-settings-page .mn-cls-reasons .mn-cls-card__head p b { font-weight: 500; color: var(--cls-ink); }
+.mn-checklist-settings-page .mn-cls-reasons__all { white-space: normal; }
+.mn-checklist-settings-page .mn-cls-rlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.mn-checklist-settings-page .mn-cls-rrow { border: 1px solid var(--cls-line); border-radius: 10px; padding: 10px 12px; animation: mnClsRise 0.25s var(--cls-ease) both; }
+.mn-checklist-settings-page .mn-cls-rrow.is-set { border-color: #9fd6b1; background: #fbfefc; }
+.mn-checklist-settings-page .mn-cls-rrow__name { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13.5px; margin-bottom: 6px; color: var(--cls-ink); }
+.mn-checklist-settings-page .mn-cls-rrow__name .fa { color: var(--cls-ink-3); font-size: 12px; }
+.mn-checklist-settings-page .mn-cls-rrow.is-set .mn-cls-rrow__name .fa { color: var(--cls-good); }
+.mn-checklist-settings-page .mn-cls-rrow__st { margin-left: auto; font-size: 12px; font-weight: 400; color: var(--cls-good); }
+.mn-checklist-settings-page .mn-cls-rrow__in { width: 100%; resize: vertical; line-height: 1.55; }

@@ -18,6 +18,8 @@ require_once __DIR__ . '/includes/detail_job_edit_helpers.php';
 require_once __DIR__ . '/includes/status_logistic_helpers.php';
 require_once __DIR__ . '/includes/bootstrap_logistic_recorder.php';
 require_once __DIR__ . '/includes/checklist_helpers.php';
+require_once __DIR__ . '/includes/assess_side_panels.php';
+require_once __DIR__ . '/includes/checklist_photo_helpers.php';
 
 $trp_id       = maintenance_flow_get_int($_GET, 'trp_id', 0);
 $ar_row          = null;
@@ -26,12 +28,25 @@ $locked       = false;
 $locked_ts_id = 0;
 $supported    = false;
 $symptoms     = array();
-$saved_symptom_id = 0;
+$bundles      = array();
+$reasons      = array();
+$history      = array();
+$photos       = array();
+$saved_symptom_ids = array();
+$checklist_saved   = false;
 
 if ($trp_id > 0) {
     $ar_row = maintenance_update_rate_fetch_bundle($connect, $trp_id);
     if (is_array($ar_row)) {
         $locked_ts_id = (int) (isset($ar_row['trp_ts_id']) ? $ar_row['trp_ts_id'] : 0);
+        $history      = mn_ar_fetch_history($connect, isset($ar_row['trp_sn']) ? $ar_row['trp_sn'] : '', $locked_ts_id);
+        $photos       = mn_photo_list($connect, $trp_id);
+        // รูปของงานซ่อมครั้งก่อน (แสดงในแผงประวัติ)
+        $hist_photos  = mn_photo_by_trps($connect, array_map(function ($h) { return isset($h['trp_id']) ? $h['trp_id'] : 0; }, $history));
+        foreach ($history as &$h_row) {
+            $h_row['photos'] = !empty($h_row['trp_id']) && isset($hist_photos[$h_row['trp_id']]) ? $hist_photos[$h_row['trp_id']] : array();
+        }
+        unset($h_row);
         $locked       = maintenance_detail_job_repair_rate_edit_locked($connect, $trp_id);
         $product      = (string) (isset($ar_row['trp_product']) ? $ar_row['trp_product'] : '');
         maintenance_checklist_ensure_tables($connect);
@@ -42,8 +57,11 @@ if ($trp_id > 0) {
                 maintenance_update_rate_resolve_rate_product($product)
             );
             $symptoms = maintenance_checklist_fetch_symptoms($connect, $product);
+            $bundles  = maintenance_checklist_fetch_bundles($connect, $product);
+            $reasons  = maintenance_checklist_fetch_rate_reasons($connect, $product);
             foreach (maintenance_checklist_fetch_all_job_headers($connect, $trp_id) as $sid => $h) {
-                if ($sid > 0) { $saved_symptom_id = (int) $sid; break; }
+                $checklist_saved = true;
+                if ($sid > 0) { $saved_symptom_ids[] = (int) $sid; }
             }
         }
     }
@@ -75,6 +93,7 @@ function mn_ar_f($row, $key)
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" />
 <link rel="stylesheet" href="css/mn-page-addjob.css" />
 <link rel="stylesheet" href="css/mn-page-assess-repair.css?v=<?php echo filemtime(__DIR__ . '/css/mn-page-assess-repair.css'); ?>" />
+<link rel="stylesheet" href="css/mn-photo-lightbox.css?v=<?php echo filemtime(__DIR__ . '/css/mn-photo-lightbox.css'); ?>" />
 <?php
 $mnModalAssetPrefix = '';
 require_once __DIR__ . '/includes/mn_modal_assets.php';
@@ -133,8 +152,12 @@ $boot = array(
     'trpId'          => $trp_id,
     'product'        => mn_ar_f($ar_row, 'trp_product'),
     'symptoms'       => $sym_out,
-    'savedSymptomId' => $saved_symptom_id,
+    'savedSymptomIds' => $saved_symptom_ids,
+    'checklistSaved' => $checklist_saved,
     'rateOptions'    => array_values($rate_options),
+    'bundles'        => $bundles,
+    'rateReasons'    => (object) $reasons,
+    'photos'         => $photos,
     'saved'          => array(
         'tech'    => mn_ar_f($ar_row, 'trp_repair_technician'),
         'parts'   => $saved_parts,
@@ -160,6 +183,21 @@ $sn = mn_ar_f($ar_row, 'trp_sn');
     </div>
   </div>
   <div class="content mn-workspace">
+    <?php
+    echo mn_ar_info_panel(array(
+        'product'   => $boot['product'],
+        'sn'        => $sn,
+        'receive'   => mn_ar_f($ar_row, 'trp_receive_date'),
+        'company'   => $company,
+        'buy'       => mn_ar_f($ar_row, 'trp_buy_date'),
+        'age'       => mn_ar_f($ar_row, 'trp_repair_age'),
+        'insurance' => $insurance,
+        'ins_in'    => $ins_in,
+        'inform'    => mn_ar_f($ar_row, 'trp_repair_inform'),
+        'remarks'   => mn_ar_f($ar_row, 'ts_remarks'),
+    ));
+    echo mn_ar_history_panel($history);
+    ?>
     <main class="mn-ar" id="mn_ar">
 
       <header class="mn-ar-top">
@@ -203,9 +241,9 @@ $sn = mn_ar_f($ar_row, 'trp_sn');
           </div>
           <?php } ?>
           <details class="mn-ar-history">
-            <summary>ประวัติการซ่อม <i class="fa fa-angle-down" aria-hidden="true"></i></summary>
+            <summary>ประวัติการซ่อม (<?php echo count($history); ?>) <i class="fa fa-angle-down" aria-hidden="true"></i></summary>
             <div class="mn-ar-history__body">
-              <?php echo check_history_repair($locked_ts_id, $sn); ?>
+              <?php echo mn_ar_history_list($history); ?>
             </div>
           </details>
         </section>
@@ -223,8 +261,8 @@ $sn = mn_ar_f($ar_row, 'trp_sn');
             <h1 class="mn-ar-h">ตรวจตามอาการ</h1>
             <span class="mn-ar-progress" id="mn_ar_sym_progress"></span>
           </div>
-          <p class="mn-ar-sub">เลือกอาการที่พบ หรือกด “ไม่มีอาการเฉพาะ” เพื่อข้าม</p>
-          <div class="mn-ar-chips" id="mn_ar_symptoms" role="radiogroup" aria-label="อาการ"></div>
+          <p class="mn-ar-sub">เลือกอาการที่พบ <b>เลือกได้หลายอาการ</b> หรือกด “ไม่มีอาการเฉพาะ” เพื่อข้าม <span class="mn-ar-sub__count" id="mn_ar_sym_count"></span></p>
+          <div class="mn-ar-chips" id="mn_ar_symptoms" role="group" aria-label="อาการ (เลือกได้หลายอาการ)"></div>
           <ul class="mn-ar-items" id="mn_ar_sym_items"></ul>
         </section>
 
@@ -235,10 +273,19 @@ $sn = mn_ar_f($ar_row, 'trp_sn');
 
           <div class="mn-ar-field">
             <div class="mn-ar-field__head">
-              <label class="mn-ar-label" for="mn_ar_tech">อาการที่ประเมิน</label>
-              <button type="button" class="mn-ar-link" id="mn_ar_regen"><i class="fa fa-refresh" aria-hidden="true"></i> สรุปใหม่จากผลตรวจ</button>
+              <span class="mn-ar-label">สรุปการประเมิน</span>
+              <span class="mn-ar-field__hint">ส่งให้ฝ่ายเสนอราคา | ระบบเขียนจากผลตรวจและรายการซ่อม</span>
             </div>
-            <textarea id="mn_ar_tech" class="mn-ar-input mn-ar-textarea" rows="3"></textarea>
+            <div class="mn-ar-report" id="mn_ar_report" aria-live="polite"></div>
+          </div>
+
+          <div class="mn-ar-field">
+            <div class="mn-ar-field__head">
+              <label class="mn-ar-label" for="mn_ar_tech">ความเห็นช่าง / เหตุผลการเสนอเปลี่ยนอะไหล่</label>
+              <button type="button" class="mn-ar-link" id="mn_ar_regen_comment"><i class="fa fa-refresh" aria-hidden="true"></i> ร่างใหม่จากผลตรวจ</button>
+              <span class="mn-ar-field__hint">ระบบร่างให้จากสิ่งที่ตรวจพบและรายการซ่อม แก้ไขหรือเติมได้ | บันทึกต่อท้ายสรุปการประเมิน</span>
+            </div>
+            <textarea id="mn_ar_tech" class="mn-ar-input mn-ar-textarea mn-ar-textarea--comment" rows="6" placeholder="อธิบายเหตุผลการเสนอเปลี่ยนอะไหล่ สาเหตุที่น่าจะเป็น หรือสิ่งที่ควรแจ้งลูกค้า"></textarea>
           </div>
 
           <div class="mn-ar-field">
@@ -267,21 +314,34 @@ $sn = mn_ar_f($ar_row, 'trp_sn');
             </div>
           </div>
 
-          <div class="mn-ar-grid2">
-            <div class="mn-ar-field">
-              <label class="mn-ar-label" for="trp_fw">UP FW</label>
-              <input type="text" id="trp_fw" class="mn-ar-input" />
+          <div class="mn-ar-field">
+            <div class="mn-ar-field__head">
+              <span class="mn-ar-label">รูปประกอบเพิ่มเติม</span>
+              <span class="mn-ar-field__hint">รูปที่ไม่เจาะจงข้อตรวจ เช่น สภาพเครื่องโดยรวม | แนบรายข้อได้ที่ปุ่มกล้องใต้แต่ละข้อ</span>
             </div>
-            <div class="mn-ar-field">
-              <label class="mn-ar-label" for="trp_rate_date">วันที่ประเมิน</label>
-              <input type="date" id="trp_rate_date" class="mn-ar-input" value="<?php echo mn_ar_h($rate_date); ?>" />
-            </div>
+            <div class="mn-ar-photos mn-ar-photos--general" data-ci="0"></div>
           </div>
 
-          <div class="mn-ar-field">
-            <label class="mn-ar-label" for="trp_repair_remarks">หมายเหตุ</label>
-            <textarea id="trp_repair_remarks" class="mn-ar-input mn-ar-textarea" rows="2"></textarea>
-          </div>
+          <details class="mn-ar-more">
+            <summary><span>เพิ่มเติม</span> <small>UP FW | วันที่ประเมิน | หมายเหตุ</small> <i class="fa fa-angle-down" aria-hidden="true"></i></summary>
+            <div class="mn-ar-more__body">
+            <div class="mn-ar-grid2">
+              <div class="mn-ar-field">
+                <label class="mn-ar-label" for="trp_fw">UP FW</label>
+                <input type="text" id="trp_fw" class="mn-ar-input" />
+              </div>
+              <div class="mn-ar-field">
+                <label class="mn-ar-label" for="trp_rate_date">วันที่ประเมิน</label>
+                <input type="date" id="trp_rate_date" class="mn-ar-input" value="<?php echo mn_ar_h($rate_date); ?>" />
+              </div>
+            </div>
+
+            <div class="mn-ar-field">
+              <label class="mn-ar-label" for="trp_repair_remarks">หมายเหตุ</label>
+              <textarea id="trp_repair_remarks" class="mn-ar-input mn-ar-textarea" rows="2"></textarea>
+            </div>
+            </div>
+          </details>
 
           <p class="mn-ar-assessor">ผู้ประเมิน <strong><?php echo mn_ar_h($user_rate !== '' ? $user_rate : '—'); ?></strong></p>
         </section>
@@ -298,6 +358,7 @@ $sn = mn_ar_f($ar_row, 'trp_sn');
 <script type="text/javascript">
 window.mnAr = <?php echo json_encode($boot, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP); ?>;
 </script>
+<script type="text/javascript" src="js/mn-photo-lightbox.js?v=<?php echo filemtime(__DIR__ . '/js/mn-photo-lightbox.js'); ?>"></script>
 <script type="text/javascript" src="js/assess_repair-page.js?v=<?php echo filemtime(__DIR__ . '/js/assess_repair-page.js'); ?>"></script>
 </body>
 </html>

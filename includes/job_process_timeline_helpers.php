@@ -172,7 +172,7 @@ if (!function_exists('maintenance_job_process_render_timeline_line')) {
             echo '<span class="mn-jp-logistics-inline">';
             echo 'ขนส่ง: ';
             echo maintenance_status_logistic_h($lg !== '' ? $lg : '—');
-            echo ' · Tracking: ';
+            echo ' | Tracking: ';
             if ($tk !== '') {
                 $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT;
                 if (defined('JSON_HEX_AMP')) {

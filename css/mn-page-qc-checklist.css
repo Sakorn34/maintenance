@@ -469,3 +469,6 @@
   opacity: 0.94;
   outline: none;
 }
+
+/* อาการที่ช่างประเมิน (สรุปหลายบรรทัดจาก assess_repair) */
+.mn-addjob-page.mn-qc-checklist-page .mn-qc-dl__row--emph dd { white-space: pre-wrap; }

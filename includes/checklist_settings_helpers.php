@@ -98,13 +98,17 @@ if (!function_exists('mn_cls_item_out')) {
         $labels = (string) $r['ci_opts'] !== '' ? explode('|', (string) $r['ci_opts']) : array();
         $rates = json_decode((string) $r['ci_opt_rates'], true);
         $colors = json_decode((string) $r['ci_opt_colors'], true);
+        $notes = json_decode((string) $r['ci_opt_notes'], true);
+        $groups = json_decode((string) $r['ci_opt_groups'], true);
         $options = array();
         foreach ($labels as $i => $raw) {
             $raw = trim($raw);
             $note = substr($raw, -5) === ':note';
             $rate = is_array($rates) ? (isset($rates[$i]) ? (string) $rates[$i] : '') : ($i > 0 ? (string) $r['ci_rate_on_fail'] : '');
             $color = is_array($colors) && isset($colors[$i]) ? (string) $colors[$i] : '';
-            $options[] = array('label' => $note ? substr($raw, 0, -5) : $raw, 'note' => $note, 'rate' => $rate, 'color' => $color);
+            $note_default = $note && is_array($notes) && isset($notes[$i]) ? (string) $notes[$i] : '';
+            $group = is_array($groups) && isset($groups[$i]) ? (int) $groups[$i] : 0;
+            $options[] = array('label' => $note ? substr($raw, 0, -5) : $raw, 'note' => $note, 'note_default' => $note_default, 'rate' => $rate, 'color' => $color, 'group' => $group);
         }
         return array(
             'id'         => (int) $r['ci_id'],
@@ -145,7 +149,7 @@ if (!function_exists('mn_cls_load')) {
         $items = array();
         $rows = mn_cls_query_all($connect,
             'SELECT ci_id, ci_symptom_id, ci_group_id, ci_step, ci_question, ci_hint, ci_rate_on_fail, ci_unit,'
-            . ' ci_val_min, ci_val_max, ci_opts, ci_opt_rates, ci_opt_colors, ci_multi, ci_auto_source, ci_enabled'
+            . ' ci_val_min, ci_val_max, ci_opts, ci_opt_rates, ci_opt_colors, ci_multi, ci_opt_notes, ci_opt_groups, ci_auto_source, ci_enabled'
             . ' FROM cl_item WHERE ci_product = ? ORDER BY ci_symptom_id, ci_step, ci_id',
             's', array($product)
         );
@@ -162,7 +166,65 @@ if (!function_exists('mn_cls_load')) {
             'groups'     => $groups,
             'items'      => $items,
             'rates'      => maintenance_update_rate_fetch_rate_options($connect, maintenance_update_rate_resolve_rate_product($product)),
+            'bundles'    => maintenance_checklist_fetch_bundles($connect, $product),
+            'reasons'    => (object) maintenance_checklist_fetch_rate_reasons($connect, $product),
         );
+    }
+}
+
+/**
+ * บันทึกชุดรายการซ่อม — $old = ชื่อรายการชุดเดิม (กรณีเปลี่ยนรายการชุด) ว่าง = สร้างใหม่
+ */
+if (!function_exists('mn_cls_save_bundle')) {
+    function mn_cls_save_bundle($connect, $product, $bundle, $old, array $members)
+    {
+        $rates = maintenance_update_rate_fetch_rate_options($connect, maintenance_update_rate_resolve_rate_product($product));
+        $bundle = trim((string) $bundle);
+        $old = trim((string) $old);
+        if ($bundle === '' || !in_array($bundle, $rates, true)) { return array('ok' => false, 'error' => 'เลือกรายการชุดจากรายการซ่อมของรุ่นนี้'); }
+        $clean = array();
+        foreach ($members as $m) {
+            $m = trim((string) $m);
+            if ($m !== '' && $m !== $bundle && in_array($m, $rates, true) && !in_array($m, $clean, true)) { $clean[] = $m; }
+        }
+        if (!$clean) { return array('ok' => false, 'error' => 'เลือกรายการที่รวมอยู่ในชุดอย่างน้อย 1 รายการ'); }
+        if ($bundle !== $old) {
+            $dup = mn_cls_query_all($connect, 'SELECT crb_id FROM cl_rate_bundle WHERE crb_product = ? AND crb_bundle = ? LIMIT 1', 'ss', array($product, $bundle));
+            if ($dup) { return array('ok' => false, 'error' => '“' . $bundle . '” ตั้งเป็นชุดไว้แล้ว'); }
+        }
+        mysqli_begin_transaction($connect);
+        $ok = mn_cls_exec($connect, 'DELETE FROM cl_rate_bundle WHERE crb_product = ? AND crb_bundle IN (?, ?)', 'sss', array($product, $bundle, $old !== '' ? $old : $bundle));
+        foreach ($clean as $m) {
+            $ok = $ok && mn_cls_exec($connect, 'INSERT INTO cl_rate_bundle (crb_product, crb_bundle, crb_member) VALUES (?, ?, ?)', 'sss', array($product, $bundle, $m));
+        }
+        if ($ok) { mysqli_commit($connect); } else { mysqli_rollback($connect); }
+        return array('ok' => (bool) $ok, 'error' => $ok ? '' : 'บันทึกไม่สำเร็จ');
+    }
+}
+
+/**
+ * บันทึกเหตุผลทางเทคนิคของรายการซ่อม (ว่าง = ลบ)
+ */
+if (!function_exists('mn_cls_save_reason')) {
+    function mn_cls_save_reason($connect, $product, $rate, $reason)
+    {
+        $rates = maintenance_update_rate_fetch_rate_options($connect, maintenance_update_rate_resolve_rate_product($product));
+        $rate = trim((string) $rate);
+        if ($rate === '' || !in_array($rate, $rates, true)) { return array('ok' => false, 'error' => 'ไม่พบรายการซ่อมนี้ในรุ่น'); }
+        $reason = mb_substr(trim((string) $reason), 0, 1000, 'UTF-8');
+        $ok = mn_cls_exec($connect, 'DELETE FROM cl_rate_reason WHERE crr_product = ? AND crr_rate = ?', 'ss', array($product, $rate));
+        if ($ok && $reason !== '') {
+            $ok = mn_cls_exec($connect, 'INSERT INTO cl_rate_reason (crr_product, crr_rate, crr_reason) VALUES (?, ?, ?)', 'sss', array($product, $rate, $reason));
+        }
+        return array('ok' => (bool) $ok, 'error' => $ok ? '' : 'บันทึกไม่สำเร็จ');
+    }
+}
+
+if (!function_exists('mn_cls_delete_bundle')) {
+    function mn_cls_delete_bundle($connect, $product, $bundle)
+    {
+        $ok = mn_cls_exec($connect, 'DELETE FROM cl_rate_bundle WHERE crb_product = ? AND crb_bundle = ?', 'ss', array($product, trim((string) $bundle)));
+        return array('ok' => (bool) $ok, 'error' => $ok ? '' : 'ลบไม่สำเร็จ');
     }
 }
 
@@ -209,6 +271,8 @@ if (!function_exists('mn_cls_save_item')) {
         $opts = null;
         $opt_rates = null;
         $opt_colors = null;
+        $opt_notes = null;
+        $opt_groups = null;
         $multi = 0;
         $unit = '';
         $min = null;
@@ -220,6 +284,8 @@ if (!function_exists('mn_cls_save_item')) {
             $labels = array();
             $rates = array();
             $colors = array();
+            $notes = array();
+            $groups = array();
             foreach ((isset($in['options']) && is_array($in['options']) ? $in['options'] : array()) as $o) {
                 $label = str_replace(array('|', ':note'), array('/', ''), mn_cls_clip(isset($o['label']) ? $o['label'] : '', 100));
                 if ($label === '') { continue; }
@@ -227,13 +293,19 @@ if (!function_exists('mn_cls_save_item')) {
                 $rates[] = count($rates) === 0 ? '' : mn_cls_clip(isset($o['rate']) ? $o['rate'] : '', 200);
                 $c = isset($o['color']) ? (string) $o['color'] : '';
                 $colors[] = in_array($c, mn_cls_colors(), true) ? $c : '';
+                // ค่าเริ่มต้นช่องรายละเอียด — ยาวไม่เกินช่อง cji_note (200)
+                $notes[] = !empty($o['note']) && count($labels) > 1 ? mn_cls_clip(isset($o['note_default']) ? $o['note_default'] : '', 200) : '';
+                $g = isset($o['group']) ? (int) $o['group'] : 0;
+                $groups[] = count($labels) > 1 && $g >= 1 && $g <= 3 ? $g : 0;
             }
             if (count($labels) < 2) { return array('ok' => false, 'error' => 'ปุ่มตัวเลือกต้องมีอย่างน้อย 2 ตัวเลือก'); }
             if (count($labels) > 6) { return array('ok' => false, 'error' => 'ตัวเลือกได้สูงสุด 6 ตัว'); }
             $opts = implode('|', $labels);
             $opt_rates = json_encode($rates, JSON_UNESCAPED_UNICODE);
             $opt_colors = implode('', $colors) !== '' ? json_encode($colors) : null;
+            $opt_notes = implode('', $notes) !== '' ? json_encode($notes, JSON_UNESCAPED_UNICODE) : null;
             $multi = !empty($in['multi']) ? 1 : 0;
+            $opt_groups = $multi && array_sum($groups) > 0 ? json_encode($groups) : null;
             $rate_fail = '';
             foreach ($rates as $r) { if ($r !== '') { $rate_fail = $r; break; } }
         } elseif ($type === 'number') {
@@ -255,10 +327,10 @@ if (!function_exists('mn_cls_save_item')) {
         if ($id > 0) {
             $ok = mn_cls_exec($connect,
                 'UPDATE cl_item SET ci_symptom_id=?, ci_group_id=?, ci_question=?, ci_hint=?, ci_rate_on_fail=?, ci_unit=?,'
-                . ' ci_val_min=?, ci_val_max=?, ci_opts=?, ci_opt_rates=?, ci_opt_colors=?, ci_multi=?, ci_auto_source=?, ci_enabled=?'
+                . ' ci_val_min=?, ci_val_max=?, ci_opts=?, ci_opt_rates=?, ci_opt_colors=?, ci_multi=?, ci_opt_notes=?, ci_opt_groups=?, ci_auto_source=?, ci_enabled=?'
                 . ' WHERE ci_id=? AND ci_product=?',
-                'iissssddsssisiis',
-                array($symptom_id, $group_id, $question, $hint, $rate_fail, $unit, $min, $max, $opts, $opt_rates, $opt_colors, $multi, $auto, $enabled, $id, $product)
+                'iissssddsssisssiis',
+                array($symptom_id, $group_id, $question, $hint, $rate_fail, $unit, $min, $max, $opts, $opt_rates, $opt_colors, $multi, $opt_notes, $opt_groups, $auto, $enabled, $id, $product)
             );
             return array('ok' => (bool) $ok, 'error' => $ok ? '' : 'บันทึกไม่สำเร็จ', 'id' => $id);
         }
@@ -270,10 +342,10 @@ if (!function_exists('mn_cls_save_item')) {
         $step = $next ? (int) $next[0]['n'] : 1;
         $ok = mn_cls_exec($connect,
             'INSERT INTO cl_item (ci_product, ci_symptom_id, ci_group_id, ci_step, ci_question, ci_hint, ci_rate_on_fail, ci_unit,'
-            . ' ci_val_min, ci_val_max, ci_opts, ci_opt_rates, ci_opt_colors, ci_multi, ci_auto_source, ci_enabled)'
-            . ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            'siiissssddsssisi',
-            array($product, $symptom_id, $group_id, $step, $question, $hint, $rate_fail, $unit, $min, $max, $opts, $opt_rates, $opt_colors, $multi, $auto, $enabled)
+            . ' ci_val_min, ci_val_max, ci_opts, ci_opt_rates, ci_opt_colors, ci_multi, ci_opt_notes, ci_opt_groups, ci_auto_source, ci_enabled)'
+            . ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'siiissssddsssisssi',
+            array($product, $symptom_id, $group_id, $step, $question, $hint, $rate_fail, $unit, $min, $max, $opts, $opt_rates, $opt_colors, $multi, $opt_notes, $opt_groups, $auto, $enabled)
         );
         return array('ok' => (bool) $ok, 'error' => $ok ? '' : 'บันทึกไม่สำเร็จ', 'id' => $ok ? (int) mysqli_insert_id($connect) : 0);
     }

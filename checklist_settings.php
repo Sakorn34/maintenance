@@ -10,11 +10,15 @@ require_once __DIR__ . '/includes/require_auth.php';
 header('Content-type: text/html; charset=utf-8');
 require_once __DIR__ . '/includes/bootstrap_maintenance_legacy.php';
 require_once __DIR__ . '/includes/checklist_helpers.php';
+require_once __DIR__ . '/includes/checklist_sync_helpers.php';
 
 maintenance_checklist_ensure_tables($connect);
 maintenance_db_odbc_close($connect);
 
 $initial = isset($_GET['product']) ? trim((string) $_GET['product']) : '';
+$sync_cfg = mn_cl_sync_config();
+$can_pull = $sync_cfg['url'] !== '' && $sync_cfg['token'] !== '';
+$pull_host = $can_pull ? (string) parse_url($sync_cfg['url'], PHP_URL_HOST) : '';
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -50,6 +54,9 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
       <aside class="mn-cls-col mn-cls-products" aria-label="รุ่นสินค้า">
         <div class="mn-cls-col__head">
           <h1 class="mn-cls-title">ตั้งค่ารายการตรวจเช็ค</h1>
+          <?php if ($can_pull) { ?>
+          <button type="button" class="mn-cls-btn mn-cls-btn--sync" id="mn_cls_sync" title="ดึงการตั้งค่าจาก <?php echo htmlspecialchars($pull_host, ENT_QUOTES, 'UTF-8'); ?> มาแทนที่ในเครื่องนี้"><i class="fa fa-cloud-download" aria-hidden="true"></i> ดึงค่าจาก server</button>
+          <?php } ?>
           <div class="mn-cls-search">
             <i class="fa fa-search" aria-hidden="true"></i>
             <input type="search" id="mn_cls_search" class="mn-cls-input" placeholder="ค้นหารุ่น" autocomplete="off" />
@@ -74,6 +81,8 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
               <div class="mn-cls-tabs" role="tablist">
                 <button type="button" class="mn-cls-tab is-on" data-tab="items" role="tab">ข้อตรวจ</button>
                 <button type="button" class="mn-cls-tab" data-tab="setup" role="tab">อาการ / กลุ่ม</button>
+                <button type="button" class="mn-cls-tab" data-tab="bundles" role="tab">ชุดอะไหล่</button>
+                <button type="button" class="mn-cls-tab" data-tab="reasons" role="tab">เหตุผลเปลี่ยนอะไหล่</button>
                 <button type="button" class="mn-cls-tab" data-tab="history" role="tab">ประวัติซ่อม</button>
               </div>
               <a class="mn-cls-btn mn-cls-btn--try" id="mn_cls_try" href="checklist_try" target="_blank" rel="noopener" title="เปิดหน้าที่ช่างใช้ประเมินเครื่อง (ไม่บันทึกข้อมูล)"><i class="fa fa-play-circle" aria-hidden="true"></i> ทดลองใช้งาน</a>
@@ -82,6 +91,8 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
           <div class="mn-cls-share" id="mn_cls_share"></div>
           <div class="mn-cls-pane" data-pane="items" id="mn_cls_pane_items"></div>
           <div class="mn-cls-pane" data-pane="setup" id="mn_cls_pane_setup" hidden></div>
+          <div class="mn-cls-pane" data-pane="bundles" id="mn_cls_pane_bundles" hidden></div>
+          <div class="mn-cls-pane" data-pane="reasons" id="mn_cls_pane_reasons" hidden></div>
           <div class="mn-cls-pane" data-pane="history" id="mn_cls_pane_history" hidden></div>
         </div>
       </section>

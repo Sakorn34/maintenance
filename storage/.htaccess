@@ -1,0 +1,8 @@
+# ไฟล์ข้อมูลภายในระบบ (log / สำรองการตั้งค่า / รูปประกอบ) — ห้ามเปิดตรงจากเว็บ
+<IfModule mod_authz_core.c>
+	Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+	Order allow,deny
+	Deny from all
+</IfModule>

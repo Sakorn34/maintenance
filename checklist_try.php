@@ -13,6 +13,7 @@ require_once __DIR__ . '/includes/maintenance_flow_sql_helpers.php';
 require_once __DIR__ . '/includes/update_rate_helpers.php';
 require_once __DIR__ . '/includes/bootstrap_logistic_recorder.php';
 require_once __DIR__ . '/includes/checklist_helpers.php';
+require_once __DIR__ . '/includes/assess_side_panels.php';
 
 maintenance_checklist_ensure_tables($connect);
 
@@ -30,11 +31,15 @@ if (!in_array($product, $try_products, true)) {
 
 $symptoms = array();
 $rate_options = array();
+$bundles = array();
+$reasons = array();
 if ($product !== '') {
     foreach (maintenance_checklist_fetch_symptoms($connect, $product) as $s) {
         $symptoms[] = array('id' => (int) $s['cs_id'], 'name' => (string) $s['cs_name']);
     }
     $rate_options = maintenance_update_rate_fetch_rate_options($connect, maintenance_update_rate_resolve_rate_product($product));
+    $bundles = maintenance_checklist_fetch_bundles($connect, $product);
+    $reasons = maintenance_checklist_fetch_rate_reasons($connect, $product);
 }
 maintenance_db_odbc_close($connect);
 
@@ -44,8 +49,11 @@ $boot = array(
     'trpId'          => 0,
     'product'        => $product,
     'symptoms'       => $symptoms,
-    'savedSymptomId' => 0,
+    'savedSymptomIds' => array(),
     'rateOptions'    => array_values($rate_options),
+    'bundles'        => $bundles,
+    'rateReasons'    => (object) $reasons,
+    'photos'         => array(),
     'saved'          => array(),
     'userRate'       => $user_rate,
 );
@@ -67,6 +75,7 @@ function mn_try_h($v)
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" />
 <link rel="stylesheet" href="css/mn-page-addjob.css" />
 <link rel="stylesheet" href="css/mn-page-assess-repair.css?v=<?php echo filemtime(__DIR__ . '/css/mn-page-assess-repair.css'); ?>" />
+<link rel="stylesheet" href="css/mn-photo-lightbox.css?v=<?php echo filemtime(__DIR__ . '/css/mn-photo-lightbox.css'); ?>" />
 <?php
 $mnModalAssetPrefix = '';
 require_once __DIR__ . '/includes/mn_modal_assets.php';
@@ -85,6 +94,31 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
     </div>
   </div>
   <div class="content mn-workspace">
+    <?php
+    // โหมดทดลองไม่มีใบงานจริง — แสดงข้อมูลตัวอย่างให้เห็นหน้าตาแผงข้างแบบงานจริง
+    $demo_buy = date('d/m/Y', strtotime('-3 years -2 months'));
+    echo mn_ar_info_panel(array(
+        'product'   => $product,
+        'sn'        => 'ตัวอย่าง-0001',
+        'receive'   => date('d/m/Y'),
+        'company'   => "บริษัท รักษาความปลอดภัย ตัวอย่าง
+อาคารสำนักงานตัวอย่าง",
+        'buy'       => $demo_buy,
+        'age'       => '3 ปี 2 เดือน',
+        'insurance' => 'หมดประกัน',
+        'ins_in'    => false,
+        'inform'    => 'ทัชสกรีนกดไม่ติดบางจุด เปิดเครื่องช้า',
+        'remarks'   => 'ลูกค้าขอใบเสนอราคาก่อนซ่อม',
+    ), true);
+    echo mn_ar_history_panel(array(
+        array('no' => 2, 'date' => date('d/m/Y', strtotime('-8 months')), 'number' => 'MTN-ตัวอย่าง-0002', 'company' => '',
+            'inform' => 'กล้องภาพมัว', 'assess' => 'เลนส์กล้องมีฝ้า ทำความสะอาดแล้วภาพชัด',
+            'parts' => array('ทำความสะอาดเลนส์กล้อง'), 'remarks' => '', 'rater' => 'ช่างตัวอย่าง', 'by' => 'ช่างตัวอย่าง', 'status' => 'ส่งคืนลูกค้า'),
+        array('no' => 1, 'date' => date('d/m/Y', strtotime('-2 years')), 'number' => 'MTN-ตัวอย่าง-0001', 'company' => '',
+            'inform' => 'เปิดไม่ติด', 'assess' => 'Adapter เสีย', 'parts' => array('Adapter 12V 5A'),
+            'remarks' => 'เปลี่ยนในประกัน', 'rater' => 'ช่างตัวอย่าง', 'by' => 'ช่างตัวอย่าง', 'status' => 'ส่งคืนลูกค้า'),
+    ), true);
+    ?>
     <main class="mn-ar" id="mn_ar">
 
       <header class="mn-ar-top">
@@ -143,8 +177,8 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
             <h1 class="mn-ar-h">ตรวจตามอาการ</h1>
             <span class="mn-ar-progress" id="mn_ar_sym_progress"></span>
           </div>
-          <p class="mn-ar-sub">เลือกอาการที่พบ หรือกด “ไม่มีอาการเฉพาะ” เพื่อข้าม</p>
-          <div class="mn-ar-chips" id="mn_ar_symptoms" role="radiogroup" aria-label="อาการ"></div>
+          <p class="mn-ar-sub">เลือกอาการที่พบ <b>เลือกได้หลายอาการ</b> หรือกด “ไม่มีอาการเฉพาะ” เพื่อข้าม <span class="mn-ar-sub__count" id="mn_ar_sym_count"></span></p>
+          <div class="mn-ar-chips" id="mn_ar_symptoms" role="group" aria-label="อาการ (เลือกได้หลายอาการ)"></div>
           <ul class="mn-ar-items" id="mn_ar_sym_items"></ul>
         </section>
 
@@ -155,10 +189,19 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
 
           <div class="mn-ar-field">
             <div class="mn-ar-field__head">
-              <label class="mn-ar-label" for="mn_ar_tech">อาการที่ประเมิน</label>
-              <button type="button" class="mn-ar-link" id="mn_ar_regen"><i class="fa fa-refresh" aria-hidden="true"></i> สรุปใหม่จากผลตรวจ</button>
+              <span class="mn-ar-label">สรุปการประเมิน</span>
+              <span class="mn-ar-field__hint">ส่งให้ฝ่ายเสนอราคา | ระบบเขียนจากผลตรวจและรายการซ่อม</span>
             </div>
-            <textarea id="mn_ar_tech" class="mn-ar-input mn-ar-textarea" rows="3"></textarea>
+            <div class="mn-ar-report" id="mn_ar_report" aria-live="polite"></div>
+          </div>
+
+          <div class="mn-ar-field">
+            <div class="mn-ar-field__head">
+              <label class="mn-ar-label" for="mn_ar_tech">ความเห็นช่าง / เหตุผลการเสนอเปลี่ยนอะไหล่</label>
+              <button type="button" class="mn-ar-link" id="mn_ar_regen_comment"><i class="fa fa-refresh" aria-hidden="true"></i> ร่างใหม่จากผลตรวจ</button>
+              <span class="mn-ar-field__hint">ระบบร่างให้จากสิ่งที่ตรวจพบและรายการซ่อม แก้ไขหรือเติมได้ | บันทึกต่อท้ายสรุปการประเมิน</span>
+            </div>
+            <textarea id="mn_ar_tech" class="mn-ar-input mn-ar-textarea mn-ar-textarea--comment" rows="6" placeholder="อธิบายเหตุผลการเสนอเปลี่ยนอะไหล่ สาเหตุที่น่าจะเป็น หรือสิ่งที่ควรแจ้งลูกค้า"></textarea>
           </div>
 
           <div class="mn-ar-field">
@@ -187,21 +230,34 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
             </div>
           </div>
 
-          <div class="mn-ar-grid2">
-            <div class="mn-ar-field">
-              <label class="mn-ar-label" for="trp_fw">UP FW</label>
-              <input type="text" id="trp_fw" class="mn-ar-input" />
+          <div class="mn-ar-field">
+            <div class="mn-ar-field__head">
+              <span class="mn-ar-label">รูปประกอบเพิ่มเติม</span>
+              <span class="mn-ar-field__hint">รูปที่ไม่เจาะจงข้อตรวจ เช่น สภาพเครื่องโดยรวม | แนบรายข้อได้ที่ปุ่มกล้องใต้แต่ละข้อ</span>
             </div>
-            <div class="mn-ar-field">
-              <label class="mn-ar-label" for="trp_rate_date">วันที่ประเมิน</label>
-              <input type="date" id="trp_rate_date" class="mn-ar-input" value="<?php echo date('Y-m-d'); ?>" />
-            </div>
+            <div class="mn-ar-photos mn-ar-photos--general" data-ci="0"></div>
           </div>
 
-          <div class="mn-ar-field">
-            <label class="mn-ar-label" for="trp_repair_remarks">หมายเหตุ</label>
-            <textarea id="trp_repair_remarks" class="mn-ar-input mn-ar-textarea" rows="2"></textarea>
-          </div>
+          <details class="mn-ar-more">
+            <summary><span>เพิ่มเติม</span> <small>UP FW | วันที่ประเมิน | หมายเหตุ</small> <i class="fa fa-angle-down" aria-hidden="true"></i></summary>
+            <div class="mn-ar-more__body">
+            <div class="mn-ar-grid2">
+              <div class="mn-ar-field">
+                <label class="mn-ar-label" for="trp_fw">UP FW</label>
+                <input type="text" id="trp_fw" class="mn-ar-input" />
+              </div>
+              <div class="mn-ar-field">
+                <label class="mn-ar-label" for="trp_rate_date">วันที่ประเมิน</label>
+                <input type="date" id="trp_rate_date" class="mn-ar-input" value="<?php echo date('Y-m-d'); ?>" />
+              </div>
+            </div>
+
+            <div class="mn-ar-field">
+              <label class="mn-ar-label" for="trp_repair_remarks">หมายเหตุ</label>
+              <textarea id="trp_repair_remarks" class="mn-ar-input mn-ar-textarea" rows="2"></textarea>
+            </div>
+            </div>
+          </details>
 
           <p class="mn-ar-assessor">ผู้ประเมิน <strong><?php echo mn_try_h($user_rate !== '' ? $user_rate : '—'); ?></strong></p>
         </section>
@@ -218,6 +274,7 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
 <script type="text/javascript">
 window.mnAr = <?php echo json_encode($boot, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP); ?>;
 </script>
+<script type="text/javascript" src="js/mn-photo-lightbox.js?v=<?php echo filemtime(__DIR__ . '/js/mn-photo-lightbox.js'); ?>"></script>
 <script type="text/javascript" src="js/assess_repair-page.js?v=<?php echo filemtime(__DIR__ . '/js/assess_repair-page.js'); ?>"></script>
 </body>
 </html>

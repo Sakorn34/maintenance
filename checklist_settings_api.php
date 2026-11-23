@@ -1,7 +1,7 @@
 <?php
 /**
  * วัตถุประสงค์และขอบเขต:
- * JSON API ของหน้า checklist_settings — GET: products / load / history · POST (JSON body): บันทึก ลบ เรียงลำดับ
+ * JSON API ของหน้า checklist_settings — GET: products / load / history | POST (JSON body): บันทึก ลบ เรียงลำดับ
  */
 
 date_default_timezone_set('Asia/Bangkok');
@@ -36,6 +36,12 @@ $product = isset($src['product']) ? trim((string) $src['product']) : '';
 
 if ($action === 'ping') {
     mn_cls_respond($connect, array('ok' => true));
+}
+
+if ($action === 'sync_pull') {
+    if (!$is_post) { mn_cls_respond($connect, array('ok' => false, 'error' => 'ต้องส่งแบบ POST')); }
+    require_once __DIR__ . '/includes/checklist_sync_helpers.php';
+    mn_cls_respond($connect, mn_cl_sync_pull($connect));
 }
 
 if ($action === 'products') {
@@ -77,6 +83,16 @@ switch ($action) {
     case 'delete_symptom':
     case 'delete_group':
         $out = mn_cls_delete_named($connect, $product, $action === 'delete_symptom' ? 'symptom' : 'group', $id);
+        break;
+    case 'save_bundle':
+        $out = mn_cls_save_bundle($connect, $product, isset($body['bundle']) ? $body['bundle'] : '', isset($body['old']) ? $body['old'] : '',
+            isset($body['members']) && is_array($body['members']) ? $body['members'] : array());
+        break;
+    case 'delete_bundle':
+        $out = mn_cls_delete_bundle($connect, $product, isset($body['bundle']) ? $body['bundle'] : '');
+        break;
+    case 'save_reason':
+        $out = mn_cls_save_reason($connect, $product, isset($body['rate']) ? $body['rate'] : '', isset($body['reason']) ? $body['reason'] : '');
         break;
     case 'set_share':
         $out = mn_cls_set_share($connect, $product, isset($body['share_from']) ? $body['share_from'] : '', $mn_logistic_recorder_value);

@@ -1,7 +1,7 @@
 <?php
 /**
  * วัตถุประสงค์และขอบเขต:
- * รับ GET จากฟอร์มประเมิน (`update_rate`) แล้วอัปเดต `transac_repair` — refactor จาก `old_system/save_rate.php` ใช้ auth + mysqli prepared + modal แล้วกลับ `status_rate`
+ * รับ GET จากฟอร์มประเมิน (`update_rate`) หรือ POST จากหน้า `assess_repair` (ข้อความสรุปยาว) แล้วอัปเดต `transac_repair` — refactor จาก `old_system/save_rate.php` ใช้ auth + mysqli prepared + modal แล้วกลับ `status_rate`
  *
  * Flow:
  * require_auth → mysqli → `maintenance_save_rate_apply_from_get` → ปิด connection → แสดง modal → redirect `status_rate`
@@ -13,7 +13,8 @@ header('Content-type: text/html; charset=utf-8');
 require_once __DIR__ . '/includes/mysql_odbc_compat.php';
 require_once __DIR__ . '/includes/save_rate_helpers.php';
 
-$result = maintenance_save_rate_apply_from_get($connect, $_GET);
+$rate_input = (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') ? $_POST : $_GET;
+$result = maintenance_save_rate_apply_from_get($connect, $rate_input);
 $mn_modal_msg = $result['message'];
 $mn_modal_variant = $result['ok'] ? 'success' : 'danger';
 

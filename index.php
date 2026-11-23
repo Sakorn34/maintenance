@@ -207,7 +207,7 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
       </table>
 
       <div class="mn-index-summary" role="status">
-        <p><strong>สรุปตัวกรอง:</strong> <?php echo maintenance_status_logistic_h(implode(' · ', $query_parts['summary_lines'])); ?></p>
+        <p><strong>สรุปตัวกรอง:</strong> <?php echo maintenance_status_logistic_h(implode(' | ', $query_parts['summary_lines'])); ?></p>
       </div>
     </div>
   </div>

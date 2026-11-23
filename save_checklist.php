@@ -38,6 +38,9 @@ foreach ($results as $ci_id => $entry) {
 }
 
 maintenance_checklist_ensure_tables($connect);
+if ($symptom_id === 0 && isset($data['keep_symptoms']) && is_array($data['keep_symptoms'])) {
+    maintenance_checklist_prune_symptoms($connect, $trp_id, $data['keep_symptoms']);
+}
 $out = maintenance_checklist_save($connect, $trp_id, $symptom_id, $clean, $mn_logistic_recorder_value);
 
 maintenance_db_odbc_close($connect);

@@ -82,3 +82,6 @@
   color: #ff9900;
   font-size: 0.95rem;
 }
+
+/* สรุปการประเมินจากหน้า assess_repair มีหลายบรรทัด — แสดงขึ้นบรรทัดตามต้นฉบับ */
+.mn-addjob-page.mn-status-offer-price-page .mn-status-offer-price-tech { white-space: pre-wrap; display: inline-block; }

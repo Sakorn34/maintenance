@@ -720,7 +720,7 @@ if (!function_exists('maintenance_inventory_pickup_fetch_pre_stock_tech_lines'))
                 if ($docNo !== '' && $remark === '') {
                     $remark = $docNo;
                 } elseif ($docNo !== '') {
-                    $remark = $remark . ' · ' . $docNo;
+                    $remark = $remark . ' | ' . $docNo;
                 }
                 $lines[] = array(
                     'line_kind' => 'tech',

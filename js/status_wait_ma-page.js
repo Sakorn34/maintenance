@@ -199,7 +199,7 @@ function mnWaitMaPickupPreviewRenderDocument(body, doc, sectionClass) {
   if (doc.pre_type) { metaParts.push(doc.pre_type); }
   if (doc.requested_by) { metaParts.push('ผู้ขอเบิก: ' + doc.requested_by); }
   if (doc.approved_by) { metaParts.push('ผู้อนุมัติจ่าย: ' + doc.approved_by); }
-  head.textContent = metaParts.join(' · ');
+  head.textContent = metaParts.join(' | ');
   block.appendChild(head);
   count = document.createElement('p');
   count.className = 'mn-wait-ma-pickup-preview-modal__count';
@@ -207,7 +207,7 @@ function mnWaitMaPickupPreviewRenderDocument(body, doc, sectionClass) {
   var techN = typeof doc.line_count_tech === 'number' ? doc.line_count_tech : 0;
   if (techN > 0) {
     var invN = doc.line_count - techN;
-    countText += ' (คลังกลาง ' + invN + ' · คลังช่าง ' + techN + ' · ตัดแล้ว)';
+    countText += ' (คลังกลาง ' + invN + ' | คลังช่าง ' + techN + ' | ตัดแล้ว)';
   }
   count.textContent = countText;
   block.appendChild(count);
@@ -236,7 +236,7 @@ function mnWaitMaPickupPreviewRender(data) {
     pending = data.pending_documents || [];
     issued = data.issued_documents || [];
     meta.textContent =
-      'รอคลังจ่าย ' + String(pending.length) + ' เอกสาร · จ่ายแล้ว ' + String(issued.length) + ' เอกสาร';
+      'รอคลังจ่าย ' + String(pending.length) + ' เอกสาร | จ่ายแล้ว ' + String(issued.length) + ' เอกสาร';
     if (data.remarks) {
       remarksEl = document.createElement('p');
       remarksEl.className = 'mn-wait-ma-pickup-preview-modal__remarks';
@@ -272,7 +272,7 @@ function mnWaitMaPickupPreviewRender(data) {
   if (data.pre_type) { metaParts.push(data.pre_type); }
   if (data.requested_by) { metaParts.push('ผู้ขอเบิก: ' + data.requested_by); }
   if (data.approved_by) { metaParts.push('ผู้อนุมัติจ่าย: ' + data.approved_by); }
-  meta.textContent = metaParts.join(' · ');
+  meta.textContent = metaParts.join(' | ');
   if (data.remarks) {
     remarksEl = document.createElement('p');
     remarksEl.className = 'mn-wait-ma-pickup-preview-modal__remarks';

@@ -17,7 +17,7 @@ if ($navProfileName === '') {
   <div class="mn-appbar__inner">
     <div class="mn-appbar__brand">
       <a href="checklist_settings">Maintenance</a>
-      <span class="mn-appbar__tagline">ชุดทดสอบ · ตั้งค่ารายการตรวจเช็ค (ยังไม่เชื่อมระบบจริง)</span>
+      <span class="mn-appbar__tagline">ชุดทดสอบ | ตั้งค่ารายการตรวจเช็ค (ยังไม่เชื่อมระบบจริง)</span>
     </div>
     <div class="mn-appbar__navwrap"></div>
     <?php if ($navProfileName !== '') { ?>

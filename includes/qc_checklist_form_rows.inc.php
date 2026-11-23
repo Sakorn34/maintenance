@@ -31,9 +31,9 @@
       <div class="mn-qc-prose"><?= $detail; ?></div>
       <p class="mn-qc-inline-meta">
         <strong><?= htmlspecialchars((string) $result_trp['trp_product'], ENT_QUOTES, 'UTF-8'); ?></strong>
-        <span class="mn-qc-sep">·</span>
+        <span class="mn-qc-sep">|</span>
         <span>S/N <?= htmlspecialchars((string) $result_trp['trp_sn'], ENT_QUOTES, 'UTF-8'); ?></span>
-        <span class="mn-qc-sep">·</span>
+        <span class="mn-qc-sep">|</span>
         <span class="mn-qc-tag mn-qc-tag--age">อายุเครื่อง <?= htmlspecialchars(maintenance_qc_checklist_db_text_to_utf8($result_trp['trp_repair_age']), ENT_QUOTES, 'UTF-8'); ?></span>
         <span class="mn-qc-tag mn-qc-tag--insurance"><?= htmlspecialchars(maintenance_qc_checklist_db_text_to_utf8($result_trp['trp_insurance']), ENT_QUOTES, 'UTF-8'); ?></span>
       </p>
@@ -47,7 +47,7 @@
         <dl class="mn-qc-dl">
           <div class="mn-qc-dl__row"><dt>ผู้รับเรื่อง</dt><dd><?= htmlspecialchars((string) $result_trp['trp_user_recive_ma'], ENT_QUOTES, 'UTF-8'); ?></dd></div>
           <div class="mn-qc-dl__row"><dt>อาการที่ลูกค้าแจ้ง</dt><dd><?= htmlspecialchars(maintenance_qc_checklist_db_text_to_utf8($result_trp['trp_repair_inform']), ENT_QUOTES, 'UTF-8'); ?></dd></div>
-          <div class="mn-qc-dl__row"><dt>ประเมินโดย / ซ่อมโดย</dt><dd><?= htmlspecialchars((string) $result_trp['trp_user_rate'], ENT_QUOTES, 'UTF-8'); ?> · <?= htmlspecialchars(maintenance_qc_checklist_db_text_to_utf8($result_trp['trp_user_ma']), ENT_QUOTES, 'UTF-8'); ?></dd></div>
+          <div class="mn-qc-dl__row"><dt>ประเมินโดย / ซ่อมโดย</dt><dd><?= htmlspecialchars((string) $result_trp['trp_user_rate'], ENT_QUOTES, 'UTF-8'); ?> | <?= htmlspecialchars(maintenance_qc_checklist_db_text_to_utf8($result_trp['trp_user_ma']), ENT_QUOTES, 'UTF-8'); ?></dd></div>
           <div class="mn-qc-dl__row mn-qc-dl__row--emph"><dt>อาการที่ช่างประเมิน</dt><dd><?= htmlspecialchars(maintenance_qc_checklist_db_text_to_utf8($result_trp['trp_repair_technician']), ENT_QUOTES, 'UTF-8'); ?></dd></div>
         </dl>
         <div class="mn-qc-list-repair"><?php echo $list_repair; ?></div>

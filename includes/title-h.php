@@ -172,7 +172,7 @@ if ($navProfileName === '') {
   <div class="mn-appbar__inner">
     <div class="mn-appbar__brand">
       <a href="<?php echo htmlspecialchars($b . '/index', ENT_QUOTES, 'UTF-8'); ?>">Maintenance</a>
-      <span class="mn-appbar__tagline">ระบบจัดการงานซ่อม · ภายในองค์กร</span>
+      <span class="mn-appbar__tagline">ระบบจัดการงานซ่อม | ภายในองค์กร</span>
     </div>
     <div class="mn-appbar__navwrap">
       <ul class="mn-navlist">

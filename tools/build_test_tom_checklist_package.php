@@ -24,7 +24,7 @@ require $root . '/includes/mysql_odbc_compat.php';
 
 // ---------- files ----------
 
-$entries = array('checklist_settings.php', 'checklist_settings_api.php', 'checklist_try.php', 'checklist_items.php', 'suggest_rates.php');
+$entries = array('checklist_settings.php', 'checklist_settings_api.php', 'checklist_try.php', 'checklist_items.php', 'suggest_rates.php', 'checklist_export.php');
 $assets = array(
     '.htaccess',
     'css/mn-theme.css', 'css/mn-layout.css', 'css/mn-nav.css', 'css/site-legacy.css',
@@ -88,6 +88,19 @@ return array(
 
 PHP
 );
+
+// token ของ checklist_export (ให้ localhost ดึงการตั้งค่าจาก server) — ใช้ค่าเดียวกับ config/checklist_sync.local.php ในเครื่อง
+$sync_extra = array();
+$sync_local = $root . '/config/checklist_sync.local.php';
+$sync_cfg = is_file($sync_local) ? require $sync_local : array();
+if (is_array($sync_cfg) && !empty($sync_cfg['token'])) {
+    file_put_contents($www . '/config/checklist_sync.local.php',
+        "<?php\n// เปิด checklist_export ให้ localhost ดึงการตั้งค่า — token ต้องตรงกับ config/checklist_sync.local.php ในเครื่อง\n"
+        . "return array(\n    'url'    => '',\n    'token'  => " . var_export((string) $sync_cfg['token'], true) . ",\n    'cainfo' => '',\n);\n");
+    $sync_extra[] = 'config/checklist_sync.local.php';
+} else {
+    echo "คำเตือน: ไม่มี config/checklist_sync.local.php (token) — ปุ่มดึงค่าจาก server จะใช้ไม่ได้\n";
+}
 
 // ---------- SQL ----------
 
@@ -153,7 +166,7 @@ list($ins, $counts['employee']) = tt_inserts($c, 'employee', 'SELECT emp_id, emp
 $ref .= $ins . "\nSET FOREIGN_KEY_CHECKS = 1;\n";
 
 $start = $head . "-- ข้อตรวจตั้งต้น — import ครั้งแรกครั้งเดียว (CREATE IF NOT EXISTS + INSERT IGNORE ไม่ทับงานที่ทีมแก้แล้ว)\n\n";
-foreach (array('cl_symptom', 'cl_group', 'cl_product', 'cl_item') as $t) {
+foreach (array('cl_symptom', 'cl_group', 'cl_product', 'cl_item', 'cl_rate_bundle', 'cl_rate_reason') as $t) {
     $start .= tt_create($c, $t, true);
     list($ins, $counts[$t]) = tt_inserts($c, $t, "SELECT * FROM `$t`", true);
     $start .= $ins . "\n";
@@ -168,7 +181,7 @@ maintenance_db_odbc_close($c);
 // ---------- DEPLOY.txt ----------
 
 $list = '';
-$all = array_merge($files, array('includes/title-h.php', 'config/database.php', 'config/env.local.example.php', 'index.php'));
+$all = array_merge($files, array('includes/title-h.php', 'config/database.php', 'config/env.local.example.php', 'index.php'), $sync_extra);
 sort($all);
 foreach (array_unique($all) as $f) { $list .= '  - ' . $f . ($f === 'includes/title-h.php' ? '   (หัวเพจแบบเรียบของชุดทดสอบ)' : '') . "\n"; }
 $cnt = '';
@@ -238,7 +251,7 @@ $list
 --------------------------------------------------------------------------------
 ตอนเปิดใช้จริง (ภายหลัง)
 --------------------------------------------------------------------------------
-  export เฉพาะ 4 ตาราง cl_symptom, cl_group, cl_product, cl_item จาก biton_maintenance_test
+  export เฉพาะ 6 ตาราง cl_symptom, cl_group, cl_product, cl_item, cl_rate_bundle, cl_rate_reason จาก biton_maintenance_test
   ไป import ที่ biton_maintenance พร้อมกับ deploy ระบบ checklist ขึ้นโฟลเดอร์ maintenance
   (ไม่ต้องย้าย cl_job_header / cl_job_item — เป็นผลตรวจของใบงาน)
   จากนั้นลบโฟลเดอร์ test-tom และฐาน biton_maintenance_test ได้

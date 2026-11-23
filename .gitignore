@@ -52,3 +52,9 @@ storage/logs/*.log
 # ไฟล์ระบบ Windows
 Thumbs.db
 desktop.ini
+
+# สำรองการตั้งค่า checklist ก่อนดึงค่าจาก server (checklist_sync)
+/storage/checklist_sync/
+
+# รูปประกอบการประเมิน (checklist_photo)
+/storage/photos/

@@ -522,7 +522,7 @@
 }
 
 .mn-job-process-page .mn-jp-activate-history__step::after {
-  content: '·';
+  content: '|';
   margin-left: 0.35rem;
   font-weight: 400;
   color: #94a3b8;

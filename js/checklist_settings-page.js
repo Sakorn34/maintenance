@@ -43,7 +43,8 @@
     sel: null,
     draft: null,
     dirty: false,
-    history: null
+    history: null,
+    bundleEdit: null
   };
 
   // ---------- utils ----------
@@ -150,6 +151,38 @@
 
   // ---------- products ----------
 
+  // ---------- ดึงการตั้งค่าจาก server (เฉพาะเครื่องที่ตั้ง config/checklist_sync.local.php) ----------
+
+  function onSyncClick() {
+    guardDirty(function () {
+      confirmMsg('ดึงการตั้งค่าตรวจเช็คจาก server มาแทนที่ข้อมูลในเครื่องนี้ทั้งหมด?\n\n'
+        + 'ข้อตรวจ อาการ กลุ่มชิ้นส่วน ชุดอะไหล่ และการใช้ร่วมกับรุ่น ของทุกรุ่นจะเป็นแบบเดียวกับบน server '
+        + '(ระบบสำรองข้อมูลเดิมเป็นไฟล์ไว้ก่อนแทนที่ | ผลตรวจของใบงานไม่ถูกแตะ)', doSync, { title: 'ดึงค่าจาก server', ok: 'ดึงค่า' });
+    });
+  }
+
+  function doSync() {
+    var btn = $('mn_cls_sync');
+    btn.disabled = true;
+    btn.classList.add('is-busy');
+    btn.querySelector('.fa').className = 'fa fa-circle-o-notch fa-spin';
+    apiPost({ action: 'sync_pull' }).then(function (res) {
+      var c = res.counts || {};
+      closeEditor();
+      state.bundleEdit = null;
+      state.history = null;
+      return loadProducts().then(function () { return state.product ? reload() : null; }).then(function () {
+        alertMsg('ดึงค่าจาก server แล้ว (ข้อมูล ณ ' + res.exported_at + ')\n\n'
+          + 'ข้อตรวจ ' + (c.cl_item || 0) + ' | อาการ ' + (c.cl_symptom || 0) + ' | กลุ่ม ' + (c.cl_group || 0)
+          + ' | ชุดอะไหล่ ' + (c.cl_rate_bundle || 0) + ' แถว\n\nสำรองข้อมูลเดิมไว้ที่ ' + res.backup, 'info');
+      });
+    }).catch(fail).then(function () {
+      btn.disabled = false;
+      btn.classList.remove('is-busy');
+      btn.querySelector('.fa').className = 'fa fa-cloud-download';
+    });
+  }
+
   function loadProducts() {
     return apiGet({ action: 'products' }).then(function (res) {
       state.products = res.products || [];
@@ -178,6 +211,7 @@
       state.cat = 0;
       state.sel = null;
       state.history = null;
+      state.bundleEdit = null;
       renderProducts();
       if (global.history && global.history.replaceState) {
         global.history.replaceState(null, '', 'checklist_settings?product=' + encodeURIComponent(name));
@@ -208,8 +242,8 @@
     var d = state.data;
     var p = state.products.filter(function (x) { return x.name === state.product; })[0] || { repairs: 0 };
     $('mn_cls_pname').textContent = d.product;
-    $('mn_cls_pmeta').textContent = 'ข้อตรวจ ' + d.items.length + ' ข้อ · อาการ ' + d.symptoms.length
-      + ' · กลุ่มชิ้นส่วน ' + d.groups.length + ' · ซ่อม ' + p.repairs.toLocaleString() + ' งาน';
+    $('mn_cls_pmeta').textContent = 'ข้อตรวจ ' + d.items.length + ' ข้อ | อาการ ' + d.symptoms.length
+      + ' | กลุ่มชิ้นส่วน ' + d.groups.length + ' | ซ่อม ' + p.repairs.toLocaleString() + ' งาน';
     renderShare();
     $('mn_cls_try').href = 'checklist_try?product=' + encodeURIComponent(d.share_from || d.product);
     doc.querySelectorAll('.mn-cls-tab').forEach(function (t) {
@@ -220,6 +254,8 @@
     });
     if (state.tab === 'items') { renderItemsPane(); }
     if (state.tab === 'setup') { renderSetupPane(); }
+    if (state.tab === 'bundles') { renderBundlesPane(); }
+    if (state.tab === 'reasons') { renderReasonsPane(); }
     if (state.tab === 'history') { renderHistoryPane(); }
   }
 
@@ -263,7 +299,7 @@
   }
 
   function typeLabel(it) {
-    if (it.type === 'options') { return 'ปุ่ม ' + it.options.length + (it.multi ? ' · หลายค่า' : ''); }
+    if (it.type === 'options') { return 'ปุ่ม ' + it.options.length + (it.multi ? ' | หลายค่า' : ''); }
     if (it.type === 'number') { return it.min + '–' + it.max + ' ' + it.unit; }
     if (it.type === 'auto') { return 'อัตโนมัติ'; }
     return 'ผ่าน/ไม่ผ่าน';
@@ -320,7 +356,7 @@
     }
     pane.innerHTML = '<div class="mn-cls-chips">' + chips + '</div>' + body
       + '<button type="button" class="mn-cls-add" id="mn_cls_add_item"><i class="fa fa-plus" aria-hidden="true"></i> เพิ่มข้อตรวจใน “' + esc(symName(state.cat)) + '”</button>'
-      + (list.length > 1 ? '<p class="mn-cls-muted mn-cls-hint">ลากที่ <i class="fa fa-ellipsis-v"></i> เพื่อเรียงลำดับภายในกลุ่ม · เปลี่ยนกลุ่มได้ในแผงแก้ไข</p>' : '');
+      + (list.length > 1 ? '<p class="mn-cls-muted mn-cls-hint">ลากที่ <i class="fa fa-ellipsis-v"></i> เพื่อเรียงลำดับภายในกลุ่ม | เปลี่ยนกลุ่มได้ในแผงแก้ไข</p>' : '');
   }
 
   function onItemsPaneClick(e) {
@@ -360,7 +396,7 @@
     var box = doc.createElement('span');
     box.className = 'mn-cls-chip mn-cls-chip--edit';
     box.innerHTML = '<input type="text" class="mn-cls-chip__in" maxlength="100" placeholder="ชื่ออาการ" />'
-      + '<span class="mn-cls-chip__keys">Enter บันทึก · Esc ยกเลิก</span>';
+      + '<span class="mn-cls-chip__keys">Enter บันทึก | Esc ยกเลิก</span>';
     target.parentNode.replaceChild(box, target);
     var input = box.querySelector('input');
     input.value = orig;
@@ -475,6 +511,241 @@
       + '</div>';
   }
 
+  // ---------- bundles pane (ชุดอะไหล่) ----------
+
+  function bundleRows() { return state.data.bundles || []; }
+
+  function renderBundlesPane() {
+    var d = state.data;
+    var pane = $('mn_cls_pane_bundles');
+    if (d.share_from) {
+      pane.innerHTML = '<div class="mn-cls-note"><i class="fa fa-link" aria-hidden="true"></i><div><b>รุ่นนี้ใช้รายการตรวจร่วมกับ ' + esc(d.share_from)
+        + '</b><p>ชุดอะไหล่ใช้ของรุ่นนั้นด้วย — ตั้งค่าที่รุ่น ' + esc(d.share_from) + '</p></div></div>';
+      return;
+    }
+    var ed = state.bundleEdit;
+    var list = bundleRows();
+    var html = '<div class="mn-cls-card mn-cls-bundles"><div class="mn-cls-card__head"><h3>ชุดอะไหล่</h3>'
+      + '<p class="mn-cls-muted">รายการซ่อมแบบชุดที่รวมหลายรายการไว้แล้ว เช่น “MA เปลี่ยนอะไหล่พื้นฐาน” — ถ้าใบงานมีรายการชุด ระบบจะไม่ส่งรายการที่อยู่ในชุดแยกอีก'
+      + ' ถ้าไม่มีรายการชุด จึงส่งรายการแยกตามผลตรวจ</p></div>';
+    if (!list.length && !(ed && ed.old === '')) {
+      html += '<div class="mn-cls-bempty"><i class="fa fa-cubes" aria-hidden="true"></i> ยังไม่มีชุดอะไหล่ของรุ่นนี้</div>';
+    }
+    list.forEach(function (b) { html += ed && ed.old === b.bundle ? bundleEditor() : bundleCard(b); });
+    html += ed && ed.old === ''
+      ? bundleEditor()
+      : '<button type="button" class="mn-cls-add" data-bact="new"' + (ed ? ' disabled' : '') + '><i class="fa fa-plus" aria-hidden="true"></i> เพิ่มชุดอะไหล่</button>';
+    pane.innerHTML = html + '</div>';
+    if (ed) { renderBundlePick(); }
+  }
+
+  function bundleCard(b) {
+    var rates = state.data.rates || [];
+    var lock = state.bundleEdit ? ' disabled' : '';
+    return '<div class="mn-cls-bundle" data-bundle="' + esc(b.bundle) + '">'
+      + '<div class="mn-cls-bundle__head"><i class="fa fa-cubes mn-cls-bundle__ic" aria-hidden="true"></i>'
+      + '<b class="mn-cls-bundle__name">' + esc(b.bundle) + '</b>'
+      + (rates.indexOf(b.bundle) === -1 ? '<span class="mn-cls-pill mn-cls-pill--rate">ไม่มีในรายการซ่อมของรุ่นนี้</span>' : '')
+      + '<span class="mn-cls-pill">รวม ' + b.members.length + ' รายการ</span>'
+      + '<span class="mn-cls-nrow__act"><button type="button" class="mn-cls-ibtn" data-bact="edit" aria-label="แก้ไขชุด"' + lock + '><i class="fa fa-pencil"></i></button>'
+      + '<button type="button" class="mn-cls-ibtn mn-cls-ibtn--del" data-bact="del" aria-label="ลบชุด"' + lock + '><i class="fa fa-trash-o"></i></button></span></div>'
+      + '<div class="mn-cls-bundle__members">' + b.members.map(function (m) {
+        var miss = rates.indexOf(m) === -1;
+        return '<span class="mn-cls-bchip' + (miss ? ' is-missing' : '') + '"' + (miss ? ' title="ไม่มีในรายการซ่อมของรุ่นนี้"' : '') + '>' + esc(m) + '</span>';
+      }).join('') + '</div></div>';
+  }
+
+  function bundleEditor() {
+    var ed = state.bundleEdit;
+    var taken = bundleRows().map(function (b) { return b.bundle; }).filter(function (n) { return n !== ed.old; });
+    var opts = '<option value="">— เลือกรายการซ่อมที่เป็นชุด —</option>' + (state.data.rates || []).filter(function (r) {
+      return taken.indexOf(r) === -1;
+    }).map(function (r) {
+      return '<option value="' + esc(r) + '"' + (r === ed.bundle ? ' selected' : '') + '>' + esc(r) + '</option>';
+    }).join('');
+    return '<div class="mn-cls-bundle mn-cls-bundle--edit">'
+      + field('รายการชุด', '<select class="mn-cls-input mn-cls-input--sm" data-b="bundle">' + opts + '</select>')
+      + field('รายการที่รวมอยู่ในชุด <span class="mn-cls-pill" id="mn_cls_bcount"></span>',
+        '<div class="mn-cls-bsel" id="mn_cls_bsel"></div>'
+        + '<div class="mn-cls-search"><i class="fa fa-search" aria-hidden="true"></i><input type="search" class="mn-cls-input mn-cls-input--sm" data-b="q" placeholder="ค้นหารายการซ่อม" value="' + esc(ed.q) + '" /></div>'
+        + '<ul class="mn-cls-bpick" id="mn_cls_bpick"></ul>',
+        'ติ๊กรายการที่รายการชุดทำให้แล้ว — ถ้าใบงานมีรายการชุด รายการเหล่านี้จะไม่ถูกส่งแยก')
+      + '<div class="mn-cls-actions"><span class="mn-cls-actions__sp"></span>'
+      + '<button type="button" class="mn-cls-btn" data-bact="cancel">ยกเลิก</button>'
+      + '<button type="button" class="mn-cls-btn mn-cls-btn--primary" data-bact="save"><i class="fa fa-check" aria-hidden="true"></i> บันทึกชุด</button></div></div>';
+  }
+
+  function renderBundlePick() {
+    var ed = state.bundleEdit;
+    var ul = $('mn_cls_bpick');
+    if (!ed || !ul) { return; }
+    var q = ed.q.trim().toLowerCase();
+    var hits = (state.data.rates || []).filter(function (r) {
+      return r !== ed.bundle && (!q || r.toLowerCase().indexOf(q) !== -1);
+    });
+    ul.innerHTML = hits.map(function (r) {
+      var on = ed.members.indexOf(r) !== -1;
+      return '<li><label class="mn-cls-bpick__row' + (on ? ' is-on' : '') + '"><input type="checkbox" data-b="m" value="' + esc(r) + '"' + (on ? ' checked' : '') + ' />'
+        + '<span>' + esc(r) + '</span></label></li>';
+    }).join('') || '<li class="mn-cls-muted mn-cls-pad">ไม่พบรายการซ่อมที่ค้นหา</li>';
+    renderBundleSel();
+  }
+
+  function renderBundleSel() {
+    var ed = state.bundleEdit;
+    $('mn_cls_bcount').textContent = ed.members.length + ' รายการ';
+    $('mn_cls_bsel').innerHTML = ed.members.map(function (m) {
+      return '<span class="mn-cls-bchip is-on">' + esc(m) + '<button type="button" data-bact="unpick" data-m="' + esc(m) + '" aria-label="เอา ' + esc(m) + ' ออกจากชุด"><i class="fa fa-times" aria-hidden="true"></i></button></span>';
+    }).join('') || '<span class="mn-cls-muted">ยังไม่ได้เลือก — ติ๊กจากรายการด้านล่าง</span>';
+  }
+
+  function openBundle(b) {
+    state.bundleEdit = { old: b ? b.bundle : '', bundle: b ? b.bundle : '', members: b ? b.members.slice() : [], q: '' };
+    renderBundlesPane();
+    var ed = $('mn_cls_pane_bundles').querySelector('.mn-cls-bundle--edit');
+    if (ed) {
+      ed.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      if (!b) { ed.querySelector('[data-b="bundle"]').focus(); }
+    }
+  }
+
+  function closeBundle() {
+    state.bundleEdit = null;
+    state.dirty = false;
+    renderBundlesPane();
+  }
+
+  function toggleMember(m, on) {
+    var ed = state.bundleEdit;
+    var rates = state.data.rates || [];
+    var i = ed.members.indexOf(m);
+    if (on && i === -1) { ed.members.push(m); }
+    if (!on && i !== -1) { ed.members.splice(i, 1); }
+    ed.members.sort(function (a, b) { return rates.indexOf(a) - rates.indexOf(b); });
+    state.dirty = true;
+    $('mn_cls_bpick').querySelectorAll('[data-b="m"]').forEach(function (cb) {
+      if (cb.value === m) {
+        cb.checked = on;
+        cb.closest('.mn-cls-bpick__row').classList.toggle('is-on', on);
+      }
+    });
+    renderBundleSel();
+  }
+
+  function saveBundle() {
+    var ed = state.bundleEdit;
+    if (!ed.bundle) { alertMsg('เลือกรายการชุดก่อน'); return; }
+    if (!ed.members.length) { alertMsg('ติ๊กรายการที่รวมอยู่ในชุดอย่างน้อย 1 รายการ'); return; }
+    apiPost({ action: 'save_bundle', bundle: ed.bundle, old: ed.old, members: ed.members }).then(function () {
+      state.bundleEdit = null;
+      state.dirty = false;
+      toast('บันทึกชุดอะไหล่แล้ว');
+      return reload();
+    }).catch(fail);
+  }
+
+  function onBundlesClick(e) {
+    var btn = e.target.closest('[data-bact]');
+    if (!btn || btn.disabled) { return; }
+    var act = btn.getAttribute('data-bact');
+    var card = btn.closest('.mn-cls-bundle');
+    var name = card ? card.getAttribute('data-bundle') : '';
+    if (act === 'new') { openBundle(null); }
+    else if (act === 'edit') { openBundle(bundleRows().filter(function (b) { return b.bundle === name; })[0]); }
+    else if (act === 'cancel') { guardDirty(closeBundle); }
+    else if (act === 'save') { saveBundle(); }
+    else if (act === 'unpick') { toggleMember(btn.getAttribute('data-m'), false); }
+    else if (act === 'del') {
+      confirmMsg('ลบชุด “' + name + '” ?\n\nรายการซ่อมไม่ถูกลบ — แค่ยกเลิกการรวมชุด ใบงานจะส่งรายการแยกตามผลตรวจ', function () {
+        apiPost({ action: 'delete_bundle', bundle: name }).then(function () {
+          toast('ลบชุดแล้ว');
+          return reload();
+        }).catch(fail);
+      }, { variant: 'danger', ok: 'ลบชุด' });
+    }
+  }
+
+  function onBundlesInput(e) {
+    var ed = state.bundleEdit;
+    var t = e.target;
+    var b = t.getAttribute('data-b');
+    if (!ed || !b) { return; }
+    if (b === 'q' && e.type === 'input') {
+      ed.q = t.value;
+      renderBundlePick();
+    } else if (b === 'bundle' && e.type === 'change') {
+      ed.bundle = t.value;
+      ed.members = ed.members.filter(function (m) { return m !== t.value; });
+      state.dirty = true;
+      renderBundlePick();
+    } else if (b === 'm' && e.type === 'change') {
+      toggleMember(t.value, t.checked);
+    }
+  }
+
+  // ---------- reasons pane (เหตุผลทางเทคนิคของการเปลี่ยนอะไหล่) ----------
+
+  var reasonsAll = false;
+
+  function usedRates() {
+    var d = state.data;
+    var out = [];
+    var add = function (r) { r = (r || '').trim(); if (r && out.indexOf(r) === -1) { out.push(r); } };
+    d.items.forEach(function (it) {
+      if (!it.enabled) { return; }
+      if (it.type === 'options') { it.options.forEach(function (o) { add(o.rate); }); } else { add(it.rate_fail); }
+    });
+    (d.bundles || []).forEach(function (b) { add(b.bundle); });
+    return out.filter(function (r) { return (d.rates || []).indexOf(r) !== -1; });
+  }
+
+  function renderReasonsPane() {
+    var d = state.data;
+    var pane = $('mn_cls_pane_reasons');
+    if (d.share_from) {
+      pane.innerHTML = '<div class="mn-cls-note"><i class="fa fa-link" aria-hidden="true"></i><div><b>รุ่นนี้ใช้รายการตรวจร่วมกับ ' + esc(d.share_from)
+        + '</b><p>เหตุผลเปลี่ยนอะไหล่ใช้ของรุ่นนั้นด้วย | ตั้งค่าที่รุ่น ' + esc(d.share_from) + '</p></div></div>';
+      return;
+    }
+    var reasons = d.reasons || {};
+    var list = reasonsAll ? (d.rates || []) : usedRates();
+    var html = '<div class="mn-cls-card mn-cls-reasons"><div class="mn-cls-card__head"><h3>เหตุผลทางเทคนิคของการเปลี่ยนอะไหล่</h3>'
+      + '<p class="mn-cls-muted">ระบบใช้ข้อความนี้ร่าง “ความเห็นช่าง” ในหน้าประเมิน ต่อจากสิ่งที่ตรวจพบ เช่น “หน้าจอ 7 นิ้ว: ตรวจพบการ TouchScreen กดไม่ติดทั้งจอ '
+      + '<b>Panel TouchScreen ประกอบติดกับจอแสดงผล ไม่สามารถเปลี่ยนแยกได้ จึงต้องเปลี่ยนทั้งชุด</b>” ถ้ายังไม่ได้ตั้ง ระบบใช้ประโยคทั่วไปแทน</p></div>'
+      + '<label class="mn-cls-check mn-cls-reasons__all"><input type="checkbox" id="mn_cls_reasons_all"' + (reasonsAll ? ' checked' : '') + ' /> '
+      + 'แสดงรายการซ่อมทั้งหมดของรุ่น (ปกติแสดงเฉพาะรายการที่ข้อตรวจแนะนำ)</label>';
+    if (!list.length) {
+      html += '<div class="mn-cls-bempty"><i class="fa fa-wrench" aria-hidden="true"></i> ยังไม่มีรายการซ่อมที่ข้อตรวจแนะนำ</div>';
+    }
+    html += '<ul class="mn-cls-rlist">' + list.map(function (r) {
+      var v = reasons[r] || '';
+      return '<li class="mn-cls-rrow' + (v ? ' is-set' : '') + '"><div class="mn-cls-rrow__name"><i class="fa fa-wrench" aria-hidden="true"></i> ' + esc(r)
+        + '<span class="mn-cls-rrow__st" aria-live="polite"></span></div>'
+        + '<textarea class="mn-cls-input mn-cls-input--sm mn-cls-rrow__in" rows="2" maxlength="1000" data-rate="' + esc(r) + '" data-orig="' + esc(v) + '"'
+        + ' aria-label="เหตุผลการเปลี่ยน ' + esc(r) + '" placeholder="อธิบายว่าทำไมต้องเปลี่ยนชิ้นนี้ หรือผลเสียถ้าไม่เปลี่ยน">' + esc(v) + '</textarea></li>';
+    }).join('') + '</ul></div>';
+    pane.innerHTML = html;
+  }
+
+  function onReasonsChange(e) {
+    var t = e.target;
+    if (t.id === 'mn_cls_reasons_all') { reasonsAll = t.checked; renderReasonsPane(); return; }
+    if (!t.classList.contains('mn-cls-rrow__in')) { return; }
+    var rate = t.getAttribute('data-rate');
+    var val = t.value.trim();
+    if (val === (t.getAttribute('data-orig') || '')) { return; }
+    var st = t.closest('.mn-cls-rrow').querySelector('.mn-cls-rrow__st');
+    st.textContent = 'กำลังบันทึก…';
+    apiPost({ action: 'save_reason', rate: rate, reason: val }).then(function () {
+      t.setAttribute('data-orig', val);
+      if (!state.data.reasons || Array.isArray(state.data.reasons)) { state.data.reasons = {}; }
+      if (val) { state.data.reasons[rate] = val; } else { delete state.data.reasons[rate]; }
+      t.closest('.mn-cls-rrow').classList.toggle('is-set', !!val);
+      st.textContent = 'บันทึกแล้ว';
+      setTimeout(function () { st.textContent = ''; }, 1600);
+    }).catch(function (err) { st.textContent = ''; fail(err); });
+  }
+
   function saveNamed(kind, id, name, onDone) {
     var g = kind === 'group' ? (state.data.groups.filter(function (x) { return x.id === id; })[0] || {}) : {};
     apiPost({ action: 'save_' + kind, id: id, name: name, note: g.note || '' })
@@ -573,7 +844,7 @@
         + '<td class="mn-cls-ex">' + c.inform.map(function (x) { return '<div>• ' + esc(x.text) + (x.n > 1 ? ' <span class="mn-cls-muted">(' + x.n + ')</span>' : '') + '</div>'; }).join('')
         + c.examples.map(function (x) { return '<div class="mn-cls-ex__tech"><span class="mn-cls-muted">' + esc(x.d) + '</span> ' + esc(x.text) + '</div>'; }).join('') + '</td></tr>';
     }).join('');
-    return '<p class="mn-cls-muted">จากงานซ่อมที่มีรายการซ่อม ' + h.total.toLocaleString() + ' งาน · ใช้ประกอบการออกแบบว่าควรตรวจอะไรและแนะนำอะไหล่อะไร</p>'
+    return '<p class="mn-cls-muted">จากงานซ่อมที่มีรายการซ่อม ' + h.total.toLocaleString() + ' งาน | ใช้ประกอบการออกแบบว่าควรตรวจอะไรและแนะนำอะไหล่อะไร</p>'
       + '<h3 class="mn-cls-h3">รายการซ่อม / อะไหล่ที่ใช้บ่อย</h3><div class="mn-cls-tablewrap"><table class="mn-cls-table"><thead><tr><th>#</th><th>รายการซ่อม</th><th>งาน</th><th>%</th><th>ตัวอย่างการประเมิน</th></tr></thead><tbody>' + parts + '</tbody></table></div>'
       + '<h3 class="mn-cls-h3">ชุดรายการซ่อมที่พบบ่อย</h3><div class="mn-cls-tablewrap"><table class="mn-cls-table"><thead><tr><th>#</th><th>ชุดรายการซ่อม</th><th>งาน</th><th>%</th><th>อาการที่แจ้ง / การประเมิน</th></tr></thead><tbody>' + combos + '</tbody></table></div>';
   }
@@ -590,7 +861,14 @@
     };
   }
 
-  function blankOpt(label) { return { label: label, note: false, rate: '', color: '' }; }
+  function blankOpt(label) { return { label: label, note: false, note_default: '', rate: '', color: '', group: 0 }; }
+
+  var GROUPS = ['เลือกร่วมกับข้ออื่นได้', 'กลุ่ม 1 (เลือกได้ข้อเดียว)', 'กลุ่ม 2 (เลือกได้ข้อเดียว)', 'กลุ่ม 3 (เลือกได้ข้อเดียว)'];
+
+  function groupSelect(o) {
+    return '<select class="mn-cls-input mn-cls-input--sm mn-cls-optgrp' + (o.group ? ' is-set' : '') + '" data-o="group" title="ตัวเลือกที่อยู่กลุ่มเดียวกันเลือกพร้อมกันไม่ได้">'
+      + GROUPS.map(function (g, gi) { return '<option value="' + gi + '"' + ((o.group || 0) === gi ? ' selected' : '') + '>' + g + '</option>'; }).join('') + '</select>';
+  }
 
   function openEditor(item) {
     state.sel = item ? item.id : 'new';
@@ -679,16 +957,20 @@
           + (palOpen === i ? palette(o) : '')
           + (i === 0 ? '<p class="mn-cls-fhint">ตัวเลือกแรก = ผลปกติ ไม่แนะนำอะไหล่</p>'
             : '<div class="mn-cls-opt__sub">' + rateSelect('rate', o.rate).replace('data-f="rate"', 'data-o="rate"')
-              + '<label class="mn-cls-check"><input type="checkbox" data-o="note"' + (o.note ? ' checked' : '') + ' /> ให้พิมพ์รายละเอียด</label></div>')
+              + (d.multi ? groupSelect(o) : '')
+              + '<label class="mn-cls-check"><input type="checkbox" data-o="note"' + (o.note ? ' checked' : '') + ' /> ให้พิมพ์รายละเอียด</label>'
+              + '<textarea class="mn-cls-input mn-cls-input--sm mn-cls-notedef" data-o="note_default" rows="2" maxlength="200"' + (o.note ? '' : ' hidden')
+              + ' placeholder="ค่าเริ่มต้นของรายละเอียด (ไม่บังคับ) เช่น พบที่ตำแหน่ง…">' + esc(o.note_default || '') + '</textarea></div>')
           + '</div>'
           + (i > 1 ? '<button type="button" class="mn-cls-ibtn mn-cls-ibtn--del" data-o-del="' + i + '" aria-label="ลบตัวเลือก"><i class="fa fa-times"></i></button>' : '<span class="mn-cls-ibtn-sp"></span>')
           + '</li>';
       }).join('');
       return field('ตัวเลือก → รายการซ่อมที่แนะนำ', '<label class="mn-cls-multi' + (d.multi ? ' is-on' : '') + '"><input type="checkbox" data-f="multi"' + (d.multi ? ' checked' : '') + ' />'
-        + '<span><b>เลือกได้หลายค่า</b><small>ช่างกดได้หลายปุ่มพร้อมกัน (ยกเว้นตัวเลือกแรก) และแนะนำรายการซ่อมของทุกปุ่มที่กด</small></span></label>'
+        + '<span><b>เลือกได้หลายค่า</b><small>ช่างกดได้หลายปุ่มพร้อมกัน (ยกเว้นตัวเลือกแรก) และแนะนำรายการซ่อมของทุกปุ่มที่กด'
+        + ' | ตั้ง “กลุ่ม” ให้ตัวเลือกที่ห้ามเลือกพร้อมกัน เช่น กล่องแตกเล็กน้อย / กล่องแตกเยอะ</small></span></label>'
         + '<ul class="mn-cls-opts">' + rows + '</ul>'
         + (d.options.length < MAX_OPTS ? '<button type="button" class="mn-cls-add mn-cls-add--sm" id="mn_cls_e_addopt"><i class="fa fa-plus" aria-hidden="true"></i> เพิ่มตัวเลือก</button>' : ''),
-        'กดจุดสีหน้าตัวเลือกเพื่อเปลี่ยนสีปุ่ม · ค่าเริ่มต้น: เขียว = ปกติ, ส้ม = ผิดปกติเล็กน้อย, แดง = เสีย');
+        'กดจุดสีหน้าตัวเลือกเพื่อเปลี่ยนสีปุ่ม | ค่าเริ่มต้น: เขียว = ปกติ, ส้ม = ผิดปกติเล็กน้อย, แดง = เสีย');
     }
     if (d.type === 'number') {
       return '<div class="mn-cls-grid3">'
@@ -722,7 +1004,8 @@
       body = d.options.map(function (o, i) {
         if (!o.label) { return ''; }
         return '<span class="mn-cls-pv-opt mn-cls-pv-opt--c" style="' + colorVars(optColor(o, i)) + '">'
-          + (d.multi && i > 0 ? '<i class="fa fa-check-square-o" aria-hidden="true"></i> ' : '') + esc(o.label) + '</span>';
+          + (d.multi && i > 0 ? '<i class="fa fa-check-square-o" aria-hidden="true"></i> ' : '') + esc(o.label)
+          + (d.multi && i > 0 && o.group ? '<sup class="mn-cls-pv-grp">' + o.group + '</sup>' : '') + '</span>';
       }).join('') + (d.multi ? '<span class="mn-cls-muted mn-cls-pv-note">เลือกได้หลายค่า</span>' : '');
     } else if (d.type === 'number') {
       body = '<span class="mn-cls-pv-in">0</span><span class="mn-cls-muted">' + esc(d.unit || 'หน่วย') + '</span>'
@@ -758,13 +1041,18 @@
     var o = t.getAttribute('data-o');
     if (f) {
       if (f === 'enabled') { d.enabled = t.checked; }
-      else if (f === 'multi') { d.multi = t.checked; t.closest('.mn-cls-multi').classList.toggle('is-on', t.checked); }
+      else if (f === 'multi') { d.multi = t.checked; $('mn_cls_typebody').innerHTML = typeBody(d); }
       else if (f === 'symptom_id' || f === 'group_id') { d[f] = parseInt(t.value, 10) || 0; }
       else { d[f] = t.value; }
       markDirty();
     } else if (o) {
       var i = parseInt(t.closest('.mn-cls-opt').getAttribute('data-i'), 10);
-      d.options[i][o] = o === 'note' ? t.checked : t.value;
+      d.options[i][o] = o === 'note' ? t.checked : (o === 'group' ? parseInt(t.value, 10) || 0 : t.value);
+      if (o === 'group') { t.classList.toggle('is-set', d.options[i].group > 0); }
+      if (o === 'note') {
+        var nd = t.closest('.mn-cls-opt').querySelector('[data-o="note_default"]');
+        if (nd) { nd.hidden = !t.checked; if (t.checked) { nd.focus(); } }
+      }
       markDirty();
     }
   }
@@ -899,6 +1187,9 @@
     // ส่งสัญญาณทุก 5 นาที กัน session หมดอายุระหว่างแก้ไขนาน ๆ
     setInterval(function () { apiGet({ action: 'ping' }).catch(fail); }, 5 * 60 * 1000);
 
+    var sync = $('mn_cls_sync');
+    if (sync) { sync.addEventListener('click', onSyncClick); }
+
     $('mn_cls_search').addEventListener('input', renderProducts);
     $('mn_cls_plist').addEventListener('click', function (e) {
       var b = e.target.closest('.mn-cls-prod');
@@ -926,6 +1217,13 @@
     setup.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && e.target.classList.contains('mn-cls-nrow__in')) { e.preventDefault(); e.target.blur(); }
     });
+
+    $('mn_cls_pane_reasons').addEventListener('change', onReasonsChange);
+
+    var bundles = $('mn_cls_pane_bundles');
+    bundles.addEventListener('click', onBundlesClick);
+    bundles.addEventListener('input', onBundlesInput);
+    bundles.addEventListener('change', onBundlesInput);
 
     var ed = $('mn_cls_editor');
     ed.addEventListener('input', onEditorInput);

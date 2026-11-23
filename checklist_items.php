@@ -31,6 +31,8 @@ foreach ($items as $item) {
         $parts    = explode('|', $opts_raw);
         $rates    = json_decode((string) (isset($item['ci_opt_rates']) ? $item['ci_opt_rates'] : ''), true);
         $colors   = json_decode((string) (isset($item['ci_opt_colors']) ? $item['ci_opt_colors'] : ''), true);
+        $notes    = json_decode((string) (isset($item['ci_opt_notes']) ? $item['ci_opt_notes'] : ''), true);
+        $groups   = json_decode((string) (isset($item['ci_opt_groups']) ? $item['ci_opt_groups'] : ''), true);
         $opts_arr = array();
         foreach ($parts as $pi => $part) {
             $part     = trim($part);
@@ -41,7 +43,9 @@ foreach ($items as $item) {
                     ? (isset($rates[$pi]) ? (string) $rates[$pi] : '')
                     : ($pi > 0 ? (string) $item['ci_rate_on_fail'] : '');
                 $color = is_array($colors) && isset($colors[$pi]) ? (string) $colors[$pi] : '';
-                $opts_arr[] = array('label' => $label, 'has_note' => $has_note, 'rate' => $rate, 'color' => $color);
+                $note_default = $has_note && is_array($notes) && isset($notes[$pi]) ? (string) $notes[$pi] : '';
+                $group = is_array($groups) && isset($groups[$pi]) ? (int) $groups[$pi] : 0;
+                $opts_arr[] = array('label' => $label, 'has_note' => $has_note, 'note_default' => $note_default, 'rate' => $rate, 'color' => $color, 'group' => $group);
             }
         }
         if (count($opts_arr) === 0) { $opts_arr = null; }

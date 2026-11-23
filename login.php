@@ -112,7 +112,7 @@ header('Content-type: text/html; charset=utf-8');
     <div class="mn-login-card">
       <div class="mn-login-card__head">
         <div class="mn-login-card__brand">Maintenance</div>
-        <div class="mn-login-card__tagline">ระบบจัดการงานซ่อม · ภายในองค์กร</div>
+        <div class="mn-login-card__tagline">ระบบจัดการงานซ่อม | ภายในองค์กร</div>
       </div>
 
       <div class="mn-login-card__body">

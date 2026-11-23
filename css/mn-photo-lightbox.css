@@ -1,0 +1,45 @@
+/* หน้าต่างดูรูป + แถบรูปเล็ก (ใช้ร่วม: assess_repair / checklist_try / status_offer_price) — คู่กับ js/mn-photo-lightbox.js */
+
+.mn-plb {
+  position: fixed; inset: 0; z-index: 3000;
+  background: rgba(10, 15, 25, 0.88);
+  display: flex; align-items: center; justify-content: center;
+  padding: 48px 56px;
+  animation: mnPlbFade 0.2s ease both;
+}
+.mn-plb[hidden] { display: none; }
+.mn-plb__fig { margin: 0; max-width: 92vw; max-height: calc(100vh - 96px); min-width: 0; min-height: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.mn-plb__fig img {
+  width: auto; height: auto; max-width: 92vw; max-height: calc(100vh - 140px);
+  object-fit: contain; border-radius: 8px; background: #fff;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+.mn-plb__fig figcaption { color: #e2e8f0; font-size: 14px; text-align: center; }
+.mn-plb__close, .mn-plb__nav {
+  position: absolute; appearance: none; -webkit-appearance: none; border: 0; cursor: pointer;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14); color: #fff; font-size: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.mn-plb__close:hover, .mn-plb__nav:hover { background: rgba(255, 255, 255, 0.26); }
+.mn-plb__close:focus-visible, .mn-plb__nav:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.mn-plb__close { top: 14px; right: 14px; font-size: 18px; }
+.mn-plb__nav--prev { left: 10px; top: 50%; transform: translateY(-50%); }
+.mn-plb__nav--next { right: 10px; top: 50%; transform: translateY(-50%); }
+.mn-plb__nav[hidden] { display: none; }
+body.mn-plb-open { overflow: hidden; }
+@keyframes mnPlbFade { from { opacity: 0; } to { opacity: 1; } }
+
+/* แถบรูปเล็ก (แผงประวัติซ่อม / หน้ารอเสนอราคา) */
+.mn-photo-strip { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.mn-photo-strip__img {
+  appearance: none; -webkit-appearance: none; padding: 0; border: 1px solid #e2e8f0; background: #f1f4f8;
+  width: 52px; height: 52px; border-radius: 8px; overflow: hidden; cursor: zoom-in; flex-shrink: 0;
+}
+.mn-photo-strip__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mn-photo-strip__img:hover { border-color: #0369a1; }
+.mn-photo-strip__img:focus-visible { outline: 2px solid #0369a1; outline-offset: 2px; }
+.mn-photo-strip__more { align-self: center; font-size: 12px; color: #64748b; }
+@media (prefers-reduced-motion: reduce) {
+  .mn-plb { animation: none; }
+}

@@ -242,6 +242,8 @@ if (!function_exists('maintenance_checklist_ensure_tables')) {
             . '`ci_opt_rates` TEXT ' . $col . ' NULL DEFAULT NULL,'
             . '`ci_opt_colors` VARCHAR(200) ' . $col . ' NULL DEFAULT NULL,'
             . '`ci_multi` TINYINT(1) NOT NULL DEFAULT 0,'
+            . '`ci_opt_notes` TEXT ' . $col . ' NULL DEFAULT NULL,'
+            . '`ci_opt_groups` VARCHAR(100) ' . $col . ' NULL DEFAULT NULL,'
             . '`ci_auto_source` VARCHAR(50) ' . $col . ' NULL DEFAULT NULL,'
             . '`ci_enabled` TINYINT(1) NOT NULL DEFAULT 1,'
             . 'PRIMARY KEY (`ci_id`),'
@@ -322,12 +324,44 @@ if (!function_exists('maintenance_checklist_ensure_tables')) {
             if ($upd) { mysqli_stmt_close($upd); }
         }
 
+        // ชุดรายการซ่อม: รายการชุด (เช่น MA เปลี่ยนอะไหล่พื้นฐาน) รวมรายการย่อยไว้แล้ว — ถ้าใบงานมีรายการชุด ไม่ต้องส่งรายการย่อยแยก
+        mysqli_query($connect,
+            'CREATE TABLE IF NOT EXISTS `cl_rate_bundle` ('
+            . '`crb_id` INT NOT NULL AUTO_INCREMENT,'
+            . '`crb_product` VARCHAR(100) ' . $col . ' NOT NULL,'
+            . '`crb_bundle` VARCHAR(255) ' . $col . ' NOT NULL,'
+            . '`crb_member` VARCHAR(255) ' . $col . ' NOT NULL,'
+            . 'PRIMARY KEY (`crb_id`),'
+            . 'INDEX `idx_crb_product` (`crb_product`)'
+            . $tbl
+        );
+
+        // เหตุผลทางเทคนิคของรายการซ่อม — ใช้ร่าง "ความเห็นช่าง" ว่าทำไมจึงเสนอเปลี่ยนอะไหล่นี้
+        mysqli_query($connect,
+            'CREATE TABLE IF NOT EXISTS `cl_rate_reason` ('
+            . '`crr_id` INT NOT NULL AUTO_INCREMENT,'
+            . '`crr_product` VARCHAR(100) ' . $col . ' NOT NULL,'
+            . '`crr_rate` VARCHAR(255) ' . $col . ' NOT NULL,'
+            . '`crr_reason` TEXT ' . $col . ' NOT NULL,'
+            . 'PRIMARY KEY (`crr_id`),'
+            . 'INDEX `idx_crr_product` (`crr_product`)'
+            . $tbl
+        );
+
         // migrate: สีของแต่ละตัวเลือก + ตัวเลือกแบบเลือกได้หลายค่า
         if (!maintenance_checklist_column_exists($connect, 'cl_item', 'ci_opt_colors')) {
             mysqli_query($connect, 'ALTER TABLE cl_item ADD COLUMN ci_opt_colors VARCHAR(200) ' . $col . ' NULL DEFAULT NULL AFTER ci_opt_rates');
         }
         if (!maintenance_checklist_column_exists($connect, 'cl_item', 'ci_multi')) {
             mysqli_query($connect, 'ALTER TABLE cl_item ADD COLUMN ci_multi TINYINT(1) NOT NULL DEFAULT 0 AFTER ci_opt_colors');
+        }
+        // migrate: ข้อความเริ่มต้นของช่องรายละเอียด (JSON array ตามลำดับตัวเลือก)
+        if (!maintenance_checklist_column_exists($connect, 'cl_item', 'ci_opt_notes')) {
+            mysqli_query($connect, 'ALTER TABLE cl_item ADD COLUMN ci_opt_notes TEXT ' . $col . ' NULL DEFAULT NULL AFTER ci_multi');
+        }
+        // migrate: กลุ่มตัวเลือกที่เลือกได้ข้อเดียว (JSON array ตามลำดับตัวเลือก 0 = ไม่มีกลุ่ม)
+        if (!maintenance_checklist_column_exists($connect, 'cl_item', 'ci_opt_groups')) {
+            mysqli_query($connect, 'ALTER TABLE cl_item ADD COLUMN ci_opt_groups VARCHAR(100) ' . $col . ' NULL DEFAULT NULL AFTER ci_opt_notes');
         }
 
         // migrate: อาการแยกตามรุ่น — อาการเดิมทั้งหมดใช้กับ bitVisitor Plus
@@ -381,6 +415,50 @@ if (!function_exists('maintenance_checklist_effective_product')) {
     }
 }
 
+/**
+ * ชุดรายการซ่อมของรุ่น (ใช้รุ่นต้นทางถ้าตั้งใช้ร่วม) → array( array('bundle' => ชื่อรายการชุด, 'members' => array(รายการย่อย...)), ... )
+ */
+if (!function_exists('maintenance_checklist_fetch_bundles')) {
+    function maintenance_checklist_fetch_bundles($connect, $product)
+    {
+        $eff = maintenance_checklist_effective_product($connect, $product);
+        $stmt = mysqli_prepare($connect, 'SELECT crb_bundle, crb_member FROM cl_rate_bundle WHERE crb_product = ? ORDER BY crb_id');
+        if (!$stmt) { return array(); }
+        mysqli_stmt_bind_param($stmt, 's', $eff);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $map = array();
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $map[(string) $row['crb_bundle']][] = (string) $row['crb_member'];
+        }
+        mysqli_stmt_close($stmt);
+        $out = array();
+        foreach ($map as $bundle => $members) { $out[] = array('bundle' => $bundle, 'members' => $members); }
+        return $out;
+    }
+}
+
+/**
+ * เหตุผลทางเทคนิคของรายการซ่อม (ใช้รุ่นต้นทางถ้าตั้งใช้ร่วม) → array( ชื่อรายการซ่อม => เหตุผล )
+ */
+if (!function_exists('maintenance_checklist_fetch_rate_reasons')) {
+    function maintenance_checklist_fetch_rate_reasons($connect, $product)
+    {
+        $eff = maintenance_checklist_effective_product($connect, $product);
+        $stmt = mysqli_prepare($connect, 'SELECT crr_rate, crr_reason FROM cl_rate_reason WHERE crr_product = ? ORDER BY crr_id');
+        if (!$stmt) { return array(); }
+        mysqli_stmt_bind_param($stmt, 's', $eff);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $out = array();
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            if (trim((string) $row['crr_reason']) !== '') { $out[(string) $row['crr_rate']] = (string) $row['crr_reason']; }
+        }
+        mysqli_stmt_close($stmt);
+        return $out;
+    }
+}
+
 if (!function_exists('maintenance_checklist_product_supported')) {
     function maintenance_checklist_product_supported($connect, $product)
     {
@@ -422,7 +500,7 @@ if (!function_exists('maintenance_checklist_fetch_items')) {
     function maintenance_checklist_fetch_items($connect, $product, $symptom_id)
     {
         $sql = 'SELECT i.ci_id, i.ci_step, i.ci_question, i.ci_rate_on_fail, i.ci_hint,'
-            . ' i.ci_unit, i.ci_val_min, i.ci_val_max, i.ci_opts, i.ci_opt_rates, i.ci_opt_colors, i.ci_multi, i.ci_auto_source, i.ci_group_id,'
+            . ' i.ci_unit, i.ci_val_min, i.ci_val_max, i.ci_opts, i.ci_opt_rates, i.ci_opt_colors, i.ci_multi, i.ci_opt_notes, i.ci_opt_groups, i.ci_auto_source, i.ci_group_id,'
             . ' COALESCE(g.cg_name, \'\') AS group_name, COALESCE(g.cg_order, 9999) AS group_order'
             . ' FROM cl_item i'
             . ' LEFT JOIN cl_group g ON g.cg_id = i.ci_group_id'
@@ -489,6 +567,37 @@ if (!function_exists('maintenance_checklist_fetch_all_job_headers')) {
         }
         mysqli_stmt_close($stmt);
         return $out;
+    }
+}
+
+/**
+ * ลบผลตรวจของอาการที่ไม่ได้เลือกแล้ว (เคยบันทึกไว้รอบก่อน) — $keep = symptom id ที่ยังเลือกอยู่
+ */
+if (!function_exists('maintenance_checklist_prune_symptoms')) {
+    function maintenance_checklist_prune_symptoms($connect, $trp_id, array $keep)
+    {
+        $t = (int) $trp_id;
+        $keep_ids = array();
+        foreach ($keep as $k) { if ((int) $k > 0) { $keep_ids[] = (int) $k; } }
+        foreach (array_keys(maintenance_checklist_fetch_all_job_headers($connect, $t)) as $sid) {
+            $sid = (int) $sid;
+            if ($sid === 0 || in_array($sid, $keep_ids, true)) { continue; }
+            $del = mysqli_prepare($connect,
+                'DELETE ji FROM cl_job_item ji INNER JOIN cl_item i ON i.ci_id = ji.cji_item_id'
+                . ' WHERE ji.cji_trp_id = ? AND i.ci_symptom_id = ?'
+            );
+            if ($del) {
+                mysqli_stmt_bind_param($del, 'ii', $t, $sid);
+                mysqli_stmt_execute($del);
+                mysqli_stmt_close($del);
+            }
+            $del = mysqli_prepare($connect, 'DELETE FROM cl_job_header WHERE ch_trp_id = ? AND ch_symptom_id = ?');
+            if ($del) {
+                mysqli_stmt_bind_param($del, 'ii', $t, $sid);
+                mysqli_stmt_execute($del);
+                mysqli_stmt_close($del);
+            }
+        }
     }
 }
 

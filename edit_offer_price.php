@@ -104,7 +104,7 @@ $qv_number = isset($row['trp_qv_number']) ? (string) $row['trp_qv_number'] : '';
         <section class="mn-edit-offer-price-summary" aria-label="ข้อมูลใบซ่อม">
           <dl>
             <dt>เลขที่ซ่อม / วันที่ประเมิน</dt>
-            <dd><?php echo maintenance_status_logistic_h($mtn); ?> &nbsp;·&nbsp; <?php echo maintenance_status_logistic_h($rate_date); ?></dd>
+            <dd><?php echo maintenance_status_logistic_h($mtn); ?> &nbsp;|&nbsp; <?php echo maintenance_status_logistic_h($rate_date); ?></dd>
             <dt>บริษัท / ผู้ติดต่อ</dt>
             <dd><?php echo $detail_html; ?></dd>
             <dt>รายการซ่อม</dt>

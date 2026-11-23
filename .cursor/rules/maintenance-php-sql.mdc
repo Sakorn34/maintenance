@@ -101,7 +101,7 @@ alwaysApply: true
 | `update_rate` | `status_rate` | `mn-update-rate-page` | `mn-page-update-rate.css` |
 | `assess_repair` | `status_rate` | `mn-assess-repair-page` | `mn-page-assess-repair.css` *(ตรวจเช็คและประเมินแบบทีละขั้น — ลิงก์จาก `update_rate` เฉพาะรุ่นที่มี checklist; บันทึกผ่าน `save_checklist` แล้วส่งต่อ `save_rate`)* |
 | `checklist_try` | `checklist_settings` *(ไม่มีในเมนู — เปิดจากปุ่ม「ทดลองใช้งาน」ในหน้า `checklist_settings`)* | `mn-assess-repair-page mn-assess-repair-page--demo` | `mn-page-assess-repair.css` *(ทดลองหน้าประเมินแบบช่างโดยไม่มีใบงานและไม่บันทึกข้อมูล — ใช้ `js/assess_repair-page.js` โหมด demo)* |
-| `checklist_settings` | `checklist_settings` *(ไม่มีในเมนู — เข้าจากไอคอนตั้งค่าในหน้า `assess_repair` หรือลิงก์ใน `update_rate`)* | `mn-checklist-settings-page` | `mn-page-checklist-settings.css` *(ตั้งค่าข้อตรวจ / อาการ / กลุ่มชิ้นส่วน / ใช้ร่วมกับรุ่น ต่อรุ่นสินค้า)* |
+| `checklist_settings` | `checklist_settings` *(ไม่มีในเมนู — เข้าจากไอคอนตั้งค่าในหน้า `assess_repair` หรือลิงก์ใน `update_rate`)* | `mn-checklist-settings-page` | `mn-page-checklist-settings.css` *(ตั้งค่าข้อตรวจ / อาการ / กลุ่มชิ้นส่วน / ชุดอะไหล่ / ใช้ร่วมกับรุ่น ต่อรุ่นสินค้า)* |
 | `save_rate` | *(ไม่มี `title-h` — หน้า modal แล้ว redirect)* | *(ไม่มี class ที่สอง)* | *(ไม่มี — ใช้ modal asset เท่านั้น)* |
 | `edit_offer_price` | `status_offer_price` | `mn-edit-offer-price-page` | `mn-page-edit-offer-price.css` |
 | `update_offer_price` | *(ไม่มี `title-h` — หน้า modal แล้ว redirect)* | *(ไม่มี class ที่สอง)* | *(ไม่มี — ใช้ modal asset เท่านั้น)* |
@@ -124,7 +124,9 @@ alwaysApply: true
 | `checklist_items` | *(AJAX JSON — ไม่มี HTML)* | *(ไม่มี)* | *(ไม่มี)* |
 | `save_checklist` | *(AJAX JSON — ไม่มี HTML)* | *(ไม่มี)* | *(ไม่มี)* |
 | `suggest_rates` | *(AJAX JSON — ไม่มี HTML)* | *(ไม่มี)* | *(ไม่มี)* |
-| `checklist_settings_api` | *(AJAX JSON — GET products/load/history · POST บันทึก/ลบ/เรียงลำดับ)* | *(ไม่มี)* | *(ไม่มี)* |
+| `checklist_settings_api` | *(AJAX JSON — GET products/load/history | POST บันทึก/ลบ/เรียงลำดับ)* | *(ไม่มี)* | *(ไม่มี)* |
+| `checklist_export` | *(JSON — ส่งออกการตั้งค่า checklist ให้ localhost ดึงไปใช้ ยืนยันด้วย header `X-Checklist-Token` ตาม `config/checklist_sync.local.php` ไม่ใช้ session)* | *(ไม่มี)* | *(ไม่มี)* |
+| `checklist_photo` | *(รูปประกอบการประเมิน — GET ?id=&s=t หรือ f ส่งรูป (ต้องล็อกอิน), POST upload/delete, ?action=drive_check / drive_push สำหรับ Google Drive, ไฟล์อยู่ `storage/photos` ปิดการเข้าถึงตรงด้วย .htaccess แล้วย้ายขึ้น Drive ถ้าตั้ง config/google_drive.local.php)* | *(ไม่มี)* | *(ไม่มี)* |
 
 **หมายเหตุ**
 

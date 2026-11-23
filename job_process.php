@@ -293,7 +293,7 @@ require_once __DIR__ . '/includes/mn_logistics_tracking_assets.php';
                     echo '</span> (ใช้ได้ถึง ';
                     echo maintenance_status_logistic_h($jpHistExpire !== '' ? $jpHistExpire : '—');
                     if ($jpHistActivate !== '') {
-                        echo ' · ต่ออายุเมื่อ ';
+                        echo ' | ต่ออายุเมื่อ ';
                         echo maintenance_status_logistic_h($jpHistActivate);
                     }
                     echo ')';

@@ -4,7 +4,7 @@
   --mn-workspace-width: 100%;
   --ar-ink: #0f172a;
   --ar-ink-2: #475569;
-  --ar-ink-3: #94a3b8;
+  --ar-ink-3: #64748b; /* เทารอง — คมชัด ~4.8:1 บนพื้นขาว (เดิม #94a3b8 = 2.6:1) */
   --ar-line: #e5e9f0;
   --ar-line-2: #d5dce6;
   --ar-bg: #f6f8fb;
@@ -666,3 +666,265 @@
 }
 .mn-assess-repair-page .mn-ar-opts .mn-ar-auto__tag { align-self: center; }
 .mn-assess-repair-page--demo .mn-ar-note__txt { white-space: pre-line; }
+
+/* ชุดอะไหล่: รายการชุดแสดงรายการย่อยที่รวมไว้แล้ว */
+.mn-assess-repair-page .mn-ar-part__sub { display: block; margin-top: 3px; font-size: 12px; line-height: 1.5; color: var(--ar-ink-3); }
+.mn-assess-repair-page .mn-ar-part__sub .fa { color: var(--ar-accent); margin-right: 2px; }
+.mn-assess-repair-page .mn-ar-part__sub b { font-weight: 600; color: var(--ar-ink-2); }
+.mn-assess-repair-page .mn-ar-part--bundle { align-items: flex-start; }
+.mn-assess-repair-page .mn-ar-search__list li.is-covered { color: var(--ar-ink-3); }
+.mn-assess-repair-page .mn-ar-covered { margin-left: 8px; font-size: 11.5px; color: var(--ar-accent); }
+
+/* ---------- แผงข้าง: ซ้าย = ข้อมูลเครื่อง | ขวา = ประวัติการซ่อม (เฉพาะจอกว้าง) ---------- */
+
+.mn-assess-repair-page .mn-ar-side { display: none; }
+
+@media (min-width: 1180px) {
+  .mn-assess-repair-page {
+    --ar-side-w: min(380px, calc((100vw - 640px) / 2 - 48px));
+  }
+  .mn-assess-repair-page .mn-ar-side {
+    position: fixed;
+    top: calc(var(--ar-head) + 16px);
+    bottom: 16px;
+    width: var(--ar-side-w);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    background: var(--ar-card);
+    border: 1px solid var(--ar-line);
+    border-radius: var(--ar-radius);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+    animation: mnArFade 0.35s ease both;
+  }
+  .mn-assess-repair-page .mn-ar-side--info { left: 24px; }
+  .mn-assess-repair-page .mn-ar-side--hist { right: 24px; }
+  /* จอกว้างมีแผงประวัติด้านขวาแล้ว — ซ่อนส่วนพับในขั้น 1 */
+  .mn-assess-repair-page .mn-ar-step .mn-ar-history { display: none; }
+}
+
+.mn-assess-repair-page .mn-ar-side__head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 13px 16px;
+  font-size: 14px; font-weight: 600; color: var(--ar-ink);
+  border-bottom: 1px solid var(--ar-line);
+  flex-shrink: 0;
+}
+.mn-assess-repair-page .mn-ar-side__head .fa { color: var(--ar-accent); width: 16px; text-align: center; }
+.mn-assess-repair-page .mn-ar-side__head > span:first-of-type { flex: 1; }
+.mn-assess-repair-page .mn-ar-side__count { font-size: 12px; font-weight: 500; color: var(--ar-ink-3); }
+.mn-assess-repair-page .mn-ar-side__body { flex: 1; min-height: 0; overflow: auto; padding: 14px 16px 16px; overscroll-behavior: contain; }
+
+.mn-assess-repair-page .mn-ar-side__product { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; color: var(--ar-ink); }
+.mn-assess-repair-page .mn-ar-side__sn { font-size: 13px; color: var(--ar-ink-2); font-variant-numeric: tabular-nums; margin: 2px 0 10px; }
+.mn-assess-repair-page .mn-ar-side__dl { margin: 0 0 12px; }
+.mn-assess-repair-page .mn-ar-side__dl > div {
+  display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 8px;
+  padding: 8px 0; border-top: 1px solid var(--ar-line);
+}
+.mn-assess-repair-page .mn-ar-side__dl dt { color: var(--ar-ink-3); font-size: 12.5px; padding-top: 1px; }
+.mn-assess-repair-page .mn-ar-side__dl dd { margin: 0; font-size: 13.5px; overflow-wrap: anywhere; line-height: 1.5; }
+.mn-assess-repair-page .mn-ar-side__note {
+  padding: 10px 12px; margin-top: 8px;
+  background: var(--ar-bg); border-left: 3px solid var(--ar-accent); border-radius: 4px 8px 8px 4px;
+}
+.mn-assess-repair-page .mn-ar-side__note p { margin: 0; font-size: 13.5px; line-height: 1.55; overflow-wrap: anywhere; }
+.mn-assess-repair-page .mn-ar-side__note--warn { border-left-color: var(--ar-warn); background: var(--ar-warn-soft); }
+.mn-assess-repair-page .mn-ar-side__foot { margin: 12px 0 0; font-size: 12px; color: var(--ar-ink-3); }
+
+/* รายการประวัติ (แผงขวา + ขั้น 1 บนจอแคบ) */
+.mn-assess-repair-page .mn-ar-hist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.mn-assess-repair-page .mn-ar-hist__item {
+  position: relative;
+  padding: 10px 12px 11px;
+  border: 1px solid var(--ar-line); border-radius: 10px;
+  font-size: 13px; line-height: 1.5; color: var(--ar-ink-2);
+}
+.mn-assess-repair-page .mn-ar-hist__top { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
+.mn-assess-repair-page .mn-ar-hist__no { font-weight: 600; color: var(--ar-ink); font-size: 13.5px; }
+.mn-assess-repair-page .mn-ar-hist__date { margin-left: auto; font-size: 12px; color: var(--ar-ink-3); font-variant-numeric: tabular-nums; }
+.mn-assess-repair-page .mn-ar-hist__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 12px; color: var(--ar-ink-3); }
+.mn-assess-repair-page .mn-ar-hist__status { padding: 1px 8px; border-radius: 999px; background: var(--ar-accent-soft); color: var(--ar-accent); }
+.mn-assess-repair-page .mn-ar-hist__line { margin-top: 4px; overflow-wrap: anywhere; }
+.mn-assess-repair-page .mn-ar-hist__line > span:first-child { display: block; font-size: 11.5px; color: var(--ar-ink-3); }
+.mn-assess-repair-page .mn-ar-hist__line--warn { color: var(--ar-bad); }
+.mn-assess-repair-page .mn-ar-hist__parts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.mn-assess-repair-page .mn-ar-hist__part { padding: 1px 8px; border-radius: 6px; background: #f1f4f8; color: var(--ar-ink); font-size: 12.5px; }
+.mn-assess-repair-page .mn-ar-hist__co { margin-top: 6px; font-size: 11.5px; color: var(--ar-ink-3); }
+.mn-assess-repair-page .mn-ar-hist__empty { margin: 4px 0; font-size: 13.5px; color: var(--ar-ink-3); }
+.mn-assess-repair-page .mn-ar-hist__empty .fa { color: var(--ar-good); margin-right: 4px; }
+
+/* ตรวจตามอาการ: เลือกได้หลายอาการ */
+.mn-assess-repair-page .mn-ar-sub b { font-weight: 600; color: var(--ar-ink); }
+.mn-assess-repair-page .mn-ar-sub__count { margin-left: 4px; color: var(--ar-accent); font-weight: 600; }
+.mn-assess-repair-page .mn-ar-chip__tick { margin-right: 6px; font-size: 12px; animation: mnArTick 0.22s cubic-bezier(0.22, 1, 0.36, 1); }
+.mn-assess-repair-page .mn-ar-symhead {
+  display: flex; align-items: center; gap: 8px;
+  margin: 18px 0 2px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--ar-ink); color: #fff;
+  font-size: 14px; font-weight: 600;
+  animation: mnArRise 0.4s var(--ar-ease) both;
+}
+.mn-assess-repair-page .mn-ar-symhead:first-child { margin-top: 0; }
+.mn-assess-repair-page .mn-ar-symhead small { margin-left: auto; font-size: 12px; font-weight: 500; opacity: 0.75; }
+.mn-assess-repair-page .mn-ar-symempty { padding: 10px 12px; font-size: 13px; color: var(--ar-ink-3); }
+@media (prefers-reduced-motion: reduce) {
+  .mn-assess-repair-page .mn-ar-chip__tick { animation: none; }
+}
+
+/* ข้อตรวจแบบค่าตัวเลข: ช่องค่า + หน่วย + ผล + ปุ่ม อยู่แถวเดียว (ปุ่มเลือกให้อัตโนมัติจากค่าที่วัด) */
+.mn-assess-repair-page .mn-ar-item__body--num { flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: 14px; row-gap: 10px; }
+.mn-assess-repair-page .mn-ar-item__body--num > .mn-ar-measure,
+.mn-assess-repair-page .mn-ar-item__body--num > .mn-ar-opts { margin: 0; }
+.mn-assess-repair-page .mn-ar-item__body--num .mn-ar-measure .mn-ar-input { width: 104px; }
+.mn-assess-repair-page .mn-ar-item__body--num .mn-ar-measure__res:empty { display: none; }
+
+/* สรุปการประเมิน (ข้อความที่ส่งให้ฝ่ายเสนอราคา — สร้างจากผลตรวจและรายการซ่อม) */
+.mn-assess-repair-page .mn-ar-field__hint { font-size: 12px; font-weight: 400; color: var(--ar-ink-3); }
+.mn-assess-repair-page .mn-ar-report {
+  padding: 14px 16px;
+  background: var(--ar-card);
+  border: 1px solid var(--ar-line);
+  border-left: 3px solid var(--ar-accent);
+  border-radius: 6px var(--ar-radius) var(--ar-radius) 6px;
+  font-size: 14px; line-height: 1.6; color: var(--ar-ink);
+}
+.mn-assess-repair-page .mn-ar-report__lead { margin: 0; font-size: 14.5px; font-weight: 500; }
+.mn-assess-repair-page .mn-ar-report__sec { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--ar-line-2); }
+.mn-assess-repair-page .mn-ar-report__sec h4 { margin: 0 0 4px; font-size: 12.5px; font-weight: 600; color: var(--ar-ink-2); letter-spacing: 0.01em; }
+.mn-assess-repair-page .mn-ar-report__sec ul { margin: 0; padding-left: 18px; }
+.mn-assess-repair-page .mn-ar-report__sec li { margin: 2px 0; overflow-wrap: anywhere; }
+.mn-assess-repair-page .mn-ar-report__sec p { margin: 0; color: var(--ar-ink-2); overflow-wrap: anywhere; }
+.mn-assess-repair-page .mn-ar-report:empty::before { content: 'ตอบข้อตรวจให้ครบเพื่อสร้างสรุป'; color: var(--ar-ink-3); }
+.mn-assess-repair-page .mn-ar-report__sec ul.is-plain { list-style: none; padding-left: 0; }
+.mn-assess-repair-page .mn-ar-report__list { margin: 0; padding-left: 22px; }
+.mn-assess-repair-page .mn-ar-report__list li { margin: 4px 0; padding-left: 2px; overflow-wrap: anywhere; }
+.mn-assess-repair-page .mn-ar-report__list li::marker { font-weight: 600; color: var(--ar-accent); }
+/* หัวข้อหลัก (กลุ่ม) → หัวข้อย่อย (ข้อที่ตรวจ: ผล) → เสนอ | สรุปรายการท้าย */
+.mn-assess-repair-page .mn-ar-report__list > li { margin: 0 0 10px; }
+.mn-assess-repair-page .mn-ar-report__g { font-weight: 600; color: var(--ar-ink); }
+.mn-assess-repair-page .mn-ar-report__sub { margin: 3px 0 0; padding-left: 16px; list-style: disc; color: var(--ar-ink-2); }
+.mn-assess-repair-page .mn-ar-report__sub li { margin: 1px 0; }
+.mn-assess-repair-page .mn-ar-report__sub li span { color: var(--ar-ink-3); }
+.mn-assess-repair-page .mn-ar-report__sub li.is-bad { color: var(--ar-bad); font-weight: 500; }
+.mn-assess-repair-page .mn-ar-report__sub li.is-bad::marker { color: var(--ar-bad); }
+.mn-assess-repair-page .mn-ar-report__prop { margin-top: 4px; font-size: 13px; font-weight: 600; color: var(--ar-accent); }
+.mn-assess-repair-page .mn-ar-report__prop .fa { margin-right: 4px; }
+.mn-assess-repair-page .mn-ar-report__sum { margin-top: 4px; padding: 10px 12px; border-radius: 10px; background: var(--ar-accent-soft); color: #0c4a6e; }
+.mn-assess-repair-page .mn-ar-report__sum ul { margin: 4px 0 0; padding-left: 18px; }
+.mn-assess-repair-page .mn-ar-report__sum li { margin: 2px 0; overflow-wrap: anywhere; }
+/* สีผลแต่ละข้อตามสีปุ่มที่ตั้งไว้ในขั้นตรวจ (--rc) */
+.mn-assess-repair-page .mn-ar-report__sub li,
+.mn-assess-repair-page .mn-ar-report__sub li.is-bad { color: var(--rc, var(--ar-ink-2)); font-weight: 500; }
+.mn-assess-repair-page .mn-ar-report__sub li::marker,
+.mn-assess-repair-page .mn-ar-report__sub li.is-bad::marker { color: var(--rc, var(--ar-ink-3)); }
+.mn-assess-repair-page .mn-ar-report__sub li span { color: var(--ar-ink-3); font-weight: 400; }
+
+/* ---------- ปรับจากการตรวจหน้า (อ่านง่าย / ตาบอดสี / ตอบเร็ว / มือถือ) ---------- */
+
+/* placeholder ยังจางกว่าข้อความจริง ไม่ให้ดูเหมือนกรอกแล้ว */
+.mn-assess-repair-page .mn-ar-input::placeholder { color: #a3afbf; }
+
+/* วงกลมเลขข้อ: ตอบแล้วแสดงไอคอนคู่สี (ไม่พึ่งสีอย่างเดียว) */
+.mn-assess-repair-page .mn-ar-item.is-good .mn-ar-item__num,
+.mn-assess-repair-page .mn-ar-item.is-warn .mn-ar-item__num,
+.mn-assess-repair-page .mn-ar-item.is-bad .mn-ar-item__num,
+.mn-assess-repair-page .mn-ar-item.is-na .mn-ar-item__num { font-size: 0; }
+.mn-assess-repair-page .mn-ar-item.is-good .mn-ar-item__num::before,
+.mn-assess-repair-page .mn-ar-item.is-warn .mn-ar-item__num::before,
+.mn-assess-repair-page .mn-ar-item.is-bad .mn-ar-item__num::before,
+.mn-assess-repair-page .mn-ar-item.is-na .mn-ar-item__num::before { font: normal normal normal 12px/1 FontAwesome; }
+.mn-assess-repair-page .mn-ar-item.is-good .mn-ar-item__num::before { content: '\f00c'; }
+.mn-assess-repair-page .mn-ar-item.is-warn .mn-ar-item__num::before { content: '\f12a'; }
+.mn-assess-repair-page .mn-ar-item.is-bad .mn-ar-item__num::before { content: '\f00d'; font-size: 13px; }
+.mn-assess-repair-page .mn-ar-item.is-na .mn-ar-item__num::before { content: '\f068'; font-size: 11px; }
+
+/* ปุ่ม "ปกติทั้งหมด" ท้ายหัวกลุ่ม */
+.mn-assess-repair-page .mn-ar-group::after { order: 1; }
+.mn-assess-repair-page .mn-ar-allok {
+  order: 2;
+  appearance: none; -webkit-appearance: none;
+  display: inline-flex; align-items: center; gap: 5px;
+  min-height: 32px; padding: 0 12px;
+  border: 1px solid #9fd6b1; border-radius: 999px;
+  background: var(--ar-good-soft); color: var(--ar-good);
+  font: inherit; font-size: 12.5px; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+  transition: background 0.15s, transform 0.15s;
+}
+.mn-assess-repair-page .mn-ar-allok:hover { background: #dcf2e3; }
+.mn-assess-repair-page .mn-ar-allok:active { transform: scale(0.97); }
+.mn-assess-repair-page .mn-ar-allok:focus-visible { outline: 2px solid var(--ar-good); outline-offset: 2px; }
+
+/* สรุปผล: สถิติ 3 ช่องในแถวเดียวทุกขนาดจอ + ไอคอนคู่สี */
+.mn-assess-repair-page .mn-ar-findings__head { flex-wrap: nowrap; }
+.mn-assess-repair-page .mn-ar-stat { min-width: 0; }
+.mn-assess-repair-page .mn-ar-stat__l .fa { margin-right: 3px; font-size: 11px; }
+.mn-assess-repair-page .mn-ar-stat--bad.is-zero .mn-ar-stat__n { color: var(--ar-ink-2); }
+
+/* หัวช่อง: คำอธิบายขึ้นบรรทัดใหม่ ไม่บีบชื่อช่อง */
+.mn-assess-repair-page .mn-ar-field__head { flex-wrap: wrap; row-gap: 2px; }
+.mn-assess-repair-page .mn-ar-field__head .mn-ar-field__hint { flex-basis: 100%; }
+
+/* ส่วน "เพิ่มเติม" (UP FW | วันที่ประเมิน | หมายเหตุ) พับไว้ */
+.mn-assess-repair-page .mn-ar-more { background: var(--ar-card); border: 1px solid var(--ar-line); border-radius: var(--ar-radius); }
+.mn-assess-repair-page .mn-ar-more summary {
+  list-style: none; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  padding: 13px 16px; font-size: 14px; font-weight: 600; color: var(--ar-ink);
+}
+.mn-assess-repair-page .mn-ar-more summary::-webkit-details-marker { display: none; }
+.mn-assess-repair-page .mn-ar-more summary small { font-size: 12px; font-weight: 400; color: var(--ar-ink-3); }
+.mn-assess-repair-page .mn-ar-more summary .fa { margin-left: auto; color: var(--ar-ink-3); transition: transform 0.25s var(--ar-ease); }
+.mn-assess-repair-page .mn-ar-more[open] summary .fa { transform: rotate(180deg); }
+.mn-assess-repair-page .mn-ar-more__body { padding: 0 16px 14px; display: flex; flex-direction: column; gap: 12px; animation: mnArFade 0.25s ease both; }
+.mn-assess-repair-page .mn-ar-more__body .mn-ar-field { margin: 0; }
+
+/* ความเห็นช่าง / เหตุผลการเสนอเปลี่ยนอะไหล่ (ระบบร่างให้ แก้ไขได้) */
+.mn-assess-repair-page .mn-ar-textarea--comment { min-height: 150px; line-height: 1.65; }
+
+/* ---------- รูปประกอบ (แนบรายข้อ / รูปทั่วไป) ---------- */
+.mn-assess-repair-page .mn-ar-photos { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0 0 34px; }
+.mn-assess-repair-page .mn-ar-photos--general { margin: 0; }
+.mn-assess-repair-page .mn-ar-photo {
+  position: relative; width: 64px; height: 64px; flex-shrink: 0;
+  border-radius: 10px; overflow: hidden;
+  background: var(--ar-bg); border: 1px solid var(--ar-line);
+  display: inline-flex; align-items: center; justify-content: center;
+  animation: mnArFade 0.25s ease both;
+}
+.mn-assess-repair-page .mn-ar-photo img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; display: block; }
+.mn-assess-repair-page .mn-ar-photo.is-pending { color: var(--ar-ink-3); font-size: 18px; }
+.mn-assess-repair-page .mn-ar-photo__del {
+  position: absolute; top: 3px; right: 3px;
+  appearance: none; -webkit-appearance: none; border: 0;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(15, 23, 42, 0.62); color: #fff; font-size: 11px;
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.mn-assess-repair-page .mn-ar-photo__del:hover { background: var(--ar-bad); }
+.mn-assess-repair-page .mn-ar-photo-add {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 34px; padding: 0 12px;
+  border: 1px dashed var(--ar-line-2); border-radius: 999px;
+  color: var(--ar-ink-2); font-size: 13px; cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.mn-assess-repair-page .mn-ar-photo-add:hover { background: var(--ar-accent-soft); border-color: #9fcbe8; color: var(--ar-accent); }
+.mn-assess-repair-page .mn-ar-photo-add .fa { font-size: 14px; }
+.mn-assess-repair-page .mn-ar-photo-add.is-compact { width: 64px; height: 64px; padding: 0; border-radius: 10px; flex-direction: column; justify-content: center; gap: 2px; font-size: 11.5px; }
+.mn-assess-repair-page .mn-ar-photo-add:focus-within { outline: 2px solid var(--ar-accent); outline-offset: 2px; }
+.mn-assess-repair-page .mn-ar-report__pic {
+  appearance: none; -webkit-appearance: none;
+  border: 1px solid var(--ar-line-2); background: #fff; color: var(--ar-accent);
+  border-radius: 999px; padding: 0 8px; margin-left: 4px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+  vertical-align: 1px;
+}
+@media (max-width: 420px) {
+  .mn-assess-repair-page .mn-ar-photos { margin-left: 0; }
+}
+
+

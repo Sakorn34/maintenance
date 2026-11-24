@@ -126,7 +126,8 @@ alwaysApply: true
 | `suggest_rates` | *(AJAX JSON — ไม่มี HTML)* | *(ไม่มี)* | *(ไม่มี)* |
 | `checklist_settings_api` | *(AJAX JSON — GET products/load/history | POST บันทึก/ลบ/เรียงลำดับ)* | *(ไม่มี)* | *(ไม่มี)* |
 | `checklist_export` | *(JSON — ส่งออกการตั้งค่า checklist ให้ localhost ดึงไปใช้ ยืนยันด้วย header `X-Checklist-Token` ตาม `config/checklist_sync.local.php` ไม่ใช้ session)* | *(ไม่มี)* | *(ไม่มี)* |
-| `checklist_photo` | *(รูปประกอบการประเมิน — GET ?id=&s=t หรือ f ส่งรูป (ต้องล็อกอิน), POST upload/delete, ?action=drive_check / drive_push สำหรับ Google Drive, ไฟล์อยู่ `storage/photos` ปิดการเข้าถึงตรงด้วย .htaccess แล้วย้ายขึ้น Drive ถ้าตั้ง config/google_drive.local.php)* | *(ไม่มี)* | *(ไม่มี)* |
+| `checklist_photo` | *(รูปประกอบการประเมิน — GET ?id=&s=t หรือ f ส่งรูป (ต้องล็อกอิน, &dl=1 ดาวน์โหลดตั้งชื่อตามที่มา), ?action=zip รูปทั้งใบงาน, POST upload/delete/move, link_create/link_state/link_revoke ลิงก์ QR มือถือ, ?action=drive_check / drive_push / drive_rename สำหรับ Google Drive, ไฟล์อยู่ `storage/photos` ปิดการเข้าถึงตรงด้วย .htaccess แล้วย้ายขึ้น Drive ถ้าตั้ง config/google_drive.local.php)* | *(ไม่มี)* | *(ไม่มี)* |
+| `photo_upload` | *(ไม่มีแถบ `title-h` — หน้ามือถือเดี่ยวจาก QR ในหน้า `assess_repair` **ไม่ require_auth** สิทธิ์มาจากรหัส ?t= ใน `cl_photo_link` เท่านั้น (ใบงานเดียว, 3 ชั่วโมง, ปิดเมื่อบันทึกการประเมิน/กดปิด/เสนอราคาแล้ว) ส่ง Referrer-Policy: no-referrer)* | `mn-photo-upload-page` | `mn-page-photo-upload.css` *(ไม่โหลด `mn-page-addjob.css` / `mn-nav.css` เหมือน `login` — ใช้ `js/photo_upload-page.js` + `mn-photo-lightbox`)* |
 
 **หมายเหตุ**
 

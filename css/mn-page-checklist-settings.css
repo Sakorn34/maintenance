@@ -598,3 +598,10 @@
 .mn-checklist-settings-page .mn-cls-rrow.is-set .mn-cls-rrow__name .fa { color: var(--cls-good); }
 .mn-checklist-settings-page .mn-cls-rrow__st { margin-left: auto; font-size: 12px; font-weight: 400; color: var(--cls-good); }
 .mn-checklist-settings-page .mn-cls-rrow__in { width: 100%; resize: vertical; line-height: 1.55; }
+
+/* การแนบรูปต่อคำตอบ */
+.mn-checklist-settings-page .mn-cls-photosel.is-m0 { color: var(--cls-ink-3); }
+.mn-checklist-settings-page .mn-cls-photosel.is-m1 { color: var(--cls-accent); }
+.mn-checklist-settings-page .mn-cls-photosel.is-m2 { color: #b91c1c; background: #fdf0f0; border-color: #f0b0b0; font-weight: 500; }
+.mn-checklist-settings-page .mn-cls-pv-cam { font-size: 11px; opacity: 0.75; margin-left: 2px; }
+.mn-checklist-settings-page .mn-cls-pv-cam.is-req { color: #b91c1c; opacity: 1; }

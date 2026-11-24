@@ -163,7 +163,7 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
           <span class="mn-status-offer-price-age">อายุเครื่อง <?php echo maintenance_status_logistic_h($repair_age); ?></span><br />
           <span class="mn-status-offer-price-ins"><?php echo maintenance_status_logistic_h($insurance_val); ?></span></td>
         <td width="43%" align="left"><span class="mn-status-offer-price-tech"><?php echo maintenance_status_logistic_h($tech); ?></span>
-          <?php echo mn_photo_strip_html(isset($photos_by_trp[$trp_id]) ? $photos_by_trp[$trp_id] : array(), 10); ?> <br /><b>รายการซ่อม</b><br /><?php echo $list_repair_html; ?><br>
+          <?php echo mn_photo_strip_html(isset($photos_by_trp[$trp_id]) ? $photos_by_trp[$trp_id] : array(), 10, $trp_id); ?> <br /><b>รายการซ่อม</b><br /><?php echo $list_repair_html; ?><br>
           <a href="update_rate?trp_id=<?php echo (int) $trp_id; ?>"><span class="mn-status-offer-price-edit-rate"><i class="fa fa-wrench"></i> แก้ไขรายการซ่อม</span></a></td>
         <td width="8%" align="center">
           <a class="mn-status-offer-price-edit-link" href="edit_offer_price?trp_id=<?php echo (int) $trp_id; ?>" title="กรอกหรือแก้ไข QV / ราคา">

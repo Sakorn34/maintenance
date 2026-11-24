@@ -227,19 +227,58 @@ if (!function_exists('mn_photo_delete')) {
     }
 }
 
-/** ส่งไฟล์รูปให้เบราว์เซอร์ (เรียกหลังตรวจล็อกอินแล้ว) */
+/** ไฟล์รูปขนาดดู: บน server หรือดึงจาก Drive → string (ว่าง = ไม่พบ) */
+if (!function_exists('mn_photo_full_bytes')) {
+    function mn_photo_full_bytes(array $row)
+    {
+        $file = (string) $row['cp_file'];
+        $path = mn_photo_dir() . '/' . $file;
+        if (preg_match('/^[a-f0-9]{32}\.img$/', $file) && is_file($path)) { return (string) file_get_contents($path); }
+        if (!empty($row['cp_drive_id']) && mn_photo_drive_ready()) {
+            list($bytes, $err) = mn_gd_download((string) $row['cp_drive_id']);
+            if ($err === '' && $bytes !== '') { return $bytes; }
+            mn_gd_log('download ' . $row['cp_drive_id'] . ': ' . $err);
+        }
+        return '';
+    }
+}
+
+/** header ดาวน์โหลดชื่อไฟล์ภาษาไทย */
+if (!function_exists('mn_photo_disposition')) {
+    function mn_photo_disposition($name)
+    {
+        $ascii = preg_replace('/[^A-Za-z0-9._-]+/', '_', (string) $name);
+        header('Content-Disposition: attachment; filename="' . $ascii . '"; filename*=UTF-8\'\'' . rawurlencode((string) $name));
+    }
+}
+
+/**
+ * ส่งไฟล์รูปให้เบราว์เซอร์ (เรียกหลังตรวจสิทธิ์แล้ว — ล็อกอิน หรือรหัส QR ของใบงานนั้น)
+ * $download = true → ให้เบราว์เซอร์บันทึกไฟล์ ตั้งชื่อตามที่มา (เหมือนชื่อบน Drive)
+ */
 if (!function_exists('mn_photo_stream')) {
-    function mn_photo_stream($connect, $id, $thumb)
+    function mn_photo_stream($connect, $id, $thumb, $download = false)
     {
         mn_photo_ensure_table($connect);
         $row = mn_photo_row($connect, $id);
+        if ($row && $download) {
+            $bytes = mn_photo_full_bytes($row);
+            if ($bytes === '') { http_response_code(404); exit; }
+            header('Content-Type: ' . (string) $row['cp_mime']);
+            header('Content-Length: ' . strlen($bytes));
+            header('Cache-Control: private, no-store');
+            header('X-Content-Type-Options: nosniff');
+            mn_photo_disposition(mn_photo_drive_name(mn_photo_job_info($connect, $row), $row));
+            echo $bytes;
+            exit;
+        }
         $file = $row ? (string) ($thumb ? $row['cp_thumb'] : $row['cp_file']) : '';
         $path = mn_photo_dir() . '/' . $file;
         $local = $row && preg_match('/^[a-f0-9]{32}\.img$/', $file) && is_file($path);
         // รูปขนาดดูที่ย้ายขึ้น Drive แล้ว → ดึงจาก Drive มาให้ (เบราว์เซอร์เก็บแคชต่อ)
-        if (!$local && $row && !$thumb && !empty($row['cp_drive_id']) && mn_photo_drive_ready()) {
-            list($bytes, $err) = mn_gd_download((string) $row['cp_drive_id']);
-            if ($err === '' && $bytes !== '') {
+        if (!$local && $row && !$thumb) {
+            $bytes = mn_photo_full_bytes($row);
+            if ($bytes !== '') {
                 header('Content-Type: ' . (string) $row['cp_mime']);
                 header('Content-Length: ' . strlen($bytes));
                 header('Cache-Control: private, max-age=31536000, immutable');
@@ -247,7 +286,6 @@ if (!function_exists('mn_photo_stream')) {
                 echo $bytes;
                 exit;
             }
-            mn_gd_log('download ' . $row['cp_drive_id'] . ': ' . $err);
         }
         if (!$local) {
             http_response_code(404);
@@ -258,6 +296,44 @@ if (!function_exists('mn_photo_stream')) {
         header('Cache-Control: private, max-age=31536000, immutable');
         header('X-Content-Type-Options: nosniff');
         readfile($path);
+        exit;
+    }
+}
+
+/** ดาวน์โหลดรูปทั้งใบงานเป็นไฟล์ zip (ชื่อไฟล์ในนั้นตามที่มา) */
+if (!function_exists('mn_photo_zip')) {
+    function mn_photo_zip($connect, $trp_id)
+    {
+        mn_photo_ensure_table($connect);
+        $list = mn_photo_list($connect, $trp_id);
+        if (!$list || !class_exists('ZipArchive')) { http_response_code(404); echo $list ? 'server ไม่รองรับ zip' : 'ใบงานนี้ยังไม่มีรูป'; exit; }
+        @set_time_limit(180);
+        $tmp = tempnam(sys_get_temp_dir(), 'mnzip');
+        $zip = new ZipArchive();
+        if ($zip->open($tmp, ZipArchive::OVERWRITE) !== true) { http_response_code(500); exit; }
+        $job = null;
+        $count = 0;
+        foreach ($list as $p) {
+            $row = mn_photo_row($connect, $p['id']);
+            if (!$row) { continue; }
+            $bytes = mn_photo_full_bytes($row);
+            if ($bytes === '') { continue; }
+            $info = mn_photo_job_info($connect, $row);
+            if ($job === null) { $job = $info; }
+            $zip->addFromString(mn_photo_drive_name($info, $row), $bytes);
+            $count++;
+        }
+        $zip->close();
+        if (!$count) { @unlink($tmp); http_response_code(404); echo 'ไม่พบไฟล์รูป'; exit; }
+        $name = trim(preg_replace('#[\\\\/:*?"<>|]+#u', ' ', 'รูป ' . trim($job['mtn'] . ' ' . $job['product'] . ' ' . $job['sn']))) . '.zip';
+        maintenance_db_odbc_close($connect);
+        while (ob_get_level() > 0) { ob_end_clean(); }
+        header('Content-Type: application/zip');
+        header('Content-Length: ' . filesize($tmp));
+        header('Cache-Control: private, no-store');
+        mn_photo_disposition($name);
+        readfile($tmp);
+        @unlink($tmp);
         exit;
     }
 }
@@ -295,12 +371,13 @@ if (!function_exists('mn_photo_by_trps')) {
 
 /** แถบรูปเล็ก กดแล้วเปิด mnPhotoLightbox (js/mn-photo-lightbox.js) */
 if (!function_exists('mn_photo_strip_html')) {
-    function mn_photo_strip_html(array $photos, $max = 8)
+    function mn_photo_strip_html(array $photos, $max = 8, $zip_trp_id = 0)
     {
         if (!$photos) { return ''; }
         $items = array();
         foreach ($photos as $p) {
-            $items[] = array('url' => 'checklist_photo?id=' . (int) $p['id'] . '&s=f', 'caption' => $p['label'] !== '' ? $p['label'] : 'รูปประกอบเพิ่มเติม');
+            $items[] = array('url' => 'checklist_photo?id=' . (int) $p['id'] . '&s=f', 'download' => 'checklist_photo?id=' . (int) $p['id'] . '&s=f&dl=1',
+                'caption' => $p['label'] !== '' ? $p['label'] : 'รูปประกอบเพิ่มเติม');
         }
         $html = '<div class="mn-photo-strip" data-mn-photos="' . htmlspecialchars(json_encode($items, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') . '">';
         foreach ($photos as $i => $p) {
@@ -310,6 +387,10 @@ if (!function_exists('mn_photo_strip_html')) {
                 . '<img src="checklist_photo?id=' . (int) $p['id'] . '&amp;s=t" alt="" loading="lazy" /></button>';
         }
         if (count($photos) > $max) { $html .= '<span class="mn-photo-strip__more">+' . (count($photos) - $max) . ' รูป</span>'; }
+        if ((int) $zip_trp_id > 0) {
+            $html .= '<a class="mn-photo-strip__zip" href="checklist_photo?action=zip&amp;trp_id=' . (int) $zip_trp_id . '" title="ดาวน์โหลดรูปทั้งหมดของใบงานนี้ (zip)">'
+                . '<i class="fa fa-download" aria-hidden="true"></i> ทั้งหมด</a>';
+        }
         return $html . '</div>';
     }
 }
@@ -324,24 +405,28 @@ if (!function_exists('mn_photo_drive_ready')) {
     }
 }
 
-/**
- * ส่งรูป 1 รูปขึ้น Drive: โฟลเดอร์ <ราก>/<ปี-เดือน>/<เลขงาน รุ่น SN>/ ชื่อไฟล์ <เลขงาน>_<ข้อตรวจ>_<id>.jpg
- * สำเร็จแล้วลบไฟล์ขนาดดูบน server (เก็บรูปเล็กไว้) เว้นแต่ตั้ง keep_local
- */
-if (!function_exists('mn_photo_push_drive')) {
-    function mn_photo_push_drive($connect, $id)
+/** หัวข้อของรูป: "กลุ่ม - ข้อตรวจ" (ข้อที่มีชื่อกลุ่มอยู่แล้วไม่ซ้ำ) | ว่าง = รูปประกอบเพิ่มเติม */
+if (!function_exists('mn_photo_topic')) {
+    function mn_photo_topic($question, $group)
     {
-        if (!mn_photo_drive_ready()) { return 'ยังไม่ได้ตั้งค่า Google Drive'; }
-        $row = mn_photo_row($connect, $id);
-        if (!$row || !empty($row['cp_drive_id'])) { return ''; }
-        $path = mn_photo_dir() . '/' . $row['cp_file'];
-        if (!preg_match('/^[a-f0-9]{32}\.img$/', (string) $row['cp_file']) || !is_file($path)) { return 'ไม่พบไฟล์รูปบน server'; }
+        $q = trim((string) $question);
+        $g = trim((string) $group);
+        if ($q === '') { return 'รูปประกอบเพิ่มเติม'; }
+        if ($g !== '' && mb_strpos($q, $g, 0, 'UTF-8') === false) { return $g . ' - ' . $q; }
+        return $q;
+    }
+}
 
-        $job = array('mtn' => '', 'product' => '', 'sn' => '', 'q' => '');
+/** ข้อมูลใบงาน + หัวข้อของรูป (ใช้ตั้งชื่อไฟล์บน Drive) → array(mtn, product, sn, topic) */
+if (!function_exists('mn_photo_job_info')) {
+    function mn_photo_job_info($connect, array $row)
+    {
+        $job = array('mtn' => '', 'product' => '', 'sn' => '', 'q' => '', 'g' => '');
         $stmt = mysqli_prepare($connect,
             'SELECT COALESCE(t.ts_mtn_number, \'\') AS mtn, COALESCE(r.trp_product, \'\') AS product, COALESCE(r.trp_sn, \'\') AS sn,'
-            . ' COALESCE(i.ci_question, \'\') AS q'
-            . ' FROM transac_repair r LEFT JOIN transac t ON t.ts_id = r.trp_ts_id LEFT JOIN cl_item i ON i.ci_id = ?'
+            . ' COALESCE(i.ci_question, \'\') AS q, COALESCE(g.cg_name, \'\') AS g'
+            . ' FROM transac_repair r LEFT JOIN transac t ON t.ts_id = r.trp_ts_id'
+            . ' LEFT JOIN cl_item i ON i.ci_id = ? LEFT JOIN cl_group g ON g.cg_id = i.ci_group_id'
             . ' WHERE r.trp_id = ?'
         );
         if ($stmt) {
@@ -354,6 +439,116 @@ if (!function_exists('mn_photo_push_drive')) {
             mysqli_stmt_close($stmt);
             if ($found) { $job = $found; }
         }
+        $job['topic'] = mn_photo_topic($job['q'], $job['g']);
+        return $job;
+    }
+}
+
+/**
+ * ชื่อไฟล์บน Drive บอกที่มาครบ: <เลขงาน>_<รุ่น>_<SN>_<หัวข้อ>_<วันที่ เวลาที่ถ่าย>_<id>.jpg
+ * เช่น 69-0602_bitVisitor Plus_BP21081017_ตัวเครื่อง - สภาพภายนอก_2026-11-24 0831_57.jpg
+ */
+if (!function_exists('mn_photo_drive_name')) {
+    function mn_photo_drive_name(array $job, array $row)
+    {
+        $clean = function ($s, $max) {
+            $s = trim((string) preg_replace('/\s+/u', ' ', (string) preg_replace('#[\\\\/:*?"<>|_]+#u', ' ', (string) $s)));
+            return mb_substr($s, 0, $max, 'UTF-8');
+        };
+        $at = strtotime((string) $row['cp_at']);
+        $parts = array($clean($job['mtn'], 30), $clean($job['product'], 40), $clean($job['sn'], 40), $clean($job['topic'], 80),
+            $at ? date('Y-m-d Hi', $at) : '', (string) (int) $row['cp_id']);
+        $parts = array_values(array_filter($parts, function ($p) { return $p !== ''; }));
+        $ext = $row['cp_mime'] === 'image/png' ? 'png' : ($row['cp_mime'] === 'image/webp' ? 'webp' : 'jpg');
+        return implode('_', $parts) . '.' . $ext;
+    }
+}
+
+/** ย้ายรูปไปข้ออื่นของใบงานเดียวกัน (ci 0 = รูปประกอบเพิ่มเติม) — รูปที่ขึ้น Drive แล้วเปลี่ยนชื่อไฟล์ตาม */
+if (!function_exists('mn_photo_move')) {
+    function mn_photo_move($connect, $id, $trp_id, $ci)
+    {
+        mn_photo_ensure_table($connect);
+        $row = mn_photo_row($connect, $id);
+        if (!$row || (int) $row['cp_trp_id'] !== (int) $trp_id) { return array('ok' => false, 'error' => 'ไม่พบรูปนี้'); }
+        $to = max(0, (int) $ci);
+        if ($to > 0) {
+            $chk = mysqli_prepare($connect, 'SELECT ci_id FROM cl_item WHERE ci_id = ?');
+            mysqli_stmt_bind_param($chk, 'i', $to);
+            mysqli_stmt_execute($chk);
+            $r = mysqli_stmt_get_result($chk);
+            $has = $r && mysqli_fetch_row($r);
+            mysqli_stmt_close($chk);
+            if (!$has) { return array('ok' => false, 'error' => 'ไม่พบข้อตรวจที่จะย้ายไป'); }
+        }
+        $stmt = mysqli_prepare($connect, 'UPDATE cl_photo SET cp_item_id = ? WHERE cp_id = ?');
+        $pid = (int) $row['cp_id'];
+        mysqli_stmt_bind_param($stmt, 'ii', $to, $pid);
+        $ok = mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+        if (!$ok) { return array('ok' => false, 'error' => 'ย้ายรูปไม่สำเร็จ'); }
+        if (!empty($row['cp_drive_id']) && mn_photo_drive_ready()) {
+            $err = mn_photo_rename_drive($connect, $pid);
+            if ($err !== '') { mn_gd_log('rename ' . $pid . ': ' . $err); }
+        }
+        return array('ok' => true, 'error' => '', 'ci' => $to);
+    }
+}
+
+/** ตั้งชื่อไฟล์บน Drive ใหม่ตามรูปแบบปัจจุบัน (หลังย้ายข้อ หรือปรับชื่อไฟล์เก่า) → error */
+if (!function_exists('mn_photo_rename_drive')) {
+    function mn_photo_rename_drive($connect, $id)
+    {
+        if (!mn_photo_drive_ready()) { return 'ยังไม่ได้ตั้งค่า Google Drive'; }
+        $row = mn_photo_row($connect, $id);
+        if (!$row || empty($row['cp_drive_id'])) { return ''; }
+        return mn_gd_rename((string) $row['cp_drive_id'], mn_photo_drive_name(mn_photo_job_info($connect, $row), $row));
+    }
+}
+
+/**
+ * ตอบผลอัปโหลดให้เบราว์เซอร์ก่อน แล้วค่อยส่งรูปขึ้น Drive (คนถ่ายไม่ต้องรอ)
+ * server ที่ไม่มี fastcgi_finish_request จะส่งขึ้น Drive ก่อนตอบแทน
+ */
+if (!function_exists('mn_photo_finish_upload')) {
+    function mn_photo_finish_upload($connect, array $out)
+    {
+        while (ob_get_level() > 0) { ob_end_clean(); }
+        $json = json_encode($out, JSON_UNESCAPED_UNICODE);
+        if (!empty($out['ok']) && mn_photo_drive_ready()) {
+            if (function_exists('fastcgi_finish_request')) {
+                header('Content-type: application/json; charset=utf-8');
+                header('Content-Length: ' . strlen($json));
+                echo $json;
+                fastcgi_finish_request();
+                ignore_user_abort(true);
+                mn_photo_push_pending($connect, 5);
+                maintenance_db_odbc_close($connect);
+                exit;
+            }
+            mn_photo_push_pending($connect, 3);
+        }
+        maintenance_db_odbc_close($connect);
+        header('Content-type: application/json; charset=utf-8');
+        echo $json;
+        exit;
+    }
+}
+
+/**
+ * ส่งรูป 1 รูปขึ้น Drive: โฟลเดอร์ <ราก>/<ปี-เดือน>/<เลขงาน รุ่น SN>/ ชื่อไฟล์ตาม mn_photo_drive_name()
+ * สำเร็จแล้วลบไฟล์ขนาดดูบน server (เก็บรูปเล็กไว้) เว้นแต่ตั้ง keep_local
+ */
+if (!function_exists('mn_photo_push_drive')) {
+    function mn_photo_push_drive($connect, $id)
+    {
+        if (!mn_photo_drive_ready()) { return 'ยังไม่ได้ตั้งค่า Google Drive'; }
+        $row = mn_photo_row($connect, $id);
+        if (!$row || !empty($row['cp_drive_id'])) { return ''; }
+        $path = mn_photo_dir() . '/' . $row['cp_file'];
+        if (!preg_match('/^[a-f0-9]{32}\.img$/', (string) $row['cp_file']) || !is_file($path)) { return 'ไม่พบไฟล์รูปบน server'; }
+
+        $job = mn_photo_job_info($connect, $row);
         $cfg = mn_gd_config();
         $month = substr((string) $row['cp_at'], 0, 7);
         list($f_month, $err) = mn_gd_folder($connect, $cfg['folder_id'], $month !== '' ? $month : date('Y-m'));
@@ -361,9 +556,7 @@ if (!function_exists('mn_photo_push_drive')) {
         $job_name = trim($job['mtn'] . ' ' . $job['product'] . ' ' . $job['sn']);
         list($f_job, $err) = mn_gd_folder($connect, $f_month, $job_name !== '' ? $job_name : ('ใบงาน ' . $row['cp_trp_id']));
         if ($err !== '') { return $err; }
-        $label = trim(preg_replace('/[\\\/:*?"<>|]+/u', ' ', $job['q'] !== '' ? $job['q'] : 'รูปประกอบ'));
-        $ext = $row['cp_mime'] === 'image/png' ? 'png' : ($row['cp_mime'] === 'image/webp' ? 'webp' : 'jpg');
-        list($file_id, $err) = mn_gd_upload($f_job, ($job['mtn'] !== '' ? $job['mtn'] . '_' : '') . $label . '_' . (int) $row['cp_id'] . '.' . $ext, $path, (string) $row['cp_mime']);
+        list($file_id, $err) = mn_gd_upload($f_job, mn_photo_drive_name($job, $row), $path, (string) $row['cp_mime']);
         if ($err !== '') { return $err; }
 
         $keep = !empty($cfg['keep_local']);

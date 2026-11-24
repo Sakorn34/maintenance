@@ -1,0 +1,140 @@
+/* photo_upload — มือถือถ่าย/อัปรูปเข้าใบงานผ่าน QR (หน้าเดี่ยว ไม่มีเมนู ไม่ต้องล็อกอิน) */
+
+.mn-addjob-page.mn-photo-upload-page {
+  --pu-ink: #0f172a;
+  --pu-ink-2: #475569;
+  --pu-ink-3: #64748b;
+  --pu-line: #e5e9f0;
+  --pu-bg: #f6f8fb;
+  --pu-accent: #0369a1;
+  --pu-accent-soft: #e8f3fb;
+  --pu-bad: #b91c1c;
+  --pu-bad-soft: #fdf0f0;
+  margin: 0;
+  background: var(--pu-bg);
+  color: var(--pu-ink);
+  font-family: "Noto Sans Thai", system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mn-photo-upload-page .mn-pu { max-width: 560px; margin: 0 auto; min-height: 100vh; padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+
+.mn-photo-upload-page .mn-pu-top {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: 10px;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  background: var(--pu-accent); color: #fff;
+}
+.mn-photo-upload-page .mn-pu-top__job { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mn-photo-upload-page .mn-pu-top__job strong { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mn-photo-upload-page .mn-pu-top__job span { font-size: 12px; opacity: 0.9; }
+.mn-photo-upload-page .mn-pu-top__exp { font-size: 11.5px; opacity: 0.9; white-space: nowrap; }
+
+.mn-photo-upload-page .mn-pu-body { padding: 14px 16px; }
+.mn-photo-upload-page .mn-pu-loading { text-align: center; color: var(--pu-ink-3); padding: 40px 0; }
+
+.mn-photo-upload-page .mn-pu-mode { margin-bottom: 10px; }
+.mn-photo-upload-page .mn-pu-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 999px; font-size: 12.5px;
+  background: #fff; border: 1px solid var(--pu-line); color: var(--pu-ink-2);
+}
+.mn-photo-upload-page .mn-pu-chip.is-live { background: #ecf8f0; border-color: #9fd6b1; color: #15803d; }
+.mn-photo-upload-page .mn-pu-chip.is-btn { font: inherit; font-size: 12.5px; color: var(--pu-accent); border-color: #9fcbe8; cursor: pointer; }
+
+.mn-photo-upload-page .mn-pu-item { background: #fff; border: 1px solid var(--pu-line); border-radius: 16px; padding: 16px; }
+.mn-photo-upload-page .mn-pu-item__group { margin: 0 0 2px; font-size: 13px; color: var(--pu-ink-3); }
+.mn-photo-upload-page .mn-pu-item__title { margin: 0; font-size: 22px; font-weight: 600; line-height: 1.35; }
+.mn-photo-upload-page .mn-pu-item__req { margin: 8px 0 0; color: var(--pu-bad); font-weight: 600; font-size: 14px; }
+
+.mn-photo-upload-page .mn-pu-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0 4px; }
+.mn-photo-upload-page .mn-pu-btn {
+  appearance: none; -webkit-appearance: none; font: inherit; cursor: pointer;
+  min-height: 54px; border-radius: 12px; border: 1px solid var(--pu-line);
+  background: #fff; color: var(--pu-ink); font-size: 16px; font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+}
+.mn-photo-upload-page .mn-pu-btn--primary { background: var(--pu-accent); border-color: var(--pu-accent); color: #fff; }
+.mn-photo-upload-page .mn-pu-btn:active { transform: scale(0.98); }
+
+.mn-photo-upload-page .mn-pu-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+.mn-photo-upload-page .mn-pu-tile {
+  appearance: none; -webkit-appearance: none; padding: 0; font: inherit; cursor: pointer;
+  aspect-ratio: 1 / 1; border-radius: 10px; overflow: hidden;
+  border: 1px solid var(--pu-line); background: var(--pu-bg); color: var(--pu-ink-3);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+}
+.mn-photo-upload-page .mn-pu-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mn-photo-upload-page .mn-pu-tile small { font-size: 11px; text-align: center; padding: 0 4px; }
+.mn-photo-upload-page .mn-pu-tile.is-pending { font-size: 20px; }
+.mn-photo-upload-page .mn-pu-tile.is-fail { border-color: #f0b0b0; background: var(--pu-bad-soft); color: var(--pu-bad); font-size: 18px; }
+.mn-photo-upload-page .mn-pu-hint, .mn-photo-upload-page .mn-pu-empty { margin: 10px 0 0; font-size: 12.5px; color: var(--pu-ink-3); }
+
+.mn-photo-upload-page .mn-pu-other {
+  appearance: none; -webkit-appearance: none; font: inherit; cursor: pointer;
+  width: 100%; margin-top: 14px; min-height: 46px; border-radius: 12px;
+  border: 1px dashed #c5cfdb; background: transparent; color: var(--pu-ink-2); font-size: 14px;
+}
+
+.mn-photo-upload-page .mn-pu-lead { margin: 0 0 12px; padding: 12px; border-radius: 12px; background: var(--pu-accent-soft); color: var(--pu-accent); font-size: 14px; line-height: 1.5; }
+.mn-photo-upload-page .mn-pu-listhead { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-weight: 600; }
+.mn-photo-upload-page .mn-pu-back {
+  appearance: none; -webkit-appearance: none; font: inherit; cursor: pointer;
+  border: 1px solid var(--pu-line); background: #fff; border-radius: 999px; padding: 6px 12px; color: var(--pu-ink-2); font-size: 13px; font-weight: 400;
+}
+.mn-photo-upload-page .mn-pu-list { list-style: none; margin: 0; padding: 0; background: #fff; border: 1px solid var(--pu-line); border-radius: 14px; overflow: hidden; }
+.mn-photo-upload-page .mn-pu-list li + li { border-top: 1px solid var(--pu-line); }
+.mn-photo-upload-page .mn-pu-row {
+  appearance: none; -webkit-appearance: none; font: inherit; cursor: pointer; text-align: left;
+  width: 100%; min-height: 54px; padding: 10px 14px; border: 0; background: #fff; color: var(--pu-ink);
+  display: flex; align-items: center; gap: 10px; font-size: 15px;
+}
+.mn-photo-upload-page .mn-pu-row.is-cur { background: var(--pu-accent-soft); }
+.mn-photo-upload-page .mn-pu-row__txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mn-photo-upload-page .mn-pu-row__txt small { font-size: 12px; color: var(--pu-ink-3); }
+.mn-photo-upload-page .mn-pu-row .fa { color: var(--pu-ink-3); }
+.mn-photo-upload-page .mn-pu-badge { font-size: 11.5px; padding: 2px 9px; border-radius: 999px; background: var(--pu-bg); color: var(--pu-ink-2); white-space: nowrap; }
+.mn-photo-upload-page .mn-pu-badge.is-req { background: var(--pu-bad-soft); color: var(--pu-bad); font-weight: 600; }
+.mn-photo-upload-page .mn-pu-moving { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 13px; color: var(--pu-ink-2); }
+.mn-photo-upload-page .mn-pu-moving img { width: 52px; height: 52px; border-radius: 8px; object-fit: cover; }
+
+/* เมนูรูป (แตะรูป) */
+.mn-photo-upload-page .mn-pu-sheet {
+  position: fixed; inset: 0; z-index: 50; background: rgba(15, 23, 42, 0.5);
+  display: none; align-items: flex-end; justify-content: center;
+}
+.mn-photo-upload-page .mn-pu-sheet.is-on { display: flex; }
+.mn-photo-upload-page .mn-pu-sheet__panel {
+  width: 100%; max-width: 560px; background: #fff; border-radius: 18px 18px 0 0;
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 8px;
+}
+.mn-photo-upload-page .mn-pu-sheet__img { width: 88px; height: 88px; border-radius: 10px; object-fit: cover; align-self: center; margin-bottom: 4px; }
+.mn-photo-upload-page .mn-pu-sheet__btn {
+  appearance: none; -webkit-appearance: none; font: inherit; cursor: pointer; text-decoration: none;
+  min-height: 50px; border-radius: 12px; border: 1px solid var(--pu-line); background: #fff; color: var(--pu-ink);
+  display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px;
+}
+.mn-photo-upload-page .mn-pu-sheet__btn[hidden] { display: none; }
+.mn-photo-upload-page .mn-pu-sheet__btn.is-danger { color: var(--pu-bad); border-color: #f0b0b0; }
+.mn-photo-upload-page .mn-pu-sheet__btn.is-danger[data-confirm] { background: var(--pu-bad); color: #fff; }
+.mn-photo-upload-page .mn-pu-sheet__btn.is-cancel { border: 0; color: var(--pu-ink-3); }
+
+.mn-photo-upload-page .mn-pu-toast {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); z-index: 60;
+  transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+  background: #0f172a; color: #fff; padding: 10px 16px; border-radius: 999px; font-size: 14px;
+  transition: opacity 0.2s, transform 0.2s; max-width: 90vw; text-align: center;
+}
+.mn-photo-upload-page .mn-pu-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+.mn-photo-upload-page .mn-pu-toast.is-bad { background: var(--pu-bad); }
+
+.mn-photo-upload-page .mn-pu-msg { text-align: center; padding: 60px 24px; color: var(--pu-ink-2); }
+.mn-photo-upload-page .mn-pu-msg .fa { font-size: 40px; color: var(--pu-ink-3); }
+.mn-photo-upload-page .mn-pu-msg h1 { font-size: 20px; font-weight: 600; color: var(--pu-ink); margin: 14px 0 6px; }
+.mn-photo-upload-page .mn-pu-msg p { margin: 0; font-size: 14px; }
+
+/* หน้าต่างดูรูปบนมือถือ: เว้นที่ปุ่มให้แคบลง */
+@media (max-width: 560px) {
+  .mn-photo-upload-page .mn-plb { padding: 70px 8px 40px; }
+}

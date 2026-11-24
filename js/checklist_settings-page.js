@@ -857,11 +857,20 @@
       type: 'options',
       multi: false,
       options: [blankOpt('ปกติ'), blankOpt(''), blankOpt('')],
-      extra_opt: '', unit: '', min: '', max: '', auto: 'buy_date', rate_fail: '', enabled: true
+      extra_opt: '', unit: '', min: '', max: '', auto: 'buy_date', rate_fail: '', photo_fail: 1, enabled: true
     };
   }
 
-  function blankOpt(label) { return { label: label, note: false, note_default: '', rate: '', color: '', group: 0 }; }
+  function blankOpt(label) { return { label: label, note: false, note_default: '', rate: '', color: '', group: 0, photo: 1 }; }
+
+  // การแนบรูปของคำตอบ: 0 ไม่แนบ / 1 แนบได้ / 2 ต้องแนบ
+  var PHOTO_MODES = ['ไม่แนบรูป', 'แนบรูปได้', 'ต้องแนบรูป'];
+
+  function photoSelect(attr, value, title) {
+    var v = value === undefined || value === null ? 1 : value;
+    return '<select class="mn-cls-input mn-cls-input--sm mn-cls-photosel is-m' + v + '" ' + attr + ' title="' + title + '">'
+      + PHOTO_MODES.map(function (m, mi) { return '<option value="' + mi + '"' + (v === mi ? ' selected' : '') + '>📷 ' + m + '</option>'; }).join('') + '</select>';
+  }
 
   var GROUPS = ['เลือกร่วมกับข้ออื่นได้', 'กลุ่ม 1 (เลือกได้ข้อเดียว)', 'กลุ่ม 2 (เลือกได้ข้อเดียว)', 'กลุ่ม 3 (เลือกได้ข้อเดียว)'];
 
@@ -958,6 +967,7 @@
           + (i === 0 ? '<p class="mn-cls-fhint">ตัวเลือกแรก = ผลปกติ ไม่แนะนำอะไหล่</p>'
             : '<div class="mn-cls-opt__sub">' + rateSelect('rate', o.rate).replace('data-f="rate"', 'data-o="rate"')
               + (d.multi ? groupSelect(o) : '')
+              + photoSelect('data-o="photo"', o.photo, 'เมื่อช่างเลือกคำตอบนี้ ให้แนบรูปได้หรือต้องแนบ')
               + '<label class="mn-cls-check"><input type="checkbox" data-o="note"' + (o.note ? ' checked' : '') + ' /> ให้พิมพ์รายละเอียด</label>'
               + '<textarea class="mn-cls-input mn-cls-input--sm mn-cls-notedef" data-o="note_default" rows="2" maxlength="200"' + (o.note ? '' : ' hidden')
               + ' placeholder="ค่าเริ่มต้นของรายละเอียด (ไม่บังคับ) เช่น พบที่ตำแหน่ง…">' + esc(o.note_default || '') + '</textarea></div>')
@@ -979,14 +989,16 @@
         + field('ค่าสูงสุด', '<input type="number" step="any" class="mn-cls-input mn-cls-input--sm" data-f="max" value="' + esc(d.max) + '" />')
         + '</div>'
         + field('ปุ่มเสริม (ไม่บังคับ)', '<input type="text" class="mn-cls-input mn-cls-input--sm" data-f="extra_opt" maxlength="100" value="' + esc(d.extra_opt) + '" placeholder="เช่น ไม่สามารถวัดได้" />', 'ให้ช่างกดแทนการกรอกค่า ถือเป็น N/A')
-        + field('รายการซ่อมเมื่อนอกเกณฑ์', rateSelect('rate_fail', d.rate_fail));
+        + field('รายการซ่อมเมื่อนอกเกณฑ์', rateSelect('rate_fail', d.rate_fail))
+        + field('รูปเมื่อนอกเกณฑ์', photoSelect('data-f="photo_fail"', d.photo_fail, 'เมื่อค่าที่วัดนอกเกณฑ์'), 'เช่น ถ่ายหน้าจอเครื่องวัดค่า LUX เก็บเป็นหลักฐาน');
     }
     if (d.type === 'auto') {
       var a = Object.keys(AUTO).map(function (k) { return '<option value="' + k + '"' + (k === d.auto ? ' selected' : '') + '>' + AUTO[k] + '</option>'; }).join('');
       return field('ข้อมูลอัตโนมัติ', '<select class="mn-cls-input mn-cls-input--sm" data-f="auto">' + a + '</select>', 'ช่างไม่ต้องกด ระบบคำนวณจากข้อมูลใบงาน')
         + field('รายการซ่อมเมื่อไม่ผ่าน', rateSelect('rate_fail', d.rate_fail));
     }
-    return field('รายการซ่อมเมื่อไม่ผ่าน', rateSelect('rate_fail', d.rate_fail), 'ช่างเห็นปุ่ม ผ่าน / ไม่ผ่าน / N/A');
+    return field('รายการซ่อมเมื่อไม่ผ่าน', rateSelect('rate_fail', d.rate_fail), 'ช่างเห็นปุ่ม ผ่าน / ไม่ผ่าน / N/A')
+      + field('รูปเมื่อไม่ผ่าน', photoSelect('data-f="photo_fail"', d.photo_fail, 'เมื่อช่างตอบไม่ผ่าน'));
   }
 
   function palette(o) {
@@ -1005,7 +1017,8 @@
         if (!o.label) { return ''; }
         return '<span class="mn-cls-pv-opt mn-cls-pv-opt--c" style="' + colorVars(optColor(o, i)) + '">'
           + (d.multi && i > 0 ? '<i class="fa fa-check-square-o" aria-hidden="true"></i> ' : '') + esc(o.label)
-          + (d.multi && i > 0 && o.group ? '<sup class="mn-cls-pv-grp">' + o.group + '</sup>' : '') + '</span>';
+          + (d.multi && i > 0 && o.group ? '<sup class="mn-cls-pv-grp">' + o.group + '</sup>' : '')
+          + (i > 0 && o.photo ? ' <i class="fa fa-camera mn-cls-pv-cam' + (o.photo === 2 ? ' is-req' : '') + '" title="' + PHOTO_MODES[o.photo] + '" aria-hidden="true"></i>' : '') + '</span>';
       }).join('') + (d.multi ? '<span class="mn-cls-muted mn-cls-pv-note">เลือกได้หลายค่า</span>' : '');
     } else if (d.type === 'number') {
       body = '<span class="mn-cls-pv-in">0</span><span class="mn-cls-muted">' + esc(d.unit || 'หน่วย') + '</span>'
@@ -1043,11 +1056,13 @@
       if (f === 'enabled') { d.enabled = t.checked; }
       else if (f === 'multi') { d.multi = t.checked; $('mn_cls_typebody').innerHTML = typeBody(d); }
       else if (f === 'symptom_id' || f === 'group_id') { d[f] = parseInt(t.value, 10) || 0; }
+      else if (f === 'photo_fail') { d.photo_fail = parseInt(t.value, 10) || 0; t.className = t.className.replace(/is-m\d/, 'is-m' + d.photo_fail); }
       else { d[f] = t.value; }
       markDirty();
     } else if (o) {
       var i = parseInt(t.closest('.mn-cls-opt').getAttribute('data-i'), 10);
-      d.options[i][o] = o === 'note' ? t.checked : (o === 'group' ? parseInt(t.value, 10) || 0 : t.value);
+      d.options[i][o] = o === 'note' ? t.checked : (o === 'group' || o === 'photo' ? parseInt(t.value, 10) || 0 : t.value);
+      if (o === 'photo') { t.className = t.className.replace(/is-m\d/, 'is-m' + d.options[i].photo); }
       if (o === 'group') { t.classList.toggle('is-set', d.options[i].group > 0); }
       if (o === 'note') {
         var nd = t.closest('.mn-cls-opt').querySelector('[data-o="note_default"]');

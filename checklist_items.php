@@ -33,6 +33,7 @@ foreach ($items as $item) {
         $colors   = json_decode((string) (isset($item['ci_opt_colors']) ? $item['ci_opt_colors'] : ''), true);
         $notes    = json_decode((string) (isset($item['ci_opt_notes']) ? $item['ci_opt_notes'] : ''), true);
         $groups   = json_decode((string) (isset($item['ci_opt_groups']) ? $item['ci_opt_groups'] : ''), true);
+        $photos   = json_decode((string) (isset($item['ci_opt_photos']) ? $item['ci_opt_photos'] : ''), true);
         $opts_arr = array();
         foreach ($parts as $pi => $part) {
             $part     = trim($part);
@@ -45,7 +46,8 @@ foreach ($items as $item) {
                 $color = is_array($colors) && isset($colors[$pi]) ? (string) $colors[$pi] : '';
                 $note_default = $has_note && is_array($notes) && isset($notes[$pi]) ? (string) $notes[$pi] : '';
                 $group = is_array($groups) && isset($groups[$pi]) ? (int) $groups[$pi] : 0;
-                $opts_arr[] = array('label' => $label, 'has_note' => $has_note, 'note_default' => $note_default, 'rate' => $rate, 'color' => $color, 'group' => $group);
+                $photo = is_array($photos) && isset($photos[$pi]) ? (int) $photos[$pi] : ($pi > 0 ? 1 : 0);
+                $opts_arr[] = array('label' => $label, 'has_note' => $has_note, 'note_default' => $note_default, 'rate' => $rate, 'color' => $color, 'group' => $group, 'photo' => $photo);
             }
         }
         if (count($opts_arr) === 0) { $opts_arr = null; }
@@ -74,6 +76,7 @@ foreach ($items as $item) {
         'ci_val_max'     => (isset($item['ci_val_max']) && $item['ci_val_max'] !== null) ? (float) $item['ci_val_max'] : null,
         'ci_opts'        => $opts_arr,
         'ci_multi'       => $opts_arr !== null && (int) $item['ci_multi'] === 1 && (string) $item['ci_unit'] === '',
+        'ci_photo_fail'  => isset($item['ci_photo_fail']) ? (int) $item['ci_photo_fail'] : 1,
         'group_id'       => (int) $item['ci_group_id'],
         'group_name'     => (string) $item['group_name'],
         'ci_auto_source' => $auto_source !== '' ? $auto_source : null,

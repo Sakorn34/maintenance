@@ -20,6 +20,7 @@ require_once __DIR__ . '/includes/bootstrap_logistic_recorder.php';
 require_once __DIR__ . '/includes/checklist_helpers.php';
 require_once __DIR__ . '/includes/assess_side_panels.php';
 require_once __DIR__ . '/includes/checklist_photo_helpers.php';
+require_once __DIR__ . '/includes/checklist_photo_link_helpers.php';
 
 $trp_id       = maintenance_flow_get_int($_GET, 'trp_id', 0);
 $ar_row          = null;
@@ -32,6 +33,7 @@ $bundles      = array();
 $reasons      = array();
 $history      = array();
 $photos       = array();
+$photo_link   = null;
 $saved_symptom_ids = array();
 $checklist_saved   = false;
 
@@ -59,6 +61,9 @@ if ($trp_id > 0) {
             $symptoms = maintenance_checklist_fetch_symptoms($connect, $product);
             $bundles  = maintenance_checklist_fetch_bundles($connect, $product);
             $reasons  = maintenance_checklist_fetch_rate_reasons($connect, $product);
+            // ลิงก์ QR มือถือที่ยังเปิดอยู่ (รีโหลดหน้าแล้วรับรูปจากมือถือต่อได้)
+            $active_link = mn_plink_active($connect, $trp_id);
+            $photo_link  = $active_link ? mn_plink_out($active_link) : null;
             foreach (maintenance_checklist_fetch_all_job_headers($connect, $trp_id) as $sid => $h) {
                 $checklist_saved = true;
                 if ($sid > 0) { $saved_symptom_ids[] = (int) $sid; }
@@ -158,6 +163,7 @@ $boot = array(
     'bundles'        => $bundles,
     'rateReasons'    => (object) $reasons,
     'photos'         => $photos,
+    'photoLink'      => $photo_link,
     'saved'          => array(
         'tech'    => mn_ar_f($ar_row, 'trp_repair_technician'),
         'parts'   => $saved_parts,
@@ -208,6 +214,7 @@ $sn = mn_ar_f($ar_row, 'trp_sn');
             <span class="mn-ar-top__sn">SN <?php echo mn_ar_h($sn !== '' ? $sn : '—'); ?></span>
           </div>
           <span class="mn-ar-top__count" id="mn_ar_stepcount">1/4</span>
+          <button type="button" class="mn-ar-top__back mn-ar-top__mobile" id="mn_ar_mobile" aria-label="ถ่ายรูปด้วยมือถือ" title="ถ่ายรูปด้วยมือถือ (สแกนครั้งเดียว มือถือเปลี่ยนข้อตามหน้าจอนี้)"><i class="fa fa-mobile" aria-hidden="true"></i><span class="mn-ar-top__dot" id="mn_ar_mobile_dot" hidden></span></button>
           <a class="mn-ar-top__back" href="checklist_settings?product=<?php echo rawurlencode($boot['product']); ?>" aria-label="ตั้งค่ารายการตรวจเช็คของรุ่นนี้" title="ตั้งค่ารายการตรวจเช็ค"><i class="fa fa-sliders" aria-hidden="true" style="font-size:16px"></i></a>
         </div>
         <ol class="mn-ar-steps" id="mn_ar_steps" aria-label="ขั้นตอน">
@@ -318,6 +325,7 @@ $sn = mn_ar_f($ar_row, 'trp_sn');
             <div class="mn-ar-field__head">
               <span class="mn-ar-label">รูปประกอบเพิ่มเติม</span>
               <span class="mn-ar-field__hint">รูปที่ไม่เจาะจงข้อตรวจ เช่น สภาพเครื่องโดยรวม | แนบรายข้อได้ที่ปุ่มกล้องใต้แต่ละข้อ</span>
+              <a class="mn-ar-link" id="mn_ar_zip" href="checklist_photo?action=zip&amp;trp_id=<?php echo (int) $trp_id; ?>" hidden><i class="fa fa-download" aria-hidden="true"></i> ดาวน์โหลดรูปทั้งหมด (zip)</a>
             </div>
             <div class="mn-ar-photos mn-ar-photos--general" data-ci="0"></div>
           </div>
@@ -358,6 +366,7 @@ $sn = mn_ar_f($ar_row, 'trp_sn');
 <script type="text/javascript">
 window.mnAr = <?php echo json_encode($boot, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP); ?>;
 </script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" integrity="sha384-mZT2gIty7ZDdOGkxfP6joZcYdMW1Jvj9dRlfpTmaJAKKXTqzygtB22k7FLe+KZC1" crossorigin="anonymous"></script>
 <script type="text/javascript" src="js/mn-photo-lightbox.js?v=<?php echo filemtime(__DIR__ . '/js/mn-photo-lightbox.js'); ?>"></script>
 <script type="text/javascript" src="js/assess_repair-page.js?v=<?php echo filemtime(__DIR__ . '/js/assess_repair-page.js'); ?>"></script>
 </body>

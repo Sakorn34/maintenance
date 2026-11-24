@@ -1,8 +1,8 @@
 /**
  * หน้าต่างดูรูปขนาดใหญ่ (ใช้ร่วมหลายหน้า: ประเมิน / แผงประวัติซ่อม / รอเสนอราคา)
- * - mnPhotoLightbox(items, start)  items = [{ url, caption }]
+ * - mnPhotoLightbox(items, start)  items = [{ url, caption, download }]  download = ลิงก์ดาวน์โหลด (ไม่ใส่ = ไม่มีปุ่ม)
  * - ผูกอัตโนมัติ: กล่องที่มี data-mn-photos='[{url,caption},...]' + ลูกที่มี data-mn-photo="ลำดับ"
- * ปุ่ม: Esc ปิด · ลูกศรซ้าย/ขวา เลื่อนรูป · คลิกพื้นหลังปิด
+ * ปุ่ม: Esc ปิด, ลูกศรซ้าย/ขวา เลื่อนรูป, คลิกพื้นหลังปิด, ปุ่มดาวน์โหลด (ชื่อไฟล์ตามที่มา)
  */
 (function (global) {
   'use strict';
@@ -22,6 +22,7 @@
     box.setAttribute('aria-modal', 'true');
     box.setAttribute('aria-label', 'ดูรูป');
     box.innerHTML = '<button type="button" class="mn-plb__close" aria-label="ปิด"><i class="fa fa-times" aria-hidden="true"></i></button>'
+      + '<a class="mn-plb__dl" href="#" download title="ดาวน์โหลดรูปนี้"><i class="fa fa-download" aria-hidden="true"></i><span>ดาวน์โหลด</span></a>'
       + '<button type="button" class="mn-plb__nav mn-plb__nav--prev" aria-label="รูปก่อนหน้า"><i class="fa fa-angle-left" aria-hidden="true"></i></button>'
       + '<figure class="mn-plb__fig"><img alt="" /><figcaption></figcaption></figure>'
       + '<button type="button" class="mn-plb__nav mn-plb__nav--next" aria-label="รูปถัดไป"><i class="fa fa-angle-right" aria-hidden="true"></i></button>';
@@ -44,6 +45,9 @@
     box.querySelector('img').src = p.url || '';
     box.querySelector('figcaption').textContent = (p.caption || '') + (list.length > 1 ? '  (' + (idx + 1) + '/' + list.length + ')' : '');
     box.querySelectorAll('.mn-plb__nav').forEach(function (b) { b.hidden = list.length < 2; });
+    var dl = box.querySelector('.mn-plb__dl');
+    dl.hidden = !p.download;
+    dl.setAttribute('href', p.download || '#');
   }
 
   function step(d) {

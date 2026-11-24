@@ -30,6 +30,7 @@ $assets = array(
     'css/mn-theme.css', 'css/mn-layout.css', 'css/mn-nav.css', 'css/site-legacy.css',
     'css/mn-page-addjob.css', 'css/mn-page-checklist-settings.css', 'css/mn-page-assess-repair.css', 'css/mn-modal.css',
     'js/jquery-scroll.js', 'js/checklist_settings-page.js', 'js/assess_repair-page.js', 'js/mn-modal.js',
+    'css/mn-photo-lightbox.css', 'js/mn-photo-lightbox.js',
     'config/app_environment.php',
 );
 $skip = array('includes/title-h.php', 'config/database.php');
@@ -67,9 +68,25 @@ $files = array_merge(array_keys($php), $assets);
 sort($files);
 foreach ($files as $f) { tt_copy($root . '/' . $f, $www . '/' . $f); }
 
+// กันลืมไฟล์: ไล่หา css/ js/ ที่หน้าในชุดอ้างถึง แล้วดึงไฟล์ที่ยังไม่ได้ใส่มาด้วย
+foreach (array_keys($php) as $pf) {
+    if (!preg_match_all('#(?:href|src)="((?:css|js)/[^"?]+)#', (string) file_get_contents($root . '/' . $pf), $m)) { continue; }
+    foreach (array_unique($m[1]) as $ref) {
+        if (is_file($root . '/' . $ref) && !is_file($www . '/' . $ref)) {
+            tt_copy($root . '/' . $ref, $www . '/' . $ref);
+            $files[] = $ref;
+            echo "เพิ่มไฟล์ที่หน้าอ้างถึง: $ref
+";
+        }
+    }
+}
+
 tt_copy(__DIR__ . '/test_tom/title-h.php', $www . '/includes/title-h.php');
 tt_copy($root . '/config/database.example.php', $www . '/config/database.php');
 file_put_contents($www . '/index.php', "<?php\nheader('Location: checklist_settings');\n");
+// ป้ายรุ่นของชุด — เปิด <โฟลเดอร์>/VERSION.txt บน server เพื่อดูว่าอัปโหลดถึงชุดไหนแล้ว
+file_put_contents($www . '/VERSION.txt', $version . "\n");
+$extra_version = array('VERSION.txt');
 file_put_contents($www . '/config/env.local.example.php', <<<'PHP'
 <?php
 // คัดลอกเป็น config/env.local.php บน server แล้วใส่ user/password ของฐานข้อมูลทดสอบ
@@ -181,7 +198,7 @@ maintenance_db_odbc_close($c);
 // ---------- DEPLOY.txt ----------
 
 $list = '';
-$all = array_merge($files, array('includes/title-h.php', 'config/database.php', 'config/env.local.example.php', 'index.php'), $sync_extra);
+$all = array_merge($files, array('includes/title-h.php', 'config/database.php', 'config/env.local.example.php', 'index.php'), $sync_extra, $extra_version);
 sort($all);
 foreach (array_unique($all) as $f) { $list .= '  - ' . $f . ($f === 'includes/title-h.php' ? '   (หัวเพจแบบเรียบของชุดทดสอบ)' : '') . "\n"; }
 $cnt = '';

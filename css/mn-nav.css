@@ -217,3 +217,10 @@
 .mn-appbar__logout:hover {
   background: var(--mn-danger-border);
 }
+
+/* ป้าย "ระบบทดลอง" แทนคำอธิบายใต้ชื่อระบบ (ชุดทดลองบน server) */
+.mn-appbar__tagline--test {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin-top: 2px; padding: 1px 10px; border-radius: 999px;
+  background: #c2410c; color: #fff !important; font-weight: 600;
+}

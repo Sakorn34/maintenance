@@ -168,7 +168,7 @@ if (!function_exists('mn_ar_history_list')) {
                 $html .= '</div></div>';
             }
             if (!empty($e['photos']) && function_exists('mn_photo_strip_html')) {
-                $html .= '<div class="mn-ar-hist__line"><span>รูปประกอบ (' . count($e['photos']) . ')</span>' . mn_photo_strip_html($e['photos'], 6) . '</div>';
+                $html .= '<div class="mn-ar-hist__line"><span>รูปประกอบ (' . count($e['photos']) . ')</span>' . mn_photo_strip_html($e['photos'], 6, (int) $e['trp_id']) . '</div>';
             }
             $html .= $line('หมายเหตุ', $e['remarks'], ' mn-ar-hist__line--warn')
                 . $line('การแก้ไข/ซ่อมโดย', $e['by'])

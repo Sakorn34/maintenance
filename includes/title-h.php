@@ -159,6 +159,14 @@ mysqli_close($mysqli);
 
 $b = rtrim($maintenanceWebBase, '/');
 
+// ป้าย "ระบบทดลอง" — แสดงเมื่อมี config/site_banner.local.php (ชุดทดลองบน server เท่านั้น ระบบหลักไม่มีไฟล์นี้)
+$siteBanner = '';
+$siteBannerFile = dirname(__DIR__) . '/config/site_banner.local.php';
+if (is_file($siteBannerFile)) {
+    $siteBannerValue = require $siteBannerFile;
+    $siteBanner = is_string($siteBannerValue) ? trim($siteBannerValue) : '';
+}
+
 // ผู้ใช้ที่ล็อกอินอยู่ (production: มาจาก bitlogin; localhost: จาก login.php) — ว่างเมื่อโหมด development ที่ไม่ตรวจ session
 $navProfileName = maintenance_new_profile_display_name();
 if ($navProfileName === '') {
@@ -172,7 +180,11 @@ if ($navProfileName === '') {
   <div class="mn-appbar__inner">
     <div class="mn-appbar__brand">
       <a href="<?php echo htmlspecialchars($b . '/index', ENT_QUOTES, 'UTF-8'); ?>">Maintenance</a>
+      <?php if ($siteBanner !== '') { ?>
+      <span class="mn-appbar__tagline mn-appbar__tagline--test" title="ข้อมูลในระบบนี้เป็นสำเนา ไม่กระทบระบบจริง"><i class="fa fa-flask" aria-hidden="true"></i> <?php echo htmlspecialchars($siteBanner, ENT_QUOTES, 'UTF-8'); ?></span>
+      <?php } else { ?>
       <span class="mn-appbar__tagline">ระบบจัดการงานซ่อม | ภายในองค์กร</span>
+      <?php } ?>
     </div>
     <div class="mn-appbar__navwrap">
       <ul class="mn-navlist">

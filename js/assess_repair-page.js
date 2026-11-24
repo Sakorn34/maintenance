@@ -29,7 +29,8 @@
     parts: [],
     dismissed: {},
     dirty: false,
-    saving: false
+    saving: false,
+    focus: -1
   };
 
   var COLORS = {
@@ -370,6 +371,7 @@
     });
     var wantNote = onBtns.some(function (b) { return b.getAttribute('data-note') === '1'; });
     map[id] = { result: sel.join('|'), note: wantNote ? noteWithDefault(item, cur.note, onBtns, btn) : '' };
+    refreshPhotos(id);
     state.dirty = true;
 
     li.querySelectorAll('.mn-ar-opt').forEach(function (b) {
@@ -442,6 +444,7 @@
         });
       }
       refreshItemState(li, item, map[id]);
+      refreshPhotos(id);
     }
   }
 
@@ -598,7 +601,7 @@
     if (step === 2) {
       if (!state.basicItems.length) { return false; }
       var m = markMissing(state.basicItems, state.basicRes, $('mn_ar_basic'));
-      return m === 0;
+      return m === 0 && warnMissingPhotos(missingPhotos(state.basicItems, state.basicRes), $('mn_ar_basic'));
     }
     if (step === 3) {
       if (!state.symptomChosen) {
@@ -611,7 +614,8 @@
         alertMsg('กำลังโหลดข้อตรวจของอาการ รอสักครู่');
         return false;
       }
-      return markMissing(state.symItems, state.symRes, $('mn_ar_sym_items')) === 0;
+      return markMissing(state.symItems, state.symRes, $('mn_ar_sym_items')) === 0
+        && warnMissingPhotos(missingPhotos(state.symItems, state.symRes), $('mn_ar_sym_items'));
     }
     return true;
   }
@@ -904,36 +908,59 @@
     return SERVICE_RE.test(part.trim()) || part.indexOf('ซื้อใหม่') !== -1 ? 'เสนอ' : 'เสนอเปลี่ยน';
   }
 
-  // ความเห็นช่างแบบกระชับ: ข้อละเรื่อง "สิ่งที่พบ เสนอ รายการซ่อม" เหมือนที่ช่างเคยเขียน
+  // ความเห็นช่างแบบกระชับ: ข้อละหัวข้อ "หัวข้อ: สิ่งที่พบ, สิ่งที่พบ เสนอเปลี่ยน อะไหล่"
+  // เฉพาะสิ่งที่ผิดปกติ (ส่วนที่ปกติไม่ต้องเขียน) ข้อตรวจในหัวข้อเดียวกันรวมเป็นข้อเดียว ขึ้นต้นด้วยชื่อหัวข้อ
   function rationaleText() {
-    var byPart = {};
-    var orphan = [];
-    var qCount = {};
-    allChecked().forEach(function (c) { qCount[c.item.ci_question] = (qCount[c.item.ci_question] || 0) + 1; });
+    var topics = [];
+    var byTopic = {};
+    var partTopic = {};
+    var partSaid = {};
     allChecked().forEach(function (c) {
       var it = c.item;
       var res = c.res || { result: '', note: '' };
       var tone = it.ci_auto_source ? (res.result === 'fail' ? 'bad' : 'good') : itemTone(it, res);
       if (tone !== 'warn' && tone !== 'bad') { return; }
-      var desc = shortFinding(it, res, tone, qCount);
+      // ในหัวข้อใช้ชื่อข้อเป็นประธานเสมอ (ชื่อหัวข้อขึ้นต้นอยู่แล้ว)
+      var desc = shortFinding(it, res, tone, {});
       if (!desc) { return; }
-      var ps = partsForItem(it, res);
-      if (!ps.length) { pushOnce(orphan, desc); return; }
-      ps.forEach(function (p) { byPart[p] = byPart[p] || []; pushOnce(byPart[p], desc); });
+      var name = it.group_id && it.group_name ? it.group_name : it.ci_question;
+      if (name === it.ci_question && desc.indexOf(name) === 0) { desc = desc.slice(name.length).trim() || desc; }
+      var t = byTopic[name];
+      if (!t) {
+        t = byTopic[name] = { name: name, found: [], parts: [] };
+        topics.push(t);
+      }
+      pushOnce(t.found, desc);
+      partsForItem(it, res).forEach(function (p) {
+        // อะไหล่ที่มาจากหลายหัวข้อ เขียนไว้ที่หัวข้อแรกที่พบ
+        if (!partTopic[p]) { partTopic[p] = t; pushOnce(t.parts, p); }
+        partSaid[p] = (partSaid[p] || '') + ' ' + desc;
+      });
     });
     var reasons = B.rateReasons || {};
-    var points = [];
-    state.parts.forEach(function (p) {
-      var found = byPart[p.name] || [];
-      var why = (reasons[p.name] || '').trim();
-      var said = found.join(' ');
+    var propose = function (p) {
+      var why = (reasons[p] || '').trim();
       // ประโยคที่พิมพ์ไว้บอก "เสนอ…" แล้ว (เช่น "…เสนอเปลี่ยนจอใหม่") ไม่ต่อท้ายซ้ำ
-      var propose = said.indexOf('เสนอ') !== -1 ? '' : proposeVerb(p.name) + ' ' + p.name;
-      points.push([found.join(', '), propose].filter(function (x) { return x; }).join(' ') + (why ? ' (' + why + ')' : ''));
+      if ((partSaid[p] || '').indexOf('เสนอ') !== -1) { return why ? '(' + why + ')' : ''; }
+      return proposeVerb(p) + ' ' + p + (why ? ' (' + why + ')' : '');
+    };
+    var inUse = {};
+    state.parts.forEach(function (p) { inUse[p.name] = true; });
+    var points = topics.map(function (t) {
+      var props = t.parts.filter(function (p) { return inUse[p]; }).map(propose).filter(function (x) { return x; });
+      // รายละเอียดหลายข้อลงท้าย "เสนอ…" เหมือนกัน (เช่น เสนอเปลี่ยนจอใหม่) เหลือไว้ท้ายสุดครั้งเดียว
+      var tail = function (s) { var m = s.match(/\s(เสนอ\S.*)$/); return m ? m[1] : ''; };
+      var found = t.found.map(function (s, i) {
+        var tl = tail(s);
+        var later = tl && t.found.slice(i + 1).some(function (x) { return tail(x) === tl; });
+        return later ? s.slice(0, s.length - tl.length).trim() : s;
+      });
+      return t.name + ': ' + found.join(', ') + (props.length ? ' ' + props.join(', ') : '');
     });
-    orphan.forEach(function (o) { points.push(o); });
-    var normal = buildReport().groups.filter(function (g) { return !g.lines.some(function (l) { return l.bad; }); }).map(function (g) { return g.name; });
-    if (normal.length) { points.push(normal.join(', ') + ' ปกติ'); }
+    // รายการซ่อมที่เพิ่มเอง (ไม่ได้มาจากผลตรวจ)
+    state.parts.forEach(function (p) {
+      if (!partTopic[p.name]) { var s = propose(p.name); if (s) { points.push(s); } }
+    });
     if (!points.length) { return ''; }
     return points.map(function (p, i) { return (i + 1) + ') ' + p; }).join('\n');
   }
@@ -1137,6 +1164,8 @@
 
   function goTo(step, back, silent) {
     if (step < 1 || step > 4) { return; }
+    // มือถือที่สแกน QR ตามหน้าจอ: ขั้นสรุปผล = รูปประกอบเพิ่มเติม
+    if (step === 4) { setFocus(0); } else if (step === 1) { setFocus(-1); }
     state.step = step;
     if (step > state.maxStep) { state.maxStep = step; }
 
@@ -1200,6 +1229,10 @@
       alertMsg('รอให้อัปโหลดรูปเสร็จก่อนบันทึก');
       return;
     }
+    if (!warnMissingPhotos(missingPhotos(state.basicItems, state.basicRes), $('mn_ar_basic'))
+      || !warnMissingPhotos(missingPhotos(state.symItems, state.symRes), $('mn_ar_sym_items'))) {
+      return;
+    }
     if (B.demo) {
       showDemoResult();
       return;
@@ -1234,6 +1267,7 @@
       }
       global.removeEventListener('beforeunload', onBeforeUnload);
       clearDraft();
+      revokeLinkOnSave();
       postRate();
     }).catch(function (err) {
       state.saving = false;
@@ -1438,7 +1472,7 @@
     });
   }
 
-  // ---------- รูปประกอบ (ย่อในเบราว์เซอร์ → อัปโหลด · โหมดทดลองแสดงในเครื่องอย่างเดียว) ----------
+  // ---------- รูปประกอบ (ย่อในเบราว์เซอร์ แล้วอัปโหลด | โหมดทดลองแสดงในเครื่องอย่างเดียว) ----------
 
   var photoSeq = 0;
   state.photos = (B.photos || []).map(photoFromServer);
@@ -1452,8 +1486,49 @@
     return state.photos.filter(function (p) { return p.ci === ci && !p.pending; });
   }
 
+  // การแนบรูปตามคำตอบที่เลือก (ตั้งในหน้าตั้งค่า): 0 ไม่แนบ / 1 แนบได้ / 2 ต้องแนบ
+  function photoMode(it, res) {
+    if (!it || it.ci_auto_source || !res || !res.result) { return 0; }
+    if (it.ci_opts && !hasThreshold(it)) {
+      var m = 0;
+      picked(it, res).forEach(function (l) {
+        var i = optIndex(it, l);
+        if (i >= 0) { m = Math.max(m, parseInt(it.ci_opts[i].photo, 10) || 0); }
+      });
+      return m;
+    }
+    if (res.result === 'fail') { return it.ci_photo_fail === undefined ? 1 : (parseInt(it.ci_photo_fail, 10) || 0); }
+    return 0;
+  }
+
+  function itemPhotoMode(ci) {
+    var it = findItem('basic', ci);
+    var map = state.basicRes;
+    if (!it) { it = findItem('sym', ci); map = state.symRes; }
+    return it ? photoMode(it, map[ci]) : 0;
+  }
+
+  // ข้อที่ต้องแนบรูปแต่ยังไม่มีรูป
+  function missingPhotos(items, map) {
+    return items.filter(function (it) { return photoMode(it, map[it.ci_id]) === 2 && !photosOf(it.ci_id).length; });
+  }
+
+  function warnMissingPhotos(list, wrap) {
+    if (!list.length) { return true; }
+    var li = wrap.querySelector('.mn-ar-item[data-id="' + list[0].ci_id + '"]');
+    if (li) {
+      restartAnim(li, 'is-missing');
+      li.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    alertMsg('ข้อ “' + list[0].ci_question + '” ต้องแนบรูป' + (list.length > 1 ? ' (และอีก ' + (list.length - 1) + ' ข้อ)' : ''));
+    return false;
+  }
+
   function photoStripInner(ci) {
     var list = state.photos.filter(function (p) { return p.ci === ci; });
+    var mode = ci ? itemPhotoMode(ci) : 1;
+    if (!mode && !list.length) { return ''; }
+    var need = mode === 2 && !list.some(function (p) { return !p.pending; });
     return list.map(function (p) {
       return '<span class="mn-ar-photo' + (p.pending ? ' is-pending' : '') + '" data-key="' + p.key + '">'
         + (p.pending
@@ -1461,13 +1536,17 @@
           : '<img src="' + esc(p.thumb) + '" alt="รูปประกอบ" loading="lazy" /><button type="button" class="mn-ar-photo__del" aria-label="ลบรูป"><i class="fa fa-times" aria-hidden="true"></i></button>')
         + '</span>';
     }).join('')
-      + '<label class="mn-ar-photo-add' + (list.length ? ' is-compact' : '') + '" title="แนบรูป (ถ่ายหรือเลือกจากเครื่อง)">'
-      + '<input type="file" accept="image/*" multiple data-ci="' + ci + '" hidden />'
-      + '<i class="fa fa-camera" aria-hidden="true"></i><span>' + (list.length ? 'เพิ่ม' : 'แนบรูป') + '</span></label>';
+      + (mode ? '<label class="mn-ar-photo-add' + (list.length ? ' is-compact' : '') + (need ? ' is-req' : '') + '" title="แนบรูป (ถ่ายหรือเลือกจากเครื่อง)">'
+        + '<input type="file" accept="image/*" multiple data-ci="' + ci + '" hidden />'
+        + '<i class="fa fa-camera" aria-hidden="true"></i><span>' + (list.length ? 'เพิ่ม' : (need ? 'ต้องแนบรูป' : 'แนบรูป')) + '</span></label>' : '')
+      + (mode && !B.demo ? '<button type="button" class="mn-ar-photo-qr' + (list.length ? ' is-compact' : '') + (need ? ' is-req' : '') + '" data-qr="' + ci + '" title="ถ่ายรูปข้อนี้ด้วยมือถือ (สแกน QR รูปเข้าข้อนี้ทันที)">'
+        + '<i class="fa fa-qrcode" aria-hidden="true"></i><span>มือถือ</span></button>' : '');
   }
 
   function refreshPhotos(ci) {
     doc.querySelectorAll('.mn-ar-photos[data-ci="' + ci + '"]').forEach(function (el) { el.innerHTML = photoStripInner(ci); });
+    var zip = $('mn_ar_zip');
+    if (zip) { zip.hidden = !state.photos.some(function (p) { return p.id && !p.pending; }); }
     renderReport();
   }
 
@@ -1541,6 +1620,8 @@
             var s = photoFromServer(res.photo);
             Object.keys(s).forEach(function (k) { p[k] = s[k]; });
             p.pending = false;
+            // ระหว่างรอผล การดึงรายการรูป (QR มือถือ) อาจเพิ่มรูปเดียวกันมาแล้ว
+            state.photos = state.photos.filter(function (x) { return x === p || x.id !== p.id; });
           });
       }).catch(function (err) {
         state.photos = state.photos.filter(function (x) { return x !== p; });
@@ -1594,11 +1675,13 @@
     var start = 0;
     list.forEach(function (p, i) { if (p.key === key) { start = i; } });
     global.mnPhotoLightbox(list.map(function (p) {
-      return { url: p.url, caption: photoTitle(ci) + (p.by ? '  | ' + p.by : '') };
+      return { url: p.url, download: B.demo || !p.id ? '' : 'checklist_photo?id=' + p.id + '&s=f&dl=1', caption: photoTitle(ci) + (p.by ? '  | ' + p.by : '') };
     }), start);
   }
 
   function onPhotoClick(e) {
+    var qr = e.target.closest('[data-qr]');
+    if (qr) { openQr(parseInt(qr.getAttribute('data-qr'), 10) || 0); return; }
     var del = e.target.closest('.mn-ar-photo__del');
     if (del) { deletePhoto(del.closest('.mn-ar-photo').getAttribute('data-key')); return; }
     var img = e.target.closest('.mn-ar-photo img');
@@ -1616,6 +1699,288 @@
     if (t.type !== 'file' || !t.hasAttribute('data-ci')) { return; }
     addPhotos(parseInt(t.getAttribute('data-ci'), 10) || 0, t.files);
     t.value = '';
+  }
+
+  // ---------- ถ่ายรูปด้วยมือถือ (QR — photo_upload ไม่ต้องล็อกอิน) ----------
+  // QR ประจำข้อ: ?t=&ci= รูปเข้าข้อนั้นทันที | QR ตามหน้าจอ: ?t= มือถือเปลี่ยนข้อตามที่ตอบอยู่บนหน้านี้
+  // ระหว่างลิงก์เปิดอยู่ หน้านี้ดึงรายการรูปทุก 4 วินาที รูปจากมือถือจึงขึ้นเอง
+
+  var link = B.photoLink || null;
+  var linkTimer = 0;
+  var pollTimer = 0;
+  var qrBox = null;
+  var qrCi = null;
+  var toastTimer = 0;
+
+  function linkLive() { return !!(link && link.expires > Date.now()); }
+
+  // ข้อที่มือถือควรแสดง: ข้อที่คำตอบแนบรูปได้ + ข้อที่มีรูปแล้ว (mode 2 = ต้องแนบรูป)
+  function linkItems() {
+    var out = [];
+    allChecked().forEach(function (c) {
+      var m = photoMode(c.item, c.res);
+      if (m || photosOf(c.item.ci_id).length) { out.push({ ci: c.item.ci_id, mode: m }); }
+    });
+    return out;
+  }
+
+  function photoPost(fd) {
+    return fetch('checklist_photo', { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function (r) {
+        if (r.status === 401) { throw new Error('auth'); }
+        if (!r.ok) { throw new Error('HTTP ' + r.status); }
+        return r.json();
+      });
+  }
+
+  function linkForm(action, extra) {
+    var fd = new FormData();
+    fd.append('action', action);
+    fd.append('trp_id', B.trpId);
+    Object.keys(extra || {}).forEach(function (k) { fd.append(k, extra[k]); });
+    return fd;
+  }
+
+  function ensureLink(renew) {
+    if (!renew && linkLive() && link.expires - Date.now() > 30 * 60 * 1000) { return Promise.resolve(link); }
+    return photoPost(linkForm('link_create', { renew: renew ? 1 : 0, focus: state.focus, items: JSON.stringify(linkItems()) }))
+      .then(function (res) {
+        if (!res.ok) { throw new Error(res.error || 'สร้างลิงก์ไม่สำเร็จ'); }
+        link = res.link;
+        startPoll();
+        return link;
+      });
+  }
+
+  function queueLinkSync() {
+    if (B.demo || !linkLive()) { return; }
+    clearTimeout(linkTimer);
+    linkTimer = setTimeout(function () {
+      if (!linkLive()) { return; }
+      photoPost(linkForm('link_state', { token: link.token, focus: state.focus, items: JSON.stringify(linkItems()) })).catch(function () {});
+    }, 600);
+  }
+
+  function setFocus(ci) {
+    if (state.focus === ci) { return; }
+    state.focus = ci;
+    queueLinkSync();
+  }
+
+  function onItemFocus(e) {
+    var li = e.target.closest('.mn-ar-item[data-id]');
+    if (!li) { return; }
+    var ci = parseInt(li.getAttribute('data-id'), 10) || 0;
+    if (ci && itemPhotoMode(ci)) { setFocus(ci); }
+    queueLinkSync();
+  }
+
+  function revokeLinkOnSave() {
+    if (B.demo || !link) { return; }
+    var fd = linkForm('link_revoke');
+    if (global.navigator.sendBeacon) { global.navigator.sendBeacon('checklist_photo', fd); } else { photoPost(fd).catch(function () {}); }
+    link = null;
+  }
+
+  function startPoll() {
+    updateDot();
+    if (pollTimer || B.demo) { return; }
+    pollTimer = setInterval(function () {
+      if (!linkLive()) {
+        clearInterval(pollTimer);
+        pollTimer = 0;
+        updateDot();
+        if (qrBox && !qrBox.hidden) { renderQr(); }
+        return;
+      }
+      if (doc.hidden) { return; }
+      getJSON('checklist_photo', { action: 'list', trp_id: B.trpId })
+        .then(function (res) { if (res && res.ok) { mergePhotos(res.photos || []); } })
+        .catch(function () {});
+    }, 4000);
+  }
+
+  // รวมรายการรูปจาก server (รูปที่มือถือส่ง / ลบ / ย้ายข้อ) เข้ากับหน้านี้
+  function mergePhotos(list) {
+    var byId = {};
+    list.forEach(function (o) { byId[o.id] = o; });
+    var changed = {};
+    var news = 0;
+    state.photos = state.photos.filter(function (p) {
+      if (p.pending || !p.id) { return true; }
+      var o = byId[p.id];
+      if (!o) { changed[p.ci] = true; return false; }
+      if (o.ci !== p.ci) { changed[p.ci] = true; changed[o.ci] = true; p.ci = o.ci; }
+      delete byId[p.id];
+      return true;
+    });
+    Object.keys(byId).forEach(function (id) {
+      var p = photoFromServer(byId[id]);
+      state.photos.push(p);
+      changed[p.ci] = true;
+      news++;
+    });
+    var keys = Object.keys(changed);
+    if (!keys.length) { return; }
+    keys.forEach(function (ci) { refreshPhotos(parseInt(ci, 10) || 0); });
+    queueLinkSync();
+    if (news) { arToast('รับรูปจากมือถือแล้ว ' + news + ' รูป'); }
+    if (qrBox && !qrBox.hidden) { renderQr(); }
+  }
+
+  function arToast(msg) {
+    var el = $('mn_ar_toast');
+    if (!el) {
+      el = doc.createElement('div');
+      el.id = 'mn_ar_toast';
+      el.className = 'mn-ar-toast';
+      el.setAttribute('role', 'status');
+      el.setAttribute('aria-live', 'polite');
+      doc.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.classList.add('is-on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('is-on'); }, 3000);
+  }
+
+  function updateDot() {
+    var dot = $('mn_ar_mobile_dot');
+    if (dot) { dot.hidden = !linkLive(); }
+  }
+
+  function linkUrl(ci) {
+    var base = global.location.href.replace(/[?#].*$/, '').replace(/[^\/]*$/, '');
+    return base + 'photo_upload?t=' + link.token + (ci === null ? '' : '&ci=' + ci);
+  }
+
+  function qrImg(text) {
+    if (typeof global.qrcode !== 'function') {
+      return '<p class="mn-ar-qr__err">โหลดตัวสร้าง QR ไม่สำเร็จ ใช้ปุ่มคัดลอกลิงก์ส่งเข้ามือถือแทน</p>';
+    }
+    var q = global.qrcode(0, 'M');
+    q.addData(text);
+    q.make();
+    return '<img src="' + q.createDataURL(6, 2) + '" alt="QR เปิดหน้าถ่ายรูปบนมือถือ" />';
+  }
+
+  function buildQr() {
+    if (qrBox) { return; }
+    qrBox = doc.createElement('div');
+    qrBox.className = 'mn-ar-qr';
+    qrBox.hidden = true;
+    qrBox.setAttribute('role', 'dialog');
+    qrBox.setAttribute('aria-modal', 'true');
+    qrBox.setAttribute('aria-labelledby', 'mn_ar_qr_title');
+    qrBox.innerHTML = '<div class="mn-ar-qr__panel">'
+      + '<button type="button" class="mn-ar-qr__x" data-qa="close" aria-label="ปิด"><i class="fa fa-times" aria-hidden="true"></i></button>'
+      + '<p class="mn-ar-qr__kicker"></p>'
+      + '<h2 class="mn-ar-qr__title" id="mn_ar_qr_title"></h2>'
+      + '<p class="mn-ar-qr__sub"></p>'
+      + '<div class="mn-ar-qr__code"></div>'
+      + '<p class="mn-ar-qr__exp"></p>'
+      + '<p class="mn-ar-qr__got"></p>'
+      + '<p class="mn-ar-qr__warn" hidden><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> หน้านี้เปิดจาก localhost มือถือเปิดลิงก์นี้ไม่ได้ ใช้งานจริงบน server</p>'
+      + '<div class="mn-ar-qr__btns">'
+      + '<button type="button" class="mn-ar-qr__btn" data-qa="copy"><i class="fa fa-link" aria-hidden="true"></i> <span>คัดลอกลิงก์</span></button>'
+      + '<button type="button" class="mn-ar-qr__btn" data-qa="renew"><i class="fa fa-refresh" aria-hidden="true"></i> สร้าง QR ใหม่</button>'
+      + '<button type="button" class="mn-ar-qr__btn is-danger" data-qa="revoke"><i class="fa fa-ban" aria-hidden="true"></i> ปิดลิงก์มือถือ</button>'
+      + '</div></div>';
+    doc.body.appendChild(qrBox);
+    qrBox.addEventListener('click', onQrClick);
+    doc.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !qrBox.hidden) { closeQr(); } });
+  }
+
+  function closeQr() {
+    qrBox.hidden = true;
+    doc.body.classList.remove('mn-ar-qr-open');
+  }
+
+  function renderQr(loading) {
+    var it = qrCi ? (findItem('basic', qrCi) || findItem('sym', qrCi)) : null;
+    var kicker = '';
+    var title = 'ถ่ายรูปด้วยมือถือ';
+    var sub = 'สแกนครั้งเดียว มือถือจะเปลี่ยนข้อตามที่กดตอบบนหน้าจอนี้ (เลือกข้อเองในมือถือก็ได้)';
+    if (qrCi === 0) {
+      title = 'รูปประกอบเพิ่มเติม';
+      sub = 'สแกนแล้วถ่ายได้เลย รูปเข้าหัวข้อนี้';
+    } else if (qrCi) {
+      kicker = it && it.group_name ? it.group_name : '';
+      title = photoTitle(qrCi);
+      sub = 'สแกนแล้วถ่ายได้เลย รูปเข้าข้อนี้ทันที';
+    }
+    var kick = qrBox.querySelector('.mn-ar-qr__kicker');
+    kick.textContent = kicker;
+    kick.hidden = !kicker;
+    qrBox.querySelector('#mn_ar_qr_title').textContent = title;
+    qrBox.querySelector('.mn-ar-qr__sub').textContent = sub;
+    var code = qrBox.querySelector('.mn-ar-qr__code');
+    var live = linkLive();
+    if (loading) {
+      code.innerHTML = '<i class="fa fa-circle-o-notch fa-spin" aria-hidden="true"></i>';
+    } else if (live) {
+      code.innerHTML = qrImg(linkUrl(qrCi));
+    } else {
+      code.innerHTML = '<p class="mn-ar-qr__err">ลิงก์มือถือปิดแล้ว กด “สร้าง QR ใหม่” เพื่อใช้ต่อ</p>';
+    }
+    qrBox.querySelector('.mn-ar-qr__exp').textContent = live && !loading ? 'ใช้ได้ถึง ' + link.expiresText + ' น. หรือจนกว่าจะบันทึกการประเมิน' : '';
+    var n = qrCi === null ? 0 : photosOf(qrCi).length;
+    qrBox.querySelector('.mn-ar-qr__got').textContent = qrCi !== null && n ? 'ข้อนี้มีรูปแล้ว ' + n + ' รูป' : '';
+    qrBox.querySelector('.mn-ar-qr__warn').hidden = !/^(localhost|127\.|\[::1\]|::1$)/.test(global.location.hostname);
+    qrBox.querySelector('[data-qa="copy"]').disabled = !live;
+    qrBox.querySelector('[data-qa="revoke"]').hidden = !live;
+  }
+
+  function openQr(ci) {
+    if (B.demo) { alertMsg('โหมดทดลองไม่มีใบงาน จึงอัปรูปจากมือถือไม่ได้'); return; }
+    qrCi = ci;
+    buildQr();
+    qrBox.hidden = false;
+    doc.body.classList.add('mn-ar-qr-open');
+    if (ci !== null && ci > 0) { setFocus(ci); }
+    renderQr(true);
+    qrBox.querySelector('[data-qa="close"]').focus();
+    ensureLink(false).then(function () {
+      renderQr();
+      queueLinkSync();
+    }).catch(function (err) {
+      renderQr();
+      qrBox.querySelector('.mn-ar-qr__code').innerHTML = '<p class="mn-ar-qr__err">'
+        + esc(err && err.message === 'auth' ? 'หมดเวลาเข้าสู่ระบบ ล็อกอินใหม่ในแท็บอื่นแล้วลองอีกครั้ง' : ((err && err.message) || 'สร้างลิงก์ไม่สำเร็จ')) + '</p>';
+    });
+  }
+
+  function onQrClick(e) {
+    if (e.target === qrBox) { closeQr(); return; }
+    var b = e.target.closest('[data-qa]');
+    if (!b) { return; }
+    var act = b.getAttribute('data-qa');
+    if (act === 'close') { closeQr(); }
+    if (act === 'copy' && linkLive()) {
+      var url = linkUrl(qrCi);
+      var done = function () {
+        b.querySelector('span').textContent = 'คัดลอกแล้ว';
+        setTimeout(function () { b.querySelector('span').textContent = 'คัดลอกลิงก์'; }, 1800);
+      };
+      if (global.navigator.clipboard && global.navigator.clipboard.writeText) {
+        global.navigator.clipboard.writeText(url).then(done).catch(function () { global.prompt('คัดลอกลิงก์นี้', url); });
+      } else {
+        global.prompt('คัดลอกลิงก์นี้', url);
+      }
+    }
+    if (act === 'renew') {
+      renderQr(true);
+      ensureLink(true).then(function () { renderQr(); queueLinkSync(); arToast('สร้าง QR ใหม่แล้ว QR เดิมใช้ไม่ได้'); })
+        .catch(function (err) { renderQr(); alertMsg((err && err.message) || 'สร้างลิงก์ไม่สำเร็จ', 'danger'); });
+    }
+    if (act === 'revoke') {
+      photoPost(linkForm('link_revoke')).then(function () {
+        link = null;
+        updateDot();
+        renderQr();
+        arToast('ปิดลิงก์มือถือแล้ว');
+      }).catch(function () { alertMsg('ปิดลิงก์ไม่สำเร็จ', 'danger'); });
+    }
   }
 
   function initForm() {
@@ -1676,7 +2041,11 @@
       renderSymItems();
     }
     renderSymptoms();
-    loadBasic().then(offerDraft);
+    loadBasic().then(offerDraft).then(function () {
+      if (linkLive()) { startPoll(); queueLinkSync(); }
+    });
+    var mobileBtn = $('mn_ar_mobile');
+    if (mobileBtn) { mobileBtn.addEventListener('click', function () { openQr(null); }); }
 
     // เก็บร่างทุกครั้งที่ช่างกด/พิมพ์ และส่งสัญญาณทุก 5 นาที กัน session หมดอายุระหว่างตรวจ
     ['click', 'input', 'change'].forEach(function (ev) { $('mn_ar').addEventListener(ev, queueDraft); });
@@ -1685,6 +2054,9 @@
     ['mn_ar_basic', 'mn_ar_sym_items'].forEach(function (id) {
       $(id).addEventListener('click', onItemsClick);
       $(id).addEventListener('input', onItemsInput);
+      // หลังตอบข้อ: บอกมือถือ (QR ตามหน้าจอ) ว่ากำลังตรวจข้อไหน
+      $(id).addEventListener('click', onItemFocus);
+      $(id).addEventListener('input', onItemFocus);
     });
     $('mn_ar_symptoms').addEventListener('click', onSymptomClick);
     $('mn_ar_parts').addEventListener('click', onPartsClick);

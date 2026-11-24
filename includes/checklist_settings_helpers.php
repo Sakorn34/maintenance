@@ -100,6 +100,7 @@ if (!function_exists('mn_cls_item_out')) {
         $colors = json_decode((string) $r['ci_opt_colors'], true);
         $notes = json_decode((string) $r['ci_opt_notes'], true);
         $groups = json_decode((string) $r['ci_opt_groups'], true);
+        $photos = json_decode((string) $r['ci_opt_photos'], true);
         $options = array();
         foreach ($labels as $i => $raw) {
             $raw = trim($raw);
@@ -108,7 +109,8 @@ if (!function_exists('mn_cls_item_out')) {
             $color = is_array($colors) && isset($colors[$i]) ? (string) $colors[$i] : '';
             $note_default = $note && is_array($notes) && isset($notes[$i]) ? (string) $notes[$i] : '';
             $group = is_array($groups) && isset($groups[$i]) ? (int) $groups[$i] : 0;
-            $options[] = array('label' => $note ? substr($raw, 0, -5) : $raw, 'note' => $note, 'note_default' => $note_default, 'rate' => $rate, 'color' => $color, 'group' => $group);
+            $photo = is_array($photos) && isset($photos[$i]) ? (int) $photos[$i] : ($i > 0 ? 1 : 0);
+            $options[] = array('label' => $note ? substr($raw, 0, -5) : $raw, 'note' => $note, 'note_default' => $note_default, 'rate' => $rate, 'color' => $color, 'group' => $group, 'photo' => $photo);
         }
         return array(
             'id'         => (int) $r['ci_id'],
@@ -126,6 +128,7 @@ if (!function_exists('mn_cls_item_out')) {
             'max'        => $r['ci_val_max'] === null ? '' : (float) $r['ci_val_max'],
             'auto'       => (string) $r['ci_auto_source'],
             'rate_fail'  => (string) $r['ci_rate_on_fail'],
+            'photo_fail' => (int) $r['ci_photo_fail'],
             'enabled'    => (int) $r['ci_enabled'] === 1,
         );
     }
@@ -149,7 +152,7 @@ if (!function_exists('mn_cls_load')) {
         $items = array();
         $rows = mn_cls_query_all($connect,
             'SELECT ci_id, ci_symptom_id, ci_group_id, ci_step, ci_question, ci_hint, ci_rate_on_fail, ci_unit,'
-            . ' ci_val_min, ci_val_max, ci_opts, ci_opt_rates, ci_opt_colors, ci_multi, ci_opt_notes, ci_opt_groups, ci_auto_source, ci_enabled'
+            . ' ci_val_min, ci_val_max, ci_opts, ci_opt_rates, ci_opt_colors, ci_multi, ci_opt_notes, ci_opt_groups, ci_opt_photos, ci_photo_fail, ci_auto_source, ci_enabled'
             . ' FROM cl_item WHERE ci_product = ? ORDER BY ci_symptom_id, ci_step, ci_id',
             's', array($product)
         );
@@ -273,6 +276,8 @@ if (!function_exists('mn_cls_save_item')) {
         $opt_colors = null;
         $opt_notes = null;
         $opt_groups = null;
+        $opt_photos = null;
+        $photo_fail = 1;
         $multi = 0;
         $unit = '';
         $min = null;
@@ -286,6 +291,7 @@ if (!function_exists('mn_cls_save_item')) {
             $colors = array();
             $notes = array();
             $groups = array();
+            $photos = array();
             foreach ((isset($in['options']) && is_array($in['options']) ? $in['options'] : array()) as $o) {
                 $label = str_replace(array('|', ':note'), array('/', ''), mn_cls_clip(isset($o['label']) ? $o['label'] : '', 100));
                 if ($label === '') { continue; }
@@ -297,6 +303,8 @@ if (!function_exists('mn_cls_save_item')) {
                 $notes[] = !empty($o['note']) && count($labels) > 1 ? mn_cls_clip(isset($o['note_default']) ? $o['note_default'] : '', 200) : '';
                 $g = isset($o['group']) ? (int) $o['group'] : 0;
                 $groups[] = count($labels) > 1 && $g >= 1 && $g <= 3 ? $g : 0;
+                $ph = isset($o['photo']) ? (int) $o['photo'] : 1;
+                $photos[] = count($labels) > 1 ? max(0, min(2, $ph)) : 0;
             }
             if (count($labels) < 2) { return array('ok' => false, 'error' => 'ปุ่มตัวเลือกต้องมีอย่างน้อย 2 ตัวเลือก'); }
             if (count($labels) > 6) { return array('ok' => false, 'error' => 'ตัวเลือกได้สูงสุด 6 ตัว'); }
@@ -306,6 +314,7 @@ if (!function_exists('mn_cls_save_item')) {
             $opt_notes = implode('', $notes) !== '' ? json_encode($notes, JSON_UNESCAPED_UNICODE) : null;
             $multi = !empty($in['multi']) ? 1 : 0;
             $opt_groups = $multi && array_sum($groups) > 0 ? json_encode($groups) : null;
+            $opt_photos = json_encode($photos);
             $rate_fail = '';
             foreach ($rates as $r) { if ($r !== '') { $rate_fail = $r; break; } }
         } elseif ($type === 'number') {
@@ -324,13 +333,17 @@ if (!function_exists('mn_cls_save_item')) {
             if (!in_array($auto, array('buy_date', 'last_ma'), true)) { return array('ok' => false, 'error' => 'เลือกแหล่งข้อมูลอัตโนมัติ'); }
         }
 
+        if ($type === 'passfail' || $type === 'number') {
+            $photo_fail = isset($in['photo_fail']) ? max(0, min(2, (int) $in['photo_fail'])) : 1;
+        }
+
         if ($id > 0) {
             $ok = mn_cls_exec($connect,
                 'UPDATE cl_item SET ci_symptom_id=?, ci_group_id=?, ci_question=?, ci_hint=?, ci_rate_on_fail=?, ci_unit=?,'
-                . ' ci_val_min=?, ci_val_max=?, ci_opts=?, ci_opt_rates=?, ci_opt_colors=?, ci_multi=?, ci_opt_notes=?, ci_opt_groups=?, ci_auto_source=?, ci_enabled=?'
+                . ' ci_val_min=?, ci_val_max=?, ci_opts=?, ci_opt_rates=?, ci_opt_colors=?, ci_multi=?, ci_opt_notes=?, ci_opt_groups=?, ci_opt_photos=?, ci_photo_fail=?, ci_auto_source=?, ci_enabled=?'
                 . ' WHERE ci_id=? AND ci_product=?',
-                'iissssddsssisssiis',
-                array($symptom_id, $group_id, $question, $hint, $rate_fail, $unit, $min, $max, $opts, $opt_rates, $opt_colors, $multi, $opt_notes, $opt_groups, $auto, $enabled, $id, $product)
+                'iissssddsssisssisiis',
+                array($symptom_id, $group_id, $question, $hint, $rate_fail, $unit, $min, $max, $opts, $opt_rates, $opt_colors, $multi, $opt_notes, $opt_groups, $opt_photos, $photo_fail, $auto, $enabled, $id, $product)
             );
             return array('ok' => (bool) $ok, 'error' => $ok ? '' : 'บันทึกไม่สำเร็จ', 'id' => $id);
         }
@@ -342,10 +355,10 @@ if (!function_exists('mn_cls_save_item')) {
         $step = $next ? (int) $next[0]['n'] : 1;
         $ok = mn_cls_exec($connect,
             'INSERT INTO cl_item (ci_product, ci_symptom_id, ci_group_id, ci_step, ci_question, ci_hint, ci_rate_on_fail, ci_unit,'
-            . ' ci_val_min, ci_val_max, ci_opts, ci_opt_rates, ci_opt_colors, ci_multi, ci_opt_notes, ci_opt_groups, ci_auto_source, ci_enabled)'
-            . ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            'siiissssddsssisssi',
-            array($product, $symptom_id, $group_id, $step, $question, $hint, $rate_fail, $unit, $min, $max, $opts, $opt_rates, $opt_colors, $multi, $opt_notes, $opt_groups, $auto, $enabled)
+            . ' ci_val_min, ci_val_max, ci_opts, ci_opt_rates, ci_opt_colors, ci_multi, ci_opt_notes, ci_opt_groups, ci_opt_photos, ci_photo_fail, ci_auto_source, ci_enabled)'
+            . ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'siiissssddsssisssisi',
+            array($product, $symptom_id, $group_id, $step, $question, $hint, $rate_fail, $unit, $min, $max, $opts, $opt_rates, $opt_colors, $multi, $opt_notes, $opt_groups, $opt_photos, $photo_fail, $auto, $enabled)
         );
         return array('ok' => (bool) $ok, 'error' => $ok ? '' : 'บันทึกไม่สำเร็จ', 'id' => $ok ? (int) mysqli_insert_id($connect) : 0);
     }

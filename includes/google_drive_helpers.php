@@ -13,7 +13,7 @@ if (!function_exists('mn_gd_config')) {
     {
         static $cfg = null;
         if ($cfg !== null) { return $cfg; }
-        $cfg = array('enabled' => false, 'credentials' => '', 'folder_id' => '', 'cainfo' => '', 'keep_local' => false);
+        $cfg = array('enabled' => false, 'credentials' => '', 'folder_id' => '', 'cainfo' => '', 'keep_local' => false, 'impersonate' => '');
         $file = dirname(__DIR__) . '/config/google_drive.local.php';
         if (is_file($file)) {
             $loaded = require $file;
@@ -78,16 +78,19 @@ if (!function_exists('mn_gd_http')) {
 
 /** สร้าง JWT ที่ลงลายเซ็นด้วยกุญแจ service account (RS256) */
 if (!function_exists('mn_gd_jwt')) {
-    function mn_gd_jwt(array $sa, $scope, $now)
+    function mn_gd_jwt(array $sa, $scope, $now, $sub = '')
     {
         $head = mn_gd_b64url(json_encode(array('alg' => 'RS256', 'typ' => 'JWT')));
-        $claim = mn_gd_b64url(json_encode(array(
+        $claims = array(
             'iss'   => $sa['client_email'],
             'scope' => $scope,
             'aud'   => isset($sa['token_uri']) ? $sa['token_uri'] : 'https://oauth2.googleapis.com/token',
             'iat'   => $now,
             'exp'   => $now + 3600,
-        )));
+        );
+        // ทำงานในนามผู้ใช้ Workspace (domain-wide delegation) — ไฟล์เป็นของผู้ใช้นั้น ใช้โฟลเดอร์ใน My Drive ได้
+        if ($sub !== '') { $claims['sub'] = $sub; }
+        $claim = mn_gd_b64url(json_encode($claims));
         $key = openssl_pkey_get_private($sa['private_key']);
         if (!$key) { return ''; }
         $sig = '';
@@ -108,7 +111,7 @@ if (!function_exists('mn_gd_token')) {
         }
         $sa = json_decode((string) @file_get_contents($cfg['credentials']), true);
         if (!is_array($sa) || empty($sa['client_email']) || empty($sa['private_key'])) { return array('', 'ไฟล์กุญแจ service account ไม่ถูกต้อง'); }
-        $jwt = mn_gd_jwt($sa, 'https://www.googleapis.com/auth/drive', time());
+        $jwt = mn_gd_jwt($sa, 'https://www.googleapis.com/auth/drive', time(), $cfg['impersonate']);
         if ($jwt === '') { return array('', 'ลงลายเซ็นด้วยกุญแจ service account ไม่สำเร็จ'); }
         $uri = isset($sa['token_uri']) ? $sa['token_uri'] : 'https://oauth2.googleapis.com/token';
         list($code, $body, $err) = mn_gd_http('POST', $uri, array('Content-Type: application/x-www-form-urlencoded'),
@@ -228,6 +231,16 @@ if (!function_exists('mn_gd_trash')) {
     }
 }
 
+/** เปลี่ยนชื่อไฟล์บน Drive → error */
+if (!function_exists('mn_gd_rename')) {
+    function mn_gd_rename($file_id, $name)
+    {
+        list($code, $res, $err) = mn_gd_api('PATCH', 'https://www.googleapis.com/drive/v3/files/' . rawurlencode($file_id) . '?supportsAllDrives=true&fields=id',
+            array('Content-Type: application/json; charset=UTF-8'), json_encode(array('name' => (string) $name)));
+        return $err;
+    }
+}
+
 /** ตรวจการตั้งค่า (ใช้หลังตั้งค่าครั้งแรก) → array ผลแต่ละขั้น */
 if (!function_exists('mn_gd_check')) {
     function mn_gd_check()
@@ -241,9 +254,15 @@ if (!function_exists('mn_gd_check')) {
         $out['token'] = $token !== '';
         if (!$out['token']) { $out['error'] = $err; return $out; }
         list($code, $res, $err) = mn_gd_api('GET', 'https://www.googleapis.com/drive/v3/files/' . rawurlencode($cfg['folder_id']) . '?supportsAllDrives=true&fields=id,name,driveId,capabilities(canAddChildren)');
+        $out['shared_drive'] = !empty($res['driveId']);
         if ($err !== '') { $out['error'] = 'เปิดโฟลเดอร์ไม่ได้: ' . $err . ' (แชร์โฟลเดอร์/Shared Drive ให้ service account แล้วหรือยัง)'; return $out; }
         $out['folder'] = isset($res['name']) ? (string) $res['name'] : '';
         if (empty($res['capabilities']['canAddChildren'])) { $out['error'] = 'service account ไม่มีสิทธิ์เพิ่มไฟล์ในโฟลเดอร์นี้ (ตั้งเป็น Content manager)'; }
+        // service account ไม่มีพื้นที่ของตัวเอง — อัปโหลดลงโฟลเดอร์ใน My Drive ไม่ได้ ต้องเป็น Shared Drive หรือตั้ง impersonate
+        elseif (!$out['shared_drive'] && $cfg['impersonate'] === '') {
+            $out['error'] = 'โฟลเดอร์ "' . $out['folder'] . '" อยู่ใน My Drive ไม่ใช่ Shared Drive — service account อัปโหลดไฟล์ลงที่นี่ไม่ได้'
+                . ' (Google ไม่ให้ service account เป็นเจ้าของไฟล์) ให้สร้าง Shared Drive แล้วใช้ id ของ Shared Drive แทน หรือตั้ง impersonate';
+        }
         return $out;
     }
 }

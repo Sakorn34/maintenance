@@ -84,7 +84,7 @@ if (!function_exists('mn_photo_list')) {
     function mn_photo_list($connect, $trp_id)
     {
         mn_photo_ensure_table($connect);
-        $stmt = mysqli_prepare($connect, 'SELECT cp_id, cp_item_id, cp_w, cp_h, cp_by, cp_at FROM cl_photo WHERE cp_trp_id = ? ORDER BY cp_id');
+        $stmt = mysqli_prepare($connect, 'SELECT cp_id, cp_item_id, cp_w, cp_h, cp_by, cp_at, (cp_drive_id IS NOT NULL) AS on_drive FROM cl_photo WHERE cp_trp_id = ? ORDER BY cp_id');
         if (!$stmt) { return array(); }
         $t = (int) $trp_id;
         mysqli_stmt_bind_param($stmt, 'i', $t);
@@ -93,7 +93,7 @@ if (!function_exists('mn_photo_list')) {
         $out = array();
         while ($res && ($r = mysqli_fetch_assoc($res))) {
             $out[] = array('id' => (int) $r['cp_id'], 'ci' => (int) $r['cp_item_id'], 'w' => (int) $r['cp_w'], 'h' => (int) $r['cp_h'],
-                'by' => (string) $r['cp_by'], 'at' => (string) $r['cp_at']);
+                'by' => (string) $r['cp_by'], 'at' => (string) $r['cp_at'], 'drive' => (int) $r['on_drive'] === 1);
         }
         mysqli_stmt_close($stmt);
         return $out;
@@ -350,7 +350,7 @@ if (!function_exists('mn_photo_by_trps')) {
         if (!$ids) { return array(); }
         mn_photo_ensure_table($connect);
         $ids = array_keys($ids);
-        $sql = 'SELECT p.cp_id, p.cp_trp_id, p.cp_item_id, COALESCE(i.ci_question, \'\') AS q'
+        $sql = 'SELECT p.cp_id, p.cp_trp_id, p.cp_item_id, (p.cp_drive_id IS NOT NULL) AS on_drive, COALESCE(i.ci_question, \'\') AS q'
             . ' FROM cl_photo p LEFT JOIN cl_item i ON i.ci_id = p.cp_item_id'
             . ' WHERE p.cp_trp_id IN (' . implode(',', array_fill(0, count($ids), '?')) . ') ORDER BY p.cp_trp_id, p.cp_id';
         $stmt = mysqli_prepare($connect, $sql);
@@ -362,10 +362,18 @@ if (!function_exists('mn_photo_by_trps')) {
         $res = mysqli_stmt_get_result($stmt);
         $out = array();
         while ($res && ($r = mysqli_fetch_assoc($res))) {
-            $out[(int) $r['cp_trp_id']][] = array('id' => (int) $r['cp_id'], 'ci' => (int) $r['cp_item_id'], 'label' => (string) $r['q']);
+            $out[(int) $r['cp_trp_id']][] = array('id' => (int) $r['cp_id'], 'ci' => (int) $r['cp_item_id'], 'label' => (string) $r['q'], 'drive' => (int) $r['on_drive'] === 1);
         }
         mysqli_stmt_close($stmt);
         return $out;
+    }
+}
+
+/** เครื่องหมายติ๊กถูกมุมรูป = รูปขึ้น Google Drive แล้ว (สไตล์ .mn-photo-drive ใน css/mn-photo-lightbox.css) */
+if (!function_exists('mn_photo_drive_badge')) {
+    function mn_photo_drive_badge()
+    {
+        return '<span class="mn-photo-drive" title="ขึ้น Google Drive แล้ว" aria-label="ขึ้น Google Drive แล้ว"><i class="fa fa-check" aria-hidden="true"></i></span>';
     }
 }
 
@@ -384,7 +392,8 @@ if (!function_exists('mn_photo_strip_html')) {
             if ($i >= $max) { break; }
             $cap = htmlspecialchars($items[$i]['caption'], ENT_QUOTES, 'UTF-8');
             $html .= '<button type="button" class="mn-photo-strip__img" data-mn-photo="' . $i . '" title="' . $cap . '" aria-label="ดูรูป ' . $cap . '">'
-                . '<img src="checklist_photo?id=' . (int) $p['id'] . '&amp;s=t" alt="" loading="lazy" /></button>';
+                . '<img src="checklist_photo?id=' . (int) $p['id'] . '&amp;s=t" alt="" loading="lazy" />'
+                . (!empty($p['drive']) ? mn_photo_drive_badge() : '') . '</button>';
         }
         if (count($photos) > $max) { $html .= '<span class="mn-photo-strip__more">+' . (count($photos) - $max) . ' รูป</span>'; }
         if ((int) $zip_trp_id > 0) {

@@ -73,7 +73,7 @@ if ($action !== '') {
         $photos = mn_photo_list($connect, $trp_id);
         $want = isset($_GET['ci']) ? (int) $_GET['ci'] : 0;
         $out = array();
-        foreach ($photos as $p) { $out[] = array('id' => $p['id'], 'ci' => $p['ci']); }
+        foreach ($photos as $p) { $out[] = array('id' => $p['id'], 'ci' => $p['ci'], 'drive' => $p['drive']); }
         mn_pu_json($connect, array('ok' => true, 'focus' => (int) $link['cpl_focus'], 'items' => mn_plink_items($connect, $link, $photos, $want),
             'photos' => $out, 'expiresText' => date('H:i', strtotime((string) $link['cpl_expires']))));
     }

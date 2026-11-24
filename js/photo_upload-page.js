@@ -120,7 +120,9 @@
 
   function tileHtml(p) {
     return '<button type="button" class="mn-pu-tile" data-photo="' + p.id + '" aria-label="จัดการรูปนี้">'
-      + '<img src="' + esc(imgUrl(p.id, 't')) + '" alt="" loading="lazy" /></button>';
+      + '<img src="' + esc(imgUrl(p.id, 't')) + '" alt="" loading="lazy" />'
+      + (p.drive ? '<span class="mn-photo-drive" title="ขึ้น Google Drive แล้ว"><i class="fa fa-check" aria-hidden="true"></i></span>' : '')
+      + '</button>';
   }
 
   function queueTileHtml(q) {
@@ -374,7 +376,7 @@
     render();
     sendOne(q).then(function (photo) {
       st.queue = st.queue.filter(function (x) { return x !== q; });
-      if (photo && !st.photos.some(function (x) { return x.id === photo.id; })) { st.photos.push({ id: photo.id, ci: photo.ci }); }
+      if (photo && !st.photos.some(function (x) { return x.id === photo.id; })) { st.photos.push({ id: photo.id, ci: photo.ci, drive: false }); }
       toast('ส่งรูปแล้ว');
     }).catch(function (err) {
       var m = err && err.message;

@@ -1478,7 +1478,7 @@
   state.photos = (B.photos || []).map(photoFromServer);
 
   function photoFromServer(o) {
-    return { key: 'p' + o.id, id: o.id, ci: o.ci, by: o.by || '', at: o.at || '',
+    return { key: 'p' + o.id, id: o.id, ci: o.ci, by: o.by || '', at: o.at || '', drive: !!o.drive,
       url: 'checklist_photo?id=' + o.id + '&s=f', thumb: 'checklist_photo?id=' + o.id + '&s=t' };
   }
 
@@ -1533,7 +1533,8 @@
       return '<span class="mn-ar-photo' + (p.pending ? ' is-pending' : '') + '" data-key="' + p.key + '">'
         + (p.pending
           ? '<i class="fa fa-circle-o-notch fa-spin" aria-hidden="true"></i>'
-          : '<img src="' + esc(p.thumb) + '" alt="รูปประกอบ" loading="lazy" /><button type="button" class="mn-ar-photo__del" aria-label="ลบรูป"><i class="fa fa-times" aria-hidden="true"></i></button>')
+          : '<img src="' + esc(p.thumb) + '" alt="รูปประกอบ" loading="lazy" /><button type="button" class="mn-ar-photo__del" aria-label="ลบรูป"><i class="fa fa-times" aria-hidden="true"></i></button>'
+            + (p.drive ? '<span class="mn-photo-drive" title="ขึ้น Google Drive แล้ว" aria-label="ขึ้น Google Drive แล้ว"><i class="fa fa-check" aria-hidden="true"></i></span>' : ''))
         + '</span>';
     }).join('')
       + (mode ? '<label class="mn-ar-photo-add' + (list.length ? ' is-compact' : '') + (need ? ' is-req' : '') + '" title="แนบรูป (ถ่ายหรือเลือกจากเครื่อง)">'
@@ -1622,6 +1623,7 @@
             p.pending = false;
             // ระหว่างรอผล การดึงรายการรูป (QR มือถือ) อาจเพิ่มรูปเดียวกันมาแล้ว
             state.photos = state.photos.filter(function (x) { return x === p || x.id !== p.id; });
+            checkDriveSoon();
           });
       }).catch(function (err) {
         state.photos = state.photos.filter(function (x) { return x !== p; });
@@ -1811,6 +1813,7 @@
       var o = byId[p.id];
       if (!o) { changed[p.ci] = true; return false; }
       if (o.ci !== p.ci) { changed[p.ci] = true; changed[o.ci] = true; p.ci = o.ci; }
+      if (!!o.drive !== !!p.drive) { p.drive = !!o.drive; changed[p.ci] = true; }
       delete byId[p.id];
       return true;
     });
@@ -1826,6 +1829,21 @@
     queueLinkSync();
     if (news) { arToast('รับรูปจากมือถือแล้ว ' + news + ' รูป'); }
     if (qrBox && !qrBox.hidden) { renderQr(); }
+  }
+
+  // รูปที่แนบจากคอม: server ส่งขึ้น Drive หลังตอบกลับ จึงถามสถานะซ้ำอีก 2-3 ครั้งเพื่อขึ้นติ๊กถูก
+  var driveChecks = [];
+  function checkDriveSoon() {
+    if (B.demo || pollTimer) { return; }
+    driveChecks.forEach(clearTimeout);
+    driveChecks = [5000, 15000, 40000].map(function (ms) {
+      return setTimeout(function () {
+        if (!state.photos.some(function (p) { return p.id && !p.drive; })) { return; }
+        getJSON('checklist_photo', { action: 'list', trp_id: B.trpId })
+          .then(function (res) { if (res && res.ok) { mergePhotos(res.photos || []); } })
+          .catch(function () {});
+      }, ms);
+    });
   }
 
   function arToast(msg) {

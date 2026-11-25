@@ -69,6 +69,16 @@ if (!function_exists('mn_photo_ensure_table')) {
             . 'INDEX `idx_cp_trp` (`cp_trp_id`)'
             . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
         );
+        // ไฟล์บน Drive ที่ต้องลบ (ย้ายลงถังขยะ) แต่ยังไม่สำเร็จ — ลองใหม่ใน mn_photo_trash_pending()
+        mysqli_query($connect,
+            'CREATE TABLE IF NOT EXISTS `cl_drive_trash` ('
+            . '`cdt_file_id` VARCHAR(100) ' . $col . ' NOT NULL,'
+            . '`cdt_at` DATETIME NOT NULL,'
+            . '`cdt_tries` INT NOT NULL DEFAULT 0,'
+            . '`cdt_error` VARCHAR(300) ' . $col . ' NOT NULL DEFAULT \'\','
+            . 'PRIMARY KEY (`cdt_file_id`)'
+            . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
         // id โฟลเดอร์บน Google Drive ที่สร้างแล้ว (ไม่ต้องค้นซ้ำทุกครั้ง)
         mysqli_query($connect,
             'CREATE TABLE IF NOT EXISTS `cl_drive_folder` ('
@@ -146,7 +156,9 @@ if (!function_exists('mn_photo_save')) {
         mysqli_stmt_close($exists);
         if (!$has) { return array('ok' => false, 'error' => 'ไม่พบใบงาน'); }
 
-        if (count(mn_photo_list($connect, $t)) >= 40) { return array('ok' => false, 'error' => 'ใบงานนี้มีรูปครบ 40 รูปแล้ว'); }
+        if (!function_exists('mn_sys_setting')) { require_once __DIR__ . '/system_settings_helpers.php'; }
+        $max_photos = (int) mn_sys_setting($connect, 'photo_max_per_job'); // ปรับได้ที่หน้า settings
+        if (count(mn_photo_list($connect, $t)) >= $max_photos) { return array('ok' => false, 'error' => 'ใบงานนี้มีรูปครบ ' . $max_photos . ' รูปแล้ว'); }
 
         $tmp = isset($photo['tmp_name']) ? (string) $photo['tmp_name'] : '';
         $tmp_t = isset($thumb['tmp_name']) ? (string) $thumb['tmp_name'] : '';
@@ -218,10 +230,16 @@ if (!function_exists('mn_photo_delete')) {
                 if (preg_match('/^[a-f0-9]{32}\.img$/', (string) $f)) { @unlink($dir . '/' . $f); }
             }
             // รูปที่ขึ้น Drive แล้ว: ย้ายลงถังขยะของ Drive (กู้คืนได้ 30 วัน)
-            if (!empty($row['cp_drive_id']) && mn_photo_drive_ready()) {
-                $err = mn_gd_trash((string) $row['cp_drive_id']);
-                if ($err !== '') { mn_gd_log('trash ' . $row['cp_drive_id'] . ': ' . $err); }
+            // ลบไม่สำเร็จ (เน็ตหลุด / Drive ขัดข้อง / ปิดการตั้งค่าไว้) → จำไว้ใน cl_drive_trash แล้วลองใหม่รอบถัดไป
+            if (!empty($row['cp_drive_id'])) {
+                $fid = (string) $row['cp_drive_id'];
+                $err = mn_photo_drive_ready() ? mn_gd_trash($fid) : 'ยังไม่ได้ตั้งค่า Google Drive';
+                if ($err !== '') {
+                    mn_photo_trash_queue($connect, $fid, $err);
+                    if (function_exists('mn_gd_log')) { mn_gd_log('trash ' . $fid . ': ' . $err . ' (จะลองใหม่)'); }
+                }
             }
+            mn_photo_trash_pending($connect, 5);
         }
         return array('ok' => (bool) $ok, 'error' => $ok ? '' : 'ลบรูปไม่สำเร็จ');
     }
@@ -580,12 +598,66 @@ if (!function_exists('mn_photo_push_drive')) {
     }
 }
 
+/** จำไฟล์บน Drive ที่ลบไม่สำเร็จ ไว้ลองใหม่ */
+if (!function_exists('mn_photo_trash_queue')) {
+    function mn_photo_trash_queue($connect, $file_id, $error)
+    {
+        mn_photo_ensure_table($connect);
+        $stmt = mysqli_prepare($connect,
+            'INSERT INTO cl_drive_trash (cdt_file_id, cdt_at, cdt_tries, cdt_error) VALUES (?, ?, 1, ?)'
+            . ' ON DUPLICATE KEY UPDATE cdt_tries = cdt_tries + 1, cdt_error = VALUES(cdt_error)');
+        if (!$stmt) { return; }
+        $fid = (string) $file_id;
+        $now = date('Y-m-d H:i:s');
+        $err = mb_substr((string) $error, 0, 300, 'UTF-8');
+        mysqli_stmt_bind_param($stmt, 'sss', $fid, $now, $err);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+    }
+}
+
+/** ลองลบไฟล์บน Drive ที่ค้างอีกครั้ง (เรียกหลังอัปโหลด / ลบรูป / drive_push) → array(done, left) */
+if (!function_exists('mn_photo_trash_pending')) {
+    function mn_photo_trash_pending($connect, $limit = 5)
+    {
+        mn_photo_ensure_table($connect);
+        if (!mn_photo_drive_ready()) { return array(0, mn_photo_trash_count($connect)); }
+        $ids = array();
+        $res = mysqli_query($connect, 'SELECT cdt_file_id FROM cl_drive_trash ORDER BY cdt_at LIMIT ' . max(1, (int) $limit));
+        while ($res && ($r = mysqli_fetch_row($res))) { $ids[] = (string) $r[0]; }
+        $done = 0;
+        foreach ($ids as $fid) {
+            $err = mn_gd_trash($fid);
+            if ($err !== '') {
+                mn_photo_trash_queue($connect, $fid, $err);
+                break; // Drive ยังมีปัญหา — ไว้ลองรอบหน้า
+            }
+            $del = mysqli_prepare($connect, 'DELETE FROM cl_drive_trash WHERE cdt_file_id = ?');
+            mysqli_stmt_bind_param($del, 's', $fid);
+            mysqli_stmt_execute($del);
+            mysqli_stmt_close($del);
+            $done++;
+        }
+        return array($done, mn_photo_trash_count($connect));
+    }
+}
+
+if (!function_exists('mn_photo_trash_count')) {
+    function mn_photo_trash_count($connect)
+    {
+        mn_photo_ensure_table($connect);
+        $res = mysqli_query($connect, 'SELECT COUNT(*) FROM cl_drive_trash');
+        return $res ? (int) mysqli_fetch_row($res)[0] : 0;
+    }
+}
+
 /** ส่งรูปที่ค้างขึ้น Drive (เรียกหลังอัปโหลด หรือจากปุ่มส่งค้าง) → array(sent, failed, last_error) */
 if (!function_exists('mn_photo_push_pending')) {
     function mn_photo_push_pending($connect, $limit = 5)
     {
         if (!mn_photo_drive_ready()) { return array(0, 0, ''); }
         mn_photo_ensure_table($connect);
+        mn_photo_trash_pending($connect, $limit);
         $ids = array();
         $res = mysqli_query($connect, 'SELECT cp_id FROM cl_photo WHERE cp_drive_id IS NULL ORDER BY cp_id LIMIT ' . max(1, (int) $limit));
         while ($res && ($r = mysqli_fetch_row($res))) { $ids[] = (int) $r[0]; }

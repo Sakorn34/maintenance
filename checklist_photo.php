@@ -5,7 +5,7 @@
  * - GET  ?id=&s=t|f[&dl=1]        ส่งรูป (t = รูปเล็ก, f = รูปขนาดดู, dl = ดาวน์โหลด ตั้งชื่อตามที่มา)
  * - GET  ?action=list&trp_id=     รายการรูปของใบงาน (JSON)
  * - GET  ?action=zip&trp_id=      ดาวน์โหลดรูปทั้งใบงานเป็น zip
- * - GET  ?action=drive_check | drive_push | drive_rename   ตรวจ / ส่งรูปค้าง / ตั้งชื่อไฟล์บน Drive ใหม่
+ * - GET  ?action=drive_check | drive_push | drive_rename   ตรวจ / ส่งรูปค้าง + ลบไฟล์ค้างบน Drive / ตั้งชื่อไฟล์บน Drive ใหม่
  * - POST action=upload (multipart: trp_id, ci_id, photo, thumb)  รูปที่เบราว์เซอร์ย่อมาแล้ว
  * - POST action=delete (id, trp_id) | move (id, trp_id, ci_id)
  * - POST action=link_create (trp_id, renew, focus, items) | link_state (trp_id, token, focus, items) | link_revoke (trp_id)
@@ -52,13 +52,16 @@ if ($action === 'drive_check') {
     require_once __DIR__ . '/includes/google_drive_helpers.php';
     $chk = mn_gd_check();
     $chk['pending'] = mn_photo_pending_count($connect);
+    $chk['trash_pending'] = mn_photo_trash_count($connect); // ไฟล์บน Drive ที่ลบจากระบบแล้วแต่ยังย้ายลงถังขยะไม่สำเร็จ
     $chk['ok'] = $chk['token'] && $chk['error'] === '';
     mn_photo_json($connect, $chk);
 }
 // ส่งรูปที่ค้างขึ้น Drive ทีละชุด (เปิดซ้ำได้จนค้างเป็น 0)
 if ($action === 'drive_push') {
     list($sent, $failed, $err) = mn_photo_push_pending($connect, 20);
-    mn_photo_json($connect, array('ok' => $failed === 0, 'sent' => $sent, 'pending' => mn_photo_pending_count($connect), 'error' => $err));
+    $trash_left = mn_photo_trash_count($connect);
+    mn_photo_json($connect, array('ok' => $failed === 0 && $trash_left === 0, 'sent' => $sent, 'pending' => mn_photo_pending_count($connect),
+        'trash_pending' => $trash_left, 'error' => $err));
 }
 // ตั้งชื่อไฟล์บน Drive ใหม่ตามรูปแบบปัจจุบัน ทีละ 30 รูป (?after=id ล่าสุดที่ทำแล้ว — เปิดซ้ำตาม next จนได้ done)
 if ($action === 'drive_rename') {

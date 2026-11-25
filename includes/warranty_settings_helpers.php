@@ -271,7 +271,28 @@ if (!function_exists('maintenance_warranty_suggest_insurance')) {
      * Return value:
      * - array คีย์ 'value' (string หรือ null), 'hint' (string), 'repair_warranty' (array|null), 'product_months' (int|null)
      */
-    function maintenance_warranty_suggest_insurance($connect, $product, $buy_date, $sn, $trp_id = 0)
+    function maintenance_warranty_suggest_insurance($connect, $product, $buy_date, $sn, $trp_id = 0, $ref_date = '')
+    {
+        // ทะเบียนประกัน (เครื่องใหม่ / งานซ่อม / ซื้อเพิ่ม) — includes/warranty_registry_helpers.php
+        require_once __DIR__ . '/warranty_registry_helpers.php';
+        $pw_months = maintenance_warranty_fetch_months_for_product($connect, (string) $product);
+        $timeline = mn_wr_timeline($connect, (string) $sn, (string) $product, (string) $buy_date, (int) $trp_id, (string) $ref_date);
+        list($value, $hint) = mn_wr_status($timeline, mn_wr_date($buy_date) !== '', $pw_months);
+        $repair_active = null;
+        foreach ($timeline as $it) { if ($it['active'] && $it['type'] === 'repair') { $repair_active = $it; } }
+        return array(
+            'value'           => $value,
+            'hint'            => $hint,
+            'repair_warranty' => $value === 'อยู่ในประกันซ่อม' ? $repair_active : null,
+            'product_months'  => $pw_months,
+            'timeline'        => $timeline,
+        );
+    }
+}
+
+if (!function_exists('maintenance_warranty_suggest_insurance_legacy')) {
+    /** แบบเดิม (ก่อนมีทะเบียนประกัน) — เก็บไว้อ้างอิง ไม่มีที่เรียกใช้ */
+    function maintenance_warranty_suggest_insurance_legacy($connect, $product, $buy_date, $sn, $trp_id = 0)
     {
         $pw_months = maintenance_warranty_fetch_months_for_product($connect, (string) $product);
         $repairWty = maintenance_warranty_find_repair_warranty($connect, (string) $sn, (int) $trp_id);

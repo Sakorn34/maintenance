@@ -572,7 +572,7 @@ if (!$has_any) {
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <link rel="stylesheet" href="css/mn-theme.css" />
 <link rel="stylesheet" href="css/mn-layout.css" />
-<link rel="stylesheet" href="css/mn-nav.css" />
+<link rel="stylesheet" href="css/mn-nav.css?v=<?php echo filemtime(__DIR__ . '/css/mn-nav.css'); ?>" />
 <title>ไม่พบใบงาน</title>
 </head>
 <body class="mn-addjob-page mn-detail-job-page">
@@ -604,7 +604,7 @@ if ($connect) {
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <link rel="stylesheet" href="css/mn-theme.css" />
 <link rel="stylesheet" href="css/mn-layout.css" />
-<link rel="stylesheet" href="css/mn-nav.css" />
+<link rel="stylesheet" href="css/mn-nav.css?v=<?php echo filemtime(__DIR__ . '/css/mn-nav.css'); ?>" />
 <link type="text/css" rel="stylesheet" href="css/site-legacy.css" />
 <link rel="stylesheet" type="text/css" href="css/smoothness/jquery-ui-1.7.2.custom.css" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" />

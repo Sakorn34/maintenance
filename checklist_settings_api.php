@@ -38,6 +38,10 @@ if ($action === 'ping') {
     mn_cls_respond($connect, array('ok' => true));
 }
 
+// คำสั่งอื่นนอกจาก ping เป็นงานหลังบ้าน — ต้องปลดล็อกหน้าตั้งค่าด้วยรหัสก่อน
+require_once __DIR__ . '/includes/settings_lock_helpers.php';
+mn_settings_gate($connect, 'json');
+
 if ($action === 'sync_pull') {
     if (!$is_post) { mn_cls_respond($connect, array('ok' => false, 'error' => 'ต้องส่งแบบ POST')); }
     require_once __DIR__ . '/includes/checklist_sync_helpers.php';

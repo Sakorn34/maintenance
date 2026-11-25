@@ -282,3 +282,11 @@
 .mn-index-summary p {
   margin: 0.25rem 0;
 }
+
+/* จอแท็บเล็ต/มือถือ: ตารางงานเลื่อนซ้าย-ขวาในกรอบ แทนปุ่ม view / Info ล้นออกนอกช่อง */
+@media (max-width: 900px) {
+  .mn-index-page .mn-index-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+
+/* fieldset ค่าเริ่มต้นกว้างตามเนื้อหา (min-width: min-content) จนล้นฟอร์ม — ให้หดตามกรอบ */
+.mn-index-page .mn-index-filters { min-width: 0; max-width: 100%; box-sizing: border-box; }

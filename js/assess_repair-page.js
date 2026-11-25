@@ -126,10 +126,25 @@
     return -1;
   }
 
+  // อายุเครื่อง / MA ล่าสุด 1 ปี 10 เดือน ถึงก่อนครบ 2 ปี (server ส่ง auto_near) — สีส้ม แนะนำพิจารณา MA
+  function isNear(item, res) {
+    return !!(item && item.ci_auto_source && item.auto_near && res && res.result === 'pass');
+  }
+
+  // รายการซ่อมที่แนะนำเมื่อใกล้ครบ 2 ปี (ยังไม่ใส่ในใบงานเอง ช่างกดเพิ่มจากปุ่มแนะนำ)
+  function nearRate(item, res) {
+    return isNear(item, res) ? (item.ci_rate_on_fail || '').trim() : '';
+  }
+
+  function autoTone(item, res) {
+    if (res.result === 'fail') { return 'bad'; }
+    return isNear(item, res) ? 'warn' : 'good';
+  }
+
   function itemTone(item, res) {
     if (!res || !res.result) { return ''; }
     var r = res.result;
-    if (r === 'pass') { return 'good'; }
+    if (r === 'pass') { return isNear(item, res) ? 'warn' : 'good'; }
     if (r === 'fail') { return 'bad'; }
     if (r === 'na') { return 'na'; }
     var worst = -1;
@@ -221,7 +236,7 @@
       return html + '<span class="mn-ar-auto__tag">งานจริงระบบคำนวณให้</span></div>';
     }
     if (it.ci_auto_source) {
-      var ar = it.auto_result || 'na';
+      var ar = isNear(it, res) ? 'near' : (it.auto_result || 'na');
       return '<div><span class="mn-ar-auto mn-ar-auto--' + esc(ar) + '">' + esc(it.auto_label || '')
         + (it.auto_detail ? ' <small>' + esc(it.auto_detail) + '</small>' : '') + '</span>'
         + ' <span class="mn-ar-auto__tag">ระบบคำนวณให้</span></div>';
@@ -716,9 +731,22 @@
 
   // วลีของข้อมูลอัตโนมัติ ให้อ่านเหมือนที่ช่างเขียน
   var AUTO_PHRASE = {
-    buy_date: { pass: 'ยังไม่เกิน 2 ปี', fail: 'เกิน 2 ปี' },
-    last_ma: { pass: 'เคยเปลี่ยนอะไหล่พื้นฐานไปยังไม่เกิน 2 ปี', fail: 'เคยเปลี่ยนอะไหล่พื้นฐานเกิน 2 ปี' }
+    buy_date: { pass: 'ยังไม่เกิน 2 ปี', near: 'ใกล้ครบ 2 ปี', fail: 'เกิน 2 ปี' },
+    last_ma: { pass: 'เคยเปลี่ยนอะไหล่พื้นฐานไปยังไม่เกิน 2 ปี', near: 'เปลี่ยนอะไหล่พื้นฐานล่าสุดใกล้ครบ 2 ปี', fail: 'เคยเปลี่ยนอะไหล่พื้นฐานเกิน 2 ปี' }
   };
+
+  // ใกล้ครบ 2 ปีและยังไม่มีรายการ MA ในใบงาน → " แนะนำพิจารณา MA …"
+  function nearAdvice(item, res) {
+    var r = nearRate(item, res);
+    return r && !hasPart(r) && !coveredBy(r) ? ' แนะนำพิจารณา ' + r : '';
+  }
+
+  // อายุจากรายละเอียดอัตโนมัติ: "อายุ 1 ปี 11 เดือน (ซื้อ …)" / "MA ล่าสุด … (1 ปี 11 เดือน ที่แล้ว)"
+  function autoAge(item, res) {
+    var d = (res.note || '').trim() || (item.auto_detail || '');
+    var m = d.match(/อายุ\s+([^()]+?)\s*\(/) || d.match(/\(([^()]+?)\s*ที่แล้ว\)/);
+    return m ? m[1].trim() : '';
+  }
 
   function rangeText(item) {
     var max = item.ci_val_max;
@@ -728,7 +756,7 @@
   function autoPhrase(item, res) {
     var src = item.ci_auto_source;
     if (res.result === 'na') { return ''; }
-    var base = (AUTO_PHRASE[src] || {})[res.result] || '';
+    var base = (AUTO_PHRASE[src] || {})[isNear(item, res) ? 'near' : res.result] || '';
     if (B.demo) { return base || ((DEMO_AUTO[src] || {})[res.result]) || ''; }
     var detail = (res.note || '').trim() || (item.auto_detail || '');
     if (!detail) { return base && !/ไม่พบ|ไม่ถูกต้อง|ไม่ทราบ/.test(item.auto_label || '') ? base : (item.auto_label || base); }
@@ -739,7 +767,7 @@
   function itemLine(it, res, tone) {
     var q = it.ci_question;
     var note = (res.note || '').trim();
-    if (it.ci_auto_source) { return { label: q, text: autoPhrase(it, res) }; }
+    if (it.ci_auto_source) { return { label: q, text: autoPhrase(it, res) + nearAdvice(it, res) }; }
     if (it.ci_unit && hasThreshold(it) && note !== '' && !isNaN(parseFloat(note)) && (res.result === 'pass' || res.result === 'fail')) {
       var n = parseFloat(note);
       var where = res.result === 'pass' ? 'อยู่ในค่ามาตรฐาน' : (n < it.ci_val_min ? 'ต่ำกว่าค่ามาตรฐาน' : 'สูงกว่าค่ามาตรฐาน');
@@ -775,7 +803,8 @@
   // รายการซ่อมจริงในใบงานที่มาจากข้อนี้ (ถ้าถูกรวมในชุดจะชี้ไปที่รายการชุด)
   function partsForItem(it, res) {
     var out = [];
-    ratesFor(it, res).forEach(function (r) {
+    var near = nearRate(it, res);
+    ratesFor(it, res).concat(near ? [near] : []).forEach(function (r) {
       if (hasPart(r)) { pushOnce(out, r); return; }
       var cover = coveredBy(r);
       if (cover) { pushOnce(out, cover); }
@@ -798,7 +827,7 @@
         g = byKey[key] = { name: it.group_id ? (it.group_name || 'อื่น ๆ') : 'อื่น ๆ', bad: [], good: [], parts: [], seen: {} };
         groups.push(g);
       }
-      var tone = it.ci_auto_source ? (res.result === 'fail' ? 'bad' : 'good') : itemTone(it, res);
+      var tone = it.ci_auto_source ? autoTone(it, res) : itemTone(it, res);
       var line = itemLine(it, res, tone);
       line.ci = it.ci_id;
       if (!line.text) { return; }
@@ -872,8 +901,8 @@
 
   // วลีสั้นของข้อมูลอัตโนมัติ แบบที่ช่างเขียน
   var AUTO_SHORT = {
-    buy_date: { fail: 'เครื่องอายุเกิน 2 ปี', pass: 'เครื่องอายุยังไม่เกิน 2 ปี' },
-    last_ma: { fail: 'เปลี่ยนอะไหล่พื้นฐานล่าสุดเกิน 2 ปี', pass: 'เปลี่ยนอะไหล่พื้นฐานล่าสุดยังไม่เกิน 2 ปี' }
+    buy_date: { fail: 'เครื่องอายุเกิน 2 ปี', near: 'เครื่องอายุใกล้ครบ 2 ปี', pass: 'เครื่องอายุยังไม่เกิน 2 ปี' },
+    last_ma: { fail: 'เปลี่ยนอะไหล่พื้นฐานล่าสุดเกิน 2 ปี', near: 'เปลี่ยนอะไหล่พื้นฐานล่าสุดใกล้ครบ 2 ปี', pass: 'เปลี่ยนอะไหล่พื้นฐานล่าสุดยังไม่เกิน 2 ปี' }
   };
 
   // สิ่งที่ตรวจพบแบบสั้น เช่น "การ TouchScreen กดไม่ติดทั้งจอ", "ความสว่างจอ 39 LUX ต่ำกว่ามาตรฐาน (180-420)"
@@ -889,7 +918,13 @@
 
   function shortFinding(it, res, tone, qCount) {
     var note = (res.note || '').trim();
-    if (it.ci_auto_source) { return (AUTO_SHORT[it.ci_auto_source] || {})[res.result] || autoPhrase(it, res); }
+    if (it.ci_auto_source) {
+      if (isNear(it, res)) {
+        var age = autoAge(it, res);
+        return ((AUTO_SHORT[it.ci_auto_source] || {}).near || autoPhrase(it, res)) + (age ? ' (' + age + ')' : '') + nearAdvice(it, res);
+      }
+      return (AUTO_SHORT[it.ci_auto_source] || {})[res.result] || autoPhrase(it, res);
+    }
     if (it.ci_unit && hasThreshold(it) && note !== '' && !isNaN(parseFloat(note)) && res.result === 'fail') {
       var low = parseFloat(note) < it.ci_val_min;
       return it.ci_question + ' ' + note + ' ' + it.ci_unit + (low ? ' ต่ำกว่ามาตรฐาน' : ' สูงกว่ามาตรฐาน') + ' (' + rangeText(it) + ')';
@@ -918,7 +953,7 @@
     allChecked().forEach(function (c) {
       var it = c.item;
       var res = c.res || { result: '', note: '' };
-      var tone = it.ci_auto_source ? (res.result === 'fail' ? 'bad' : 'good') : itemTone(it, res);
+      var tone = it.ci_auto_source ? autoTone(it, res) : itemTone(it, res);
       if (tone !== 'warn' && tone !== 'bad') { return; }
       // ในหัวข้อใช้ชื่อข้อเป็นประธานเสมอ (ชื่อหัวข้อขึ้นต้นอยู่แล้ว)
       var desc = shortFinding(it, res, tone, {});
@@ -1061,6 +1096,11 @@
     checklistRates().forEach(function (r) {
       if (rateSet[r] && !hasPart(r) && !coveredBy(r) && !seen[r]) { seen[r] = true; chips.push({ rate: r, src: 'check', label: 'ผลตรวจ' }); }
     });
+    // ใกล้ครบ 2 ปี: แนะนำให้พิจารณา (ไม่ใส่ในใบงานเอง)
+    allChecked().forEach(function (c) {
+      var r = nearRate(c.item, c.res);
+      if (r && rateSet[r] && !hasPart(r) && !coveredBy(r) && !seen[r]) { seen[r] = true; chips.push({ rate: r, src: 'check', label: 'ใกล้ครบ 2 ปี' }); }
+    });
     chips = chips.slice(0, 8);
     var wrap = $('mn_ar_suggest_wrap');
     wrap.classList.toggle('is-empty', chips.length === 0);
@@ -1162,8 +1202,12 @@
 
   // ---------- steps ----------
 
+  // จอกว้าง (มีแผงข้อมูลเครื่องด้านซ้าย — css .mn-ar-side แสดงที่ 1180px ขึ้นไป) ข้ามขั้น "ข้อมูลเครื่อง" เริ่มที่ตรวจพื้นฐาน
+  var WIDE = global.matchMedia ? global.matchMedia('(min-width: 1180px)') : null;
+  function firstStep() { return WIDE && WIDE.matches ? 2 : 1; }
+
   function goTo(step, back, silent) {
-    if (step < 1 || step > 4) { return; }
+    if (step < firstStep() || step > 4) { return; }
     // มือถือที่สแกน QR ตามหน้าจอ: ขั้นสรุปผล = รูปประกอบเพิ่มเติม
     if (step === 4) { setFocus(0); } else if (step === 1) { setFocus(-1); }
     state.step = step;
@@ -1179,10 +1223,11 @@
       seg.classList.toggle('is-active', n === step);
       seg.classList.toggle('is-done', n < step || (n <= state.maxStep && n !== step));
     });
-    $('mn_ar_stepcount').textContent = step + '/4';
+    var first = firstStep();
+    $('mn_ar_stepcount').textContent = (step - first + 1) + '/' + (4 - first + 1);
 
     var prev = $('mn_ar_prev');
-    prev.classList.toggle('is-hidden', step === 1);
+    prev.classList.toggle('is-hidden', step === first);
     var next = $('mn_ar_next');
     next.querySelector('.mn-ar-btn__txt').textContent = STEP_LABELS[step];
     next.classList.toggle('is-final', step === 4);
@@ -2105,7 +2150,12 @@
     }
 
 
-    goTo(1, false, true);
+    goTo(firstStep(), false, true);
+    // ย่อ/ขยายหน้าต่างข้ามขนาดจอกว้าง: อยู่ขั้นข้อมูลเครื่องแล้วจอกว้างขึ้น → ไปตรวจพื้นฐาน, ปรับตัวนับขั้น
+    if (WIDE) {
+      var onWide = function () { goTo(Math.max(state.step, firstStep()), false, true); };
+      if (WIDE.addEventListener) { WIDE.addEventListener('change', onWide); } else if (WIDE.addListener) { WIDE.addListener(onWide); }
+    }
   }
 
   if (doc.readyState === 'loading') {

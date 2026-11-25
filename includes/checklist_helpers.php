@@ -7,88 +7,104 @@
  * ทุก ensure_tables เรียกครั้งแรกในทุก request ที่ใช้ checklist เพื่อ auto-migrate
  */
 
-if (!function_exists('maintenance_checklist_format_age')) {
-    function maintenance_checklist_format_age($days)
+/**
+ * อายุแบบนับตามปฏิทินจริง (เหมือน "อายุเครื่อง" ในใบงาน เช่น 1 ปี 10 เดือน 29 วัน)
+ * $from / $to = 'Y-m-d' → array(y, m, d, text) หรือ null ถ้าวันที่ไม่ถูกต้อง
+ */
+if (!function_exists('maintenance_checklist_age')) {
+    function maintenance_checklist_age($from, $to)
     {
-        if ($days < 30)  { return (int) $days . ' วัน'; }
-        if ($days < 365) { return (int) ($days / 30) . ' เดือน'; }
-        $years  = (int) ($days / 365.25);
-        $months = (int) (($days - $years * 365.25) / 30);
-        return $years . ' ปี' . ($months > 0 ? ' ' . $months . ' เดือน' : '');
+        $a = DateTime::createFromFormat('!Y-m-d', substr(trim((string) $from), 0, 10));
+        $b = DateTime::createFromFormat('!Y-m-d', substr(trim((string) $to), 0, 10));
+        if (!$a || !$b) { return null; }
+        if ($a > $b) { $b = clone $a; }
+        $d = $a->diff($b);
+        $parts = array();
+        if ($d->y) { $parts[] = $d->y . ' ปี'; }
+        if ($d->m) { $parts[] = $d->m . ' เดือน'; }
+        if ($d->d || !$parts) { $parts[] = $d->d . ' วัน'; }
+        return array('y' => $d->y, 'm' => $d->m, 'd' => $d->d, 'text' => implode(' ', $parts));
+    }
+}
+
+/** วันที่ใช้นับอายุ = วันที่รับซ่อมของใบงานนี้ (ตรงกับ "อายุเครื่อง" ในแผงข้อมูล) ไม่มีใช้วันนี้ */
+if (!function_exists('maintenance_checklist_age_ref_date')) {
+    function maintenance_checklist_age_ref_date($receive_date)
+    {
+        $r = substr(trim((string) $receive_date), 0, 10);
+        return DateTime::createFromFormat('!Y-m-d', $r) ? $r : date('Y-m-d');
     }
 }
 
 if (!function_exists('maintenance_checklist_auto_result')) {
     /**
-     * คำนวณผลอัตโนมัติสำหรับ auto_source items
-     * Return: array{ result: 'pass'|'fail'|'na', label: string, detail: string }
+     * คำนวณผลอัตโนมัติสำหรับ auto_source items (นับอายุตามปฏิทินถึงวันที่รับซ่อม)
+     * - buy_date: อายุเครื่องจากวันที่ซื้อ
+     * - last_ma:  ระยะห่างจาก MA เปลี่ยนอะไหล่พื้นฐานครั้งล่าสุด (เฉพาะงานที่ลูกค้าอนุมัติซ่อม) — เครื่องอายุไม่ถึง 2 ปี = N/A
+     * Return: array{ result: 'pass'|'fail'|'na', label, detail, near: bool }
+     * near = ตั้งแต่เกณฑ์ในหน้า settings (ค่าเริ่มต้น 1 ปี 10 เดือน) ถึงก่อนครบ 2 ปี (ผลยังเป็น pass — หน้าประเมินแสดงสีส้มและแนะนำพิจารณา MA)
      */
     function maintenance_checklist_auto_result($connect, $trp_id, $auto_source)
     {
         $t = (int) $trp_id;
+        $stmt = mysqli_prepare($connect, 'SELECT trp_sn, trp_buy_date, trp_receive_date FROM transac_repair WHERE trp_id = ? LIMIT 1');
+        if (!$stmt) { return array('result' => 'na', 'label' => 'ไม่พบข้อมูล', 'detail' => ''); }
+        mysqli_stmt_bind_param($stmt, 'i', $t);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        if (!$row) { return array('result' => 'na', 'label' => 'ไม่พบข้อมูล', 'detail' => ''); }
+
+        $ref = maintenance_checklist_age_ref_date($row['trp_receive_date']);
+        // เกณฑ์ "ใกล้ครบ 2 ปี" (เดือน) ปรับได้ที่หน้า settings — ค่าเริ่มต้น 22 = 1 ปี 10 เดือน
+        if (!function_exists('mn_sys_setting')) { require_once __DIR__ . '/system_settings_helpers.php'; }
+        $near_months = (int) mn_sys_setting($connect, 'near_2y_months');
+        $buy_date = trim((string) $row['trp_buy_date']);
+        $buy_age = $buy_date !== '' ? maintenance_checklist_age($buy_date, $ref) : null;
 
         if ($auto_source === 'buy_date') {
-            $r = mysqli_query($connect, "SELECT trp_buy_date FROM transac_repair WHERE trp_id=$t LIMIT 1");
-            if (!$r) { return array('result' => 'na', 'label' => 'ไม่พบข้อมูล', 'detail' => ''); }
-            $row = mysqli_fetch_assoc($r);
-            $buy_date = $row ? trim((string) $row['trp_buy_date']) : '';
             if ($buy_date === '') { return array('result' => 'na', 'label' => 'ไม่ทราบวันที่ซื้อ', 'detail' => ''); }
-            $ts = strtotime($buy_date);
-            if (!$ts) { return array('result' => 'na', 'label' => 'รูปแบบวันที่ไม่ถูกต้อง', 'detail' => $buy_date); }
-            $age_days  = (time() - $ts) / 86400;
-            $age_years = $age_days / 365.25;
-            $age_str   = maintenance_checklist_format_age($age_days);
-            $date_disp = date('d/m/Y', $ts);
-            if ($age_years < 2) {
-                return array('result' => 'pass', 'label' => 'น้อยกว่า 2 ปี', 'detail' => 'อายุ ' . $age_str . ' (ซื้อ ' . $date_disp . ')');
-            }
-            return array('result' => 'fail', 'label' => 'เกิน 2 ปี', 'detail' => 'อายุ ' . $age_str . ' (ซื้อ ' . $date_disp . ')');
+            if (!$buy_age) { return array('result' => 'na', 'label' => 'รูปแบบวันที่ไม่ถูกต้อง', 'detail' => $buy_date); }
+            $detail = 'อายุ ' . $buy_age['text'] . ' (ซื้อ ' . date('d/m/Y', strtotime($buy_date)) . ')';
+            if ($buy_age['y'] >= 2) { return array('result' => 'fail', 'label' => 'เกิน 2 ปี', 'detail' => $detail); }
+            $near = $buy_age['y'] * 12 + $buy_age['m'] >= $near_months;
+            return array('result' => 'pass', 'label' => $near ? 'ใกล้ครบ 2 ปี' : 'น้อยกว่า 2 ปี', 'detail' => $detail, 'near' => $near);
         }
 
         if ($auto_source === 'last_ma') {
-            $r = mysqli_query($connect, "SELECT trp_sn, trp_buy_date FROM transac_repair WHERE trp_id=$t LIMIT 1");
-            if (!$r) { return array('result' => 'na', 'label' => 'ไม่พบข้อมูล', 'detail' => ''); }
-            $row      = mysqli_fetch_assoc($r);
-            $sn       = $row ? trim((string) $row['trp_sn']) : '';
-            $buy_date = $row ? trim((string) $row['trp_buy_date']) : '';
-
-            // ถ้าเครื่องอายุน้อยกว่า 2 ปี → N/A
-            if ($buy_date !== '') {
-                $ts_buy = strtotime($buy_date);
-                if ($ts_buy && ((time() - $ts_buy) / (365.25 * 86400)) < 2) {
-                    return array('result' => 'na', 'label' => 'N/A — เครื่องอายุน้อยกว่า 2 ปี', 'detail' => '');
-                }
+            if ($buy_age && $buy_age['y'] < 2) {
+                return array('result' => 'na', 'label' => 'N/A — เครื่องอายุน้อยกว่า 2 ปี', 'detail' => '');
             }
-
+            $sn = trim((string) $row['trp_sn']);
             if ($sn === '') { return array('result' => 'fail', 'label' => 'ไม่พบ Serial Number', 'detail' => ''); }
 
-            $sn_safe = mysqli_real_escape_string($connect, $sn);
-            $ma      = 'MA เปลียนอะไหล่พื้นฐาน';
-            $ma_safe = mysqli_real_escape_string($connect, $ma);
-            $cols    = array();
-            for ($i = 1; $i <= 10; $i++) { $cols[] = "trp_repair_no$i='$ma_safe'"; }
-            $where_ma = implode(' OR ', $cols);
-            $sql_ma = "SELECT trp_receive_date, trp_success_date FROM transac_repair"
-                . " WHERE trp_sn='$sn_safe' AND trp_id!=$t AND ($where_ma)"
-                . " ORDER BY trp_id DESC LIMIT 1";
-            $r_ma = mysqli_query($connect, $sql_ma);
-            if (!$r_ma) { return array('result' => 'fail', 'label' => 'ไม่พบประวัติ MA', 'detail' => ''); }
-            $ma_row = mysqli_fetch_assoc($r_ma);
+            // MA ที่ทำจริง = มีรายการ MA ในใบงานและลูกค้าอนุมัติซ่อม (งานที่ไม่อนุมัติ/ยังรอ ไม่นับ)
+            $ma = 'MA เปลียนอะไหล่พื้นฐาน';
+            $cols = array();
+            for ($i = 1; $i <= 10; $i++) { $cols[] = 'trp_repair_no' . $i . ' = ?'; }
+            $sql = 'SELECT trp_receive_date, trp_success_date FROM transac_repair'
+                . ' WHERE trp_sn = ? AND trp_id <> ? AND TRIM(trp_status_firmma) = \'อนุมัติซ่อม\' AND (' . implode(' OR ', $cols) . ')'
+                . ' ORDER BY trp_id DESC LIMIT 1';
+            $stmt = mysqli_prepare($connect, $sql);
+            if (!$stmt) { return array('result' => 'fail', 'label' => 'ไม่พบประวัติ MA', 'detail' => ''); }
+            $params = array_merge(array($sn, $t), array_fill(0, 10, $ma));
+            $bind = array($stmt, 'si' . str_repeat('s', 10));
+            foreach ($params as $k => $v) { $bind[] = &$params[$k]; }
+            call_user_func_array('mysqli_stmt_bind_param', $bind);
+            mysqli_stmt_execute($stmt);
+            $res = mysqli_stmt_get_result($stmt);
+            $ma_row = $res ? mysqli_fetch_assoc($res) : null;
+            mysqli_stmt_close($stmt);
             if (!$ma_row) { return array('result' => 'fail', 'label' => 'ไม่พบประวัติ MA อะไหล่พื้นฐาน', 'detail' => ''); }
 
-            $ma_date_str = ($ma_row['trp_success_date'] !== '' && $ma_row['trp_success_date'] !== null)
-                ? $ma_row['trp_success_date'] : $ma_row['trp_receive_date'];
-            $ts_ma = strtotime($ma_date_str);
-            if (!$ts_ma) { return array('result' => 'fail', 'label' => 'วันที่ MA ไม่ถูกต้อง', 'detail' => $ma_date_str); }
-
-            $age_days  = (time() - $ts_ma) / 86400;
-            $age_years = $age_days / 365.25;
-            $age_str   = maintenance_checklist_format_age($age_days);
-            $date_disp = date('d/m/Y', $ts_ma);
-            if ($age_years < 2) {
-                return array('result' => 'pass', 'label' => 'ไม่เกิน 2 ปี', 'detail' => 'MA ล่าสุด ' . $date_disp . ' (' . $age_str . ' ที่แล้ว)');
-            }
-            return array('result' => 'fail', 'label' => 'เกิน 2 ปี', 'detail' => 'MA ล่าสุด ' . $date_disp . ' (' . $age_str . ' ที่แล้ว)');
+            $ma_date = trim((string) $ma_row['trp_success_date']) !== '' ? $ma_row['trp_success_date'] : $ma_row['trp_receive_date'];
+            $ma_age = maintenance_checklist_age($ma_date, $ref);
+            if (!$ma_age) { return array('result' => 'fail', 'label' => 'วันที่ MA ไม่ถูกต้อง', 'detail' => (string) $ma_date); }
+            $detail = 'MA ล่าสุด ' . date('d/m/Y', strtotime($ma_date)) . ' (' . $ma_age['text'] . ' ที่แล้ว)';
+            if ($ma_age['y'] >= 2) { return array('result' => 'fail', 'label' => 'เกิน 2 ปี', 'detail' => $detail); }
+            $near = $ma_age['y'] * 12 + $ma_age['m'] >= $near_months;
+            return array('result' => 'pass', 'label' => $near ? 'ใกล้ครบ 2 ปี' : 'ไม่เกิน 2 ปี', 'detail' => $detail, 'near' => $near);
         }
 
         return array('result' => 'na', 'label' => 'ไม่รู้จัก auto_source', 'detail' => '');

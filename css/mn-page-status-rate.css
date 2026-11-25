@@ -64,3 +64,8 @@
   color: var(--mn-text-muted);
   font-size: 0.95rem;
 }
+
+/* จอแคบ: ไอคอนแก้ไขเล็กลงให้พอดีช่อง */
+@media (max-width: 520px) {
+  .mn-addjob-page.mn-status-rate-page .mn-status-rate-edit .fa-2x { font-size: 1.15em; }
+}

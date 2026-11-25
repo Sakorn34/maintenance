@@ -478,3 +478,64 @@
   border-radius: 2px;
   display: block;
 }
+
+/* เสนอวันที่ซื้อจากระบบ (js/buy-date-suggest.js) ใต้ช่องวันที่ซื้อ */
+.mn-update-wait-hardware-page .mn-bds { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; max-width: 560px; }
+.mn-update-wait-hardware-page .mn-bds:empty { display: none; }
+.mn-update-wait-hardware-page .mn-bds__head, .mn-update-wait-hardware-page .mn-bds__loading, .mn-update-wait-hardware-page .mn-bds__empty { margin: 0; font-size: 13px; color: #475569; }
+.mn-update-wait-hardware-page .mn-bds__head .fa { color: #0369a1; }
+.mn-update-wait-hardware-page .mn-bds__item {
+  appearance: none; -webkit-appearance: none; font: inherit; cursor: pointer; text-align: left;
+  display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: center; gap: 4px 10px;
+  padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; color: #0f172a;
+  transition: border-color 0.15s, background 0.15s;
+}
+.mn-update-wait-hardware-page .mn-bds__item:hover { border-color: #0369a1; background: #f0f9ff; }
+.mn-update-wait-hardware-page .mn-bds__item:focus-visible { outline: 2px solid #0369a1; outline-offset: 2px; }
+.mn-update-wait-hardware-page .mn-bds__item.is-on { border-color: #15803d; background: #ecf8f0; }
+.mn-update-wait-hardware-page .mn-bds__date { font-weight: 600; font-size: 15px; font-variant-numeric: tabular-nums; }
+.mn-update-wait-hardware-page .mn-bds__badge { font-size: 11.5px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: #e0f2fe; color: #0369a1; white-space: nowrap; }
+.mn-update-wait-hardware-page .mn-bds__item.is-multi .mn-bds__badge { background: #ecf8f0; color: #15803d; }
+.mn-update-wait-hardware-page .mn-bds__off { margin: 0; font-size: 11.5px; color: #94a3b8; }
+.mn-update-wait-hardware-page .mn-bds__txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; font-size: 13px; }
+.mn-update-wait-hardware-page .mn-bds__txt b { font-weight: 600; color: #334155; }
+.mn-update-wait-hardware-page .mn-bds__txt small { font-size: 12px; color: #64748b; }
+.mn-update-wait-hardware-page .mn-bds__txt .mn-bds__warn { color: #b91c1c; }
+.mn-update-wait-hardware-page .mn-bds__tick { color: #15803d; visibility: hidden; }
+.mn-update-wait-hardware-page .mn-bds__item.is-on .mn-bds__tick { visibility: visible; }
+.mn-update-wait-hardware-page .mn-bds__hint { margin: 2px 0 0; font-size: 12.5px; color: #92400e; }
+@media (max-width: 520px) {
+  .mn-update-wait-hardware-page .mn-bds__item { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .mn-update-wait-hardware-page .mn-bds__txt { grid-column: 1 / -1; }
+}
+
+/* ประวัติประกันของเครื่อง (js/warranty-timeline.js) ใต้ช่องประกัน */
+.mn-update-wait-hardware-page .mn-wr { margin-top: 8px; max-width: 560px; }
+.mn-update-wait-hardware-page .mn-wr:empty { display: none; }
+.mn-update-wait-hardware-page .mn-wr__head { margin: 0 0 6px; font-size: 13px; color: #475569; font-weight: 600; }
+.mn-update-wait-hardware-page .mn-wr__empty { margin: 0; font-size: 13px; color: #64748b; }
+.mn-update-wait-hardware-page .mn-wr__list { list-style: none; margin: 0; padding: 0; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; overflow: hidden; }
+.mn-update-wait-hardware-page .mn-wr__list li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; font-size: 13px; color: #64748b; }
+.mn-update-wait-hardware-page .mn-wr__list li + li { border-top: 1px solid #f1f5f9; }
+.mn-update-wait-hardware-page .mn-wr__list li > .fa { width: 16px; text-align: center; color: #94a3b8; }
+.mn-update-wait-hardware-page .mn-wr__list li.is-on { background: #ecf8f0; color: #0f172a; }
+.mn-update-wait-hardware-page .mn-wr__list li.is-on > .fa { color: #15803d; }
+.mn-update-wait-hardware-page .mn-wr__txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mn-update-wait-hardware-page .mn-wr__txt b { font-weight: 600; color: inherit; }
+.mn-update-wait-hardware-page .mn-wr__txt small { font-size: 12px; color: #64748b; }
+.mn-update-wait-hardware-page .mn-wr__st { font-size: 11.5px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: #f1f5f9; color: #64748b; white-space: nowrap; }
+.mn-update-wait-hardware-page .mn-wr__st.is-on { background: #15803d; color: #fff; }
+.mn-update-wait-hardware-page .mn-wr__st.is-next { background: #e0f2fe; color: #0369a1; }
+
+/* ลิงก์ไปทะเบียนประกัน / ระยะเวลาประกันรายรุ่น (เปิดแท็บใหม่) ใต้ประวัติประกัน */
+.mn-update-wait-hardware-page .mn-wr-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.mn-update-wait-hardware-page .mn-wr-link {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px;
+  border: 1px solid #cbd5e1; background: #fff; color: #0369a1 !important; font-size: 13px; text-decoration: none;
+}
+.mn-update-wait-hardware-page .mn-wr-link:hover { border-color: #0369a1; background: #f0f9ff; }
+
+/* ลิงก์ไปหน้าที่มาของหลักฐานวันที่ซื้อ (ใต้แต่ละรายการ) */
+.mn-update-wait-hardware-page .mn-bds__src { margin: -2px 0 2px 12px; font-size: 12px; color: #64748b; }
+.mn-update-wait-hardware-page .mn-bds__src a { color: #0369a1 !important; text-decoration: none; margin-right: 10px; white-space: nowrap; }
+.mn-update-wait-hardware-page .mn-bds__src a:hover { text-decoration: underline; }

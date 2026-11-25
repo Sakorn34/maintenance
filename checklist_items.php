@@ -58,11 +58,13 @@ foreach ($items as $item) {
     $auto_result = null;
     $auto_label  = null;
     $auto_detail = null;
+    $auto_near   = false;
     if ($auto_source !== '' && $trp_id > 0) {
         $auto_data   = maintenance_checklist_auto_result($connect, $trp_id, $auto_source);
         $auto_result = $auto_data['result'];
         $auto_label  = $auto_data['label'];
         $auto_detail = $auto_data['detail'];
+        $auto_near   = !empty($auto_data['near']);
     }
 
     $out[] = array(
@@ -83,6 +85,7 @@ foreach ($items as $item) {
         'auto_result'    => $auto_result,
         'auto_label'     => $auto_label,
         'auto_detail'    => $auto_detail,
+        'auto_near'      => $auto_near,
         'saved_result'   => $saved['result'],
         'saved_note'     => $saved['note'],
     );

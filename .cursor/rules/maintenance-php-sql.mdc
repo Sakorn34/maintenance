@@ -120,6 +120,7 @@ alwaysApply: true
 | `save_pickup_wait_hardware` | *(ไม่มี `title-h` — ปิด popup หรือ redirect)* | *(ไม่มี class ที่สอง)* | *(ไม่มี)* |
 | `update_wait_qc` | *(ไม่มี `title-h` — redirect)* | *(ไม่มี class ที่สอง)* | *(ไม่มี)* |
 | `warranty_settings` | `warranty_settings` | `mn-warranty-settings-page` | `mn-page-warranty-settings.css` |
+| `settings` | `settings` *(ไม่มีในเมนูหลัก — ปุ่มเฟืองข้างชื่อผู้ใช้ใน `title-h`)* | `mn-settings-page` | `mn-page-settings.css` *(รวมการตั้งค่าระบบ: ลิงก์หน้าตั้งค่า, เงื่อนไขที่ปรับได้ใน `cl_setting` ผ่าน `includes/system_settings_helpers.php`, สถานะ Google Drive, แหล่งหลักฐานวันที่ซื้อ — `js/settings-page.js`)* |
 | `save_warranty_settings` | *(ไม่มี `title-h` — redirect)* | *(ไม่มี class ที่สอง)* | *(ไม่มี)* |
 | `checklist_items` | *(AJAX JSON — ไม่มี HTML)* | *(ไม่มี)* | *(ไม่มี)* |
 | `save_checklist` | *(AJAX JSON — ไม่มี HTML)* | *(ไม่มี)* | *(ไม่มี)* |
@@ -127,6 +128,9 @@ alwaysApply: true
 | `checklist_settings_api` | *(AJAX JSON — GET products/load/history | POST บันทึก/ลบ/เรียงลำดับ)* | *(ไม่มี)* | *(ไม่มี)* |
 | `checklist_export` | *(JSON — ส่งออกการตั้งค่า checklist ให้ localhost ดึงไปใช้ ยืนยันด้วย header `X-Checklist-Token` ตาม `config/checklist_sync.local.php` ไม่ใช้ session)* | *(ไม่มี)* | *(ไม่มี)* |
 | `checklist_photo` | *(รูปประกอบการประเมิน — GET ?id=&s=t หรือ f ส่งรูป (ต้องล็อกอิน, &dl=1 ดาวน์โหลดตั้งชื่อตามที่มา), ?action=zip รูปทั้งใบงาน, POST upload/delete/move, link_create/link_state/link_revoke ลิงก์ QR มือถือ, ?action=drive_check / drive_push / drive_rename สำหรับ Google Drive, ไฟล์อยู่ `storage/photos` ปิดการเข้าถึงตรงด้วย .htaccess แล้วย้ายขึ้น Drive ถ้าตั้ง config/google_drive.local.php)* | *(ไม่มี)* | *(ไม่มี)* |
+| `warranty_registry` | `settings` *(หลังบ้าน — ด่านรหัสเดียวกับ settings, ลิงก์จากหน้า settings)* | `mn-settings-page mn-warranty-registry-page` | `mn-page-settings.css` *(ทะเบียนประกันต่อ S/N: เครื่องใหม่ / งานซ่อม / ซื้อเพิ่ม (`cl_warranty`) — `includes/warranty_registry_helpers.php`)* |
+| `warranty_status` | *(AJAX JSON — GET ?sn=&product=&buy_date=&trp_id=&ref= สถานะประกัน ณ วันรับเครื่อง + ประวัติประกัน ใช้ในหน้า `update_wait_hardware` ผ่าน `js/warranty-timeline.js`)* | *(ไม่มี)* | *(ไม่มี)* |
+| `buy_date_suggest` | *(AJAX JSON — GET ?sn=&trp_id= เสนอวันที่ซื้อจากหลักฐานจริง: ใบงานซ่อมเก่า, biton_stockparts.stock_old, biton_production.installation_history, biton_setup (historical_serials / setup_orders) ตั้งการเชื่อมต่อด้วยคีย์ stockparts_mysql / production_mysql / setup_mysql ใน env.local.php ใช้ในหน้า `update_wait_hardware` ผ่าน `js/buy-date-suggest.js`)* | *(ไม่มี)* | *(ไม่มี)* |
 | `photo_upload` | *(ไม่มีแถบ `title-h` — หน้ามือถือเดี่ยวจาก QR ในหน้า `assess_repair` **ไม่ require_auth** สิทธิ์มาจากรหัส ?t= ใน `cl_photo_link` เท่านั้น (ใบงานเดียว, 3 ชั่วโมง, ปิดเมื่อบันทึกการประเมิน/กดปิด/เสนอราคาแล้ว) ส่ง Referrer-Policy: no-referrer)* | `mn-photo-upload-page` | `mn-page-photo-upload.css` *(ไม่โหลด `mn-page-addjob.css` / `mn-nav.css` เหมือน `login` — ใช้ `js/photo_upload-page.js` + `mn-photo-lightbox`)* |
 
 **หมายเหตุ**

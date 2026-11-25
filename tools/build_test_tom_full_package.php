@@ -73,6 +73,12 @@ if (is_array($sync_cfg) && !empty($sync_cfg['token'])) {
     $files[] = 'config/checklist_sync.local.php';
 }
 
+// รหัสเข้าหน้าตั้งค่าหลังบ้าน (hash) — ค่าตั้งต้นจาก config/settings_pin.local.php ในเครื่อง (ไม่อยู่ใน git)
+if (is_file($root . '/config/settings_pin.local.php')) {
+    ff_copy($root . '/config/settings_pin.local.php', $www . '/config/settings_pin.local.php');
+    $files[] = 'config/settings_pin.local.php';
+}
+
 file_put_contents($www . '/VERSION.txt', $version . "\n");
 $files[] = 'VERSION.txt';
 sort($files);

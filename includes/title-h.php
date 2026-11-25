@@ -206,17 +206,58 @@ if ($navProfileName === '') {
         ?>
       </ul>
     </div>
-    <?php if ($navProfileName !== '') { ?>
-    <div class="mn-appbar__user">
-      <span class="mn-appbar__username" title="ผู้ใช้ที่เข้าสู่ระบบ">
-        <i class="fa fa-user-circle-o" aria-hidden="true"></i>
-        <?php echo htmlspecialchars($navProfileName, ENT_QUOTES, 'UTF-8'); ?>
-      </span>
-      <a class="mn-appbar__logout" href="<?php echo htmlspecialchars($b . '/logout', ENT_QUOTES, 'UTF-8'); ?>">
-        <i class="fa fa-sign-out" aria-hidden="true"></i> ออกจากระบบ
-      </a>
+    <?php
+    // ปุ่มโปรไฟล์ (แบบเดียวกับระบบ production): วงกลมตัวอักษรแรก + ชื่อ → เมนู ตั้งค่าระบบ / ออกจากระบบ
+    // ชื่อหลัก = ชื่อล็อกอิน (เช่น Tom) ชื่อรอง = ชื่อที่แสดงในโปรไฟล์ (เช่น SaKorN) — เหมือนระบบ production
+    $navLogin = trim((string) maintenance_new_profile_login_name());
+    $navMain = $navLogin !== '' ? $navLogin : ($navProfileName !== '' ? $navProfileName : 'ผู้ใช้');
+    $navSub = ($navProfileName !== '' && $navProfileName !== $navMain) ? $navProfileName : 'ระบบซ่อมบำรุง';
+    $navInitial = mb_strtoupper(mb_substr($navMain, 0, 1, 'UTF-8'), 'UTF-8');
+    $navSettingsOn = isset($page) && $page === 'settings';
+    // เลขเวอร์ชันระบบ (VERSION.txt — สคริปต์สร้างชุดทดลองเขียนให้) แสดงท้ายการ์ดโปรไฟล์
+    $navVersionFile = dirname(__DIR__) . '/VERSION.txt';
+    $navVersion = is_file($navVersionFile) ? trim((string) file_get_contents($navVersionFile)) : '';
+    // สีวงกลมคงที่ต่อชื่อผู้ใช้ (คนเดิมได้สีเดิมทุกหน้า)
+    $navColors = array('#db2777', '#7c3aed', '#0369a1', '#0f766e', '#c2410c', '#4f46e5', '#be123c', '#15803d');
+    $navColor = $navColors[abs(crc32($navMain)) % count($navColors)];
+    ?>
+    <div class="mn-appbar__user mn-ub" id="mn_ub">
+      <button type="button" class="mn-ub__trigger<?php echo $navSettingsOn ? ' is-active' : ''; ?>" aria-haspopup="true" aria-expanded="false" aria-controls="mn_ub_pop" title="บัญชีและการตั้งค่า">
+        <span class="mn-ub__avatar" style="background:<?php echo $navColor; ?>" aria-hidden="true"><?php echo $navInitial !== '' ? htmlspecialchars($navInitial, ENT_QUOTES, 'UTF-8') : '<i class="fa fa-user"></i>'; ?></span>
+        <span class="mn-ub__info">
+          <span class="mn-ub__name"><?php echo htmlspecialchars($navMain, ENT_QUOTES, 'UTF-8'); ?></span>
+          <span class="mn-ub__sub"><?php echo htmlspecialchars($navSub, ENT_QUOTES, 'UTF-8'); ?></span>
+        </span>
+        <i class="fa fa-caret-down mn-ub__chev" aria-hidden="true"></i>
+      </button>
+      <div class="mn-ub__pop" id="mn_ub_pop" role="menu" hidden>
+        <div class="mn-ub__head">
+          <span class="mn-ub__avatar" style="background:<?php echo $navColor; ?>" aria-hidden="true"><?php echo $navInitial !== '' ? htmlspecialchars($navInitial, ENT_QUOTES, 'UTF-8') : '<i class="fa fa-user"></i>'; ?></span>
+          <span class="mn-ub__info">
+            <span class="mn-ub__name"><?php echo htmlspecialchars($navMain, ENT_QUOTES, 'UTF-8'); ?></span>
+            <span class="mn-ub__sub"><?php echo htmlspecialchars($navSub, ENT_QUOTES, 'UTF-8'); ?></span>
+          </span>
+        </div>
+        <a role="menuitem" class="mn-ub__item<?php echo $navSettingsOn ? ' is-active' : ''; ?>" href="<?php echo htmlspecialchars($b . '/settings', ENT_QUOTES, 'UTF-8'); ?>"><i class="fa fa-cog" aria-hidden="true"></i><span>ตั้งค่าระบบ</span></a>
+        <?php if ($navProfileName !== '') { ?>
+        <div class="mn-ub__divider"></div>
+        <a role="menuitem" class="mn-ub__item mn-ub__item--danger" href="<?php echo htmlspecialchars($b . '/logout', ENT_QUOTES, 'UTF-8'); ?>"><i class="fa fa-sign-out" aria-hidden="true"></i><span>ออกจากระบบ</span></a>
+        <?php } ?>
+        <div class="mn-ub__ver"><i class="fa fa-code-fork" aria-hidden="true"></i> เวอร์ชัน <?php echo htmlspecialchars($navVersion !== '' ? $navVersion : 'ระบบหลัก', ENT_QUOTES, 'UTF-8'); ?></div>
+      </div>
     </div>
-    <?php } ?>
+    <script type="text/javascript">
+    (function () {
+      var ub = document.getElementById('mn_ub');
+      if (!ub) { return; }
+      var btn = ub.querySelector('.mn-ub__trigger');
+      var pop = document.getElementById('mn_ub_pop');
+      function setOpen(on) { pop.hidden = !on; btn.setAttribute('aria-expanded', on ? 'true' : 'false'); }
+      btn.addEventListener('click', function (e) { e.stopPropagation(); setOpen(pop.hidden); });
+      document.addEventListener('click', function (e) { if (!pop.hidden && !ub.contains(e.target)) { setOpen(false); } });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !pop.hidden) { setOpen(false); btn.focus(); } });
+    }());
+    </script>
   </div>
   <div class="mn-appbar__accent" aria-hidden="true"></div>
 </nav>

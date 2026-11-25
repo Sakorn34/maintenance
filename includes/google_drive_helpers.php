@@ -227,7 +227,8 @@ if (!function_exists('mn_gd_trash')) {
     {
         list($code, $res, $err) = mn_gd_api('PATCH', 'https://www.googleapis.com/drive/v3/files/' . rawurlencode($file_id) . '?supportsAllDrives=true&fields=id',
             array('Content-Type: application/json; charset=UTF-8'), json_encode(array('trashed' => true)));
-        return $err;
+        // ไม่พบไฟล์ = ถูกลบไปแล้ว (เช่น มีคนลบใน Drive เอง) ถือว่าสำเร็จ
+        return $code === 404 ? '' : $err;
     }
 }
 

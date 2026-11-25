@@ -47,6 +47,8 @@ return array(
     'auth_login_url' => 'https://bit-online.net/bitlogin/index.php',
     'maintenance_web_base' => '/maintenance',
     'inventory_web_base' => '/inventory',
+    // ระบบ production (ลิงก์ 'ดูที่มา' ของหลักฐานวันที่ซื้อ → หน้าเครื่อง asset.php?code=S/N)
+    'production_web_base' => '/production/finishgoogs_ma_update',
     'database' => array(
         'host' => 'localhost',
         'user' => 'root',
@@ -78,6 +80,27 @@ return array(
         'name' => 'biton_inventory',
         'port' => 3306,
         'charset' => 'utf8mb4',
+    ),
+
+    // หลักฐานวันที่ซื้อ (หน้ารับเครื่อง → buy_date_suggest) อ่านอย่างเดียว — ใช้บัญชีสิทธิ์ "อ่านอย่างเดียว" ของแต่ละฐาน
+    // ไม่ใส่ = ลองอ่านข้ามฐานด้วยบัญชีของระบบซ่อม (เข้าไม่ได้ก็ข้ามแหล่งนั้น)
+    'stockparts_mysql' => array(   // ส่งเครื่องจากคลัง (stock_old)
+        'host' => 'localhost',
+        'user' => 'CHANGE_ME',
+        'password' => 'CHANGE_ME',
+        'name' => 'biton_stockparts',
+    ),
+    'production_mysql' => array(   // ประวัติติดตั้ง (installation_history)
+        'host' => 'localhost',
+        'user' => 'CHANGE_ME',
+        'password' => 'CHANGE_ME',
+        'name' => 'biton_production',
+    ),
+    'setup_mysql' => array(        // ส่งมอบ / ใบสั่งติดตั้ง (historical_serials, po_order_part_serials, setup_orders)
+        'host' => 'localhost',
+        'user' => 'CHANGE_ME',
+        'password' => 'CHANGE_ME',
+        'name' => 'biton_setup',
     ),
 
     // debug การบันทึกจาก add_job → insert_job (เขียนไฟล์ใน storage/logs/) — ปิดเมื่อแก้ปัญหาเสร็จ

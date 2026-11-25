@@ -177,3 +177,8 @@
 .mn-addjob-page.mn-warranty-settings-page .mn-wsy-btn--cancel:hover {
   background: #e0e0e0;
 }
+
+/* จอแคบ: ตารางเลื่อนซ้าย-ขวาได้ แทนปุ่มแก้ไขล้นออกนอกช่อง */
+@media (max-width: 560px) {
+  .mn-addjob-page.mn-warranty-settings-page .mn-wsy-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}

@@ -1,0 +1,169 @@
+/* settings — หน้าตั้งค่าระบบ (ปุ่มเฟืองบนแถบเมนู) */
+
+.mn-addjob-page.mn-settings-page .mn-set { max-width: 860px; margin: 24px auto 48px; padding: 0 16px; color: #0f172a; }
+.mn-settings-page .mn-set__head h1 { margin: 0; font-size: 22px; font-weight: 600; }
+.mn-settings-page .mn-set__head h1 .fa { color: #0369a1; }
+.mn-settings-page .mn-set__head p { margin: 4px 0 16px; color: #64748b; font-size: 14px; }
+
+.mn-settings-page .mn-set__alert { margin: 0 0 14px; padding: 10px 14px; border-radius: 10px; font-size: 14px; }
+.mn-settings-page .mn-set__alert.is-ok { background: #ecf8f0; color: #15803d; border: 1px solid #9fd6b1; }
+.mn-settings-page .mn-set__alert.is-bad { background: #fdf0f0; color: #b91c1c; border: 1px solid #f0b0b0; }
+
+.mn-settings-page .mn-set__card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; }
+.mn-settings-page .mn-set__card h2 { margin: 0 0 12px; font-size: 16px; font-weight: 600; }
+.mn-settings-page .mn-set__card h2 .fa { color: #0369a1; width: 18px; }
+
+.mn-settings-page .mn-set__links { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
+.mn-settings-page .mn-set__link {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+  border: 1px solid #e2e8f0; border-radius: 12px; text-decoration: none; color: #0f172a;
+  transition: border-color 0.15s, background 0.15s;
+}
+.mn-settings-page .mn-set__link:hover { border-color: #0369a1; background: #f0f9ff; }
+.mn-settings-page .mn-set__link > .fa:first-child { font-size: 20px; color: #0369a1; width: 24px; text-align: center; }
+.mn-settings-page .mn-set__link span { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.mn-settings-page .mn-set__link b { font-weight: 600; font-size: 14.5px; }
+.mn-settings-page .mn-set__link small { font-size: 12.5px; color: #64748b; line-height: 1.45; }
+.mn-settings-page .mn-set__go { color: #94a3b8; }
+
+.mn-settings-page .mn-set__field { padding: 12px 0; border-top: 1px solid #f1f5f9; }
+.mn-settings-page .mn-set__field:first-child { border-top: 0; padding-top: 0; }
+.mn-settings-page .mn-set__field label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+.mn-settings-page .mn-set__control { display: flex; align-items: center; gap: 8px; }
+.mn-settings-page .mn-set__control select,
+.mn-settings-page .mn-set__control input {
+  font: inherit; font-size: 15px; height: 40px; padding: 0 10px;
+  border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #0f172a;
+}
+.mn-settings-page .mn-set__control input { width: 110px; }
+.mn-settings-page .mn-set__unit { color: #475569; font-size: 14px; }
+.mn-settings-page .mn-set__help { margin: 6px 0 0; font-size: 12.5px; color: #64748b; line-height: 1.5; }
+.mn-settings-page .mn-set__last { display: block; color: #94a3b8; }
+
+.mn-settings-page .mn-set__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.mn-settings-page .mn-set__btn {
+  appearance: none; -webkit-appearance: none; font: inherit; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px;
+  border: 1px solid #cbd5e1; border-radius: 999px; background: #fff; color: #334155; font-size: 13.5px;
+}
+.mn-settings-page .mn-set__btn:hover { border-color: #0369a1; color: #0369a1; }
+.mn-settings-page .mn-set__btn:disabled { opacity: 0.6; cursor: default; }
+.mn-settings-page .mn-set__btn.is-primary { background: #0369a1; border-color: #0369a1; color: #fff; font-weight: 600; }
+.mn-settings-page .mn-set__btn.is-primary:hover { background: #075985; color: #fff; }
+
+.mn-settings-page .mn-set__stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0 0 12px; }
+.mn-settings-page .mn-set__stats > div { background: #f6f8fb; border-radius: 10px; padding: 10px 12px; }
+.mn-settings-page .mn-set__stats dt { font-size: 12px; color: #64748b; }
+.mn-settings-page .mn-set__stats dd { margin: 2px 0 0; font-size: 20px; font-weight: 600; }
+
+.mn-settings-page .mn-set__status { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.mn-settings-page .mn-set__status li { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; }
+.mn-settings-page .mn-set__status li > .fa { font-size: 18px; margin-top: 1px; }
+.mn-settings-page .mn-set__status li.is-ok > .fa { color: #15803d; }
+.mn-settings-page .mn-set__status li.is-bad > .fa { color: #b91c1c; }
+.mn-settings-page .mn-set__status span { display: flex; flex-direction: column; }
+.mn-settings-page .mn-set__status small { color: #64748b; font-size: 12.5px; }
+.mn-settings-page .mn-set__muted { margin: 0; color: #64748b; font-size: 13.5px; }
+.mn-settings-page .mn-set__note { margin: 10px 0 0; font-size: 13px; color: #15803d; }
+.mn-settings-page .mn-set__note.is-bad { color: #b91c1c; }
+
+.mn-settings-page .mn-set__rules { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.7; color: #334155; }
+.mn-settings-page .mn-set__info { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.mn-settings-page .mn-set__info dt { font-size: 12px; color: #64748b; }
+.mn-settings-page .mn-set__info dd { margin: 2px 0 0; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+
+@media (max-width: 560px) {
+  .mn-settings-page .mn-set__stats { grid-template-columns: 1fr; }
+}
+
+/* ด่านใส่รหัส (includes/settings_lock_helpers.php) */
+.mn-settings-page .mn-set-lock {
+  max-width: 360px; margin: 64px auto; padding: 28px 24px; text-align: center;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+.mn-settings-page .mn-set-lock__icon { font-size: 34px; color: #0369a1; }
+.mn-settings-page .mn-set-lock h1 { margin: 10px 0 4px; font-size: 20px; font-weight: 600; }
+.mn-settings-page .mn-set-lock p { margin: 0 0 14px; color: #64748b; font-size: 14px; }
+.mn-settings-page .mn-set-lock__pin {
+  display: block; width: 100%; box-sizing: border-box; height: 52px; margin: 0 0 12px; text-align: center;
+  font-size: 26px; letter-spacing: 0.5em; border: 1px solid #cbd5e1; border-radius: 10px;
+}
+.mn-settings-page .mn-set-lock__pin:focus { outline: 2px solid #0369a1; outline-offset: 1px; border-color: #0369a1; }
+.mn-settings-page .mn-set-lock .mn-set__btn { width: 100%; justify-content: center; height: 44px; }
+.mn-settings-page .mn-set-lock__err { color: #b91c1c !important; font-weight: 600; }
+.mn-settings-page .mn-set-lock__note { margin: 12px 0 0 !important; font-size: 12px !important; }
+.mn-settings-page .mn-set__lockbtn { margin-left: 8px; font-size: 12.5px; color: #475569; text-decoration: none; border: 1px solid #cbd5e1; border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+.mn-settings-page .mn-set__lockbtn:hover { color: #0369a1; border-color: #0369a1; }
+.mn-settings-page .mn-set__pinform { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+.mn-settings-page .mn-set__pinform label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; color: #334155; }
+.mn-settings-page .mn-set__pinform input { font: inherit; width: 130px; height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 8px; }
+.mn-settings-page .mn-set__control input.mn-set__list { width: 180px; }
+
+/* ทะเบียนประกัน (warranty_registry) */
+.mn-warranty-registry-page .mn-set__head a { color: #0369a1; text-decoration: none; }
+.mn-warranty-registry-page .mn-wrp__sn { width: 220px !important; }
+.mn-warranty-registry-page .mn-wrp__list { list-style: none; margin: 10px 0 0; padding: 0; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+.mn-warranty-registry-page .mn-wrp__list li { display: flex; align-items: center; gap: 10px; padding: 9px 12px; font-size: 13.5px; color: #64748b; }
+.mn-warranty-registry-page .mn-wrp__list li + li { border-top: 1px solid #f1f5f9; }
+.mn-warranty-registry-page .mn-wrp__list li > .fa { width: 16px; text-align: center; color: #94a3b8; }
+.mn-warranty-registry-page .mn-wrp__list li.is-on { background: #ecf8f0; color: #0f172a; }
+.mn-warranty-registry-page .mn-wrp__list li.is-on > .fa { color: #15803d; }
+.mn-warranty-registry-page .mn-wrp__list span { flex: 1; display: flex; flex-direction: column; }
+.mn-warranty-registry-page .mn-wrp__list small { font-size: 12px; color: #64748b; }
+.mn-warranty-registry-page .mn-wrp__list em { font-style: normal; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.mn-warranty-registry-page .mn-wrp__list li.is-on em { color: #15803d; }
+.mn-warranty-registry-page .mn-wrp__form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; align-items: end; }
+.mn-warranty-registry-page .mn-wrp__form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; color: #334155; }
+.mn-warranty-registry-page .mn-wrp__form label.is-wide { grid-column: 1 / -1; }
+.mn-warranty-registry-page .mn-wrp__form input, .mn-warranty-registry-page .mn-wrp__form select { font: inherit; height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; }
+.mn-warranty-registry-page .mn-wrp__form .mn-set__btn { justify-self: start; }
+.mn-warranty-registry-page .mn-wrp__tablewrap { overflow-x: auto; }
+.mn-warranty-registry-page .mn-wrp__table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mn-warranty-registry-page .mn-wrp__table th { text-align: left; font-size: 12px; color: #64748b; font-weight: 600; padding: 6px 8px; border-bottom: 1px solid #e2e8f0; }
+.mn-warranty-registry-page .mn-wrp__table td { padding: 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+.mn-warranty-registry-page .mn-wrp__table td small { display: block; font-size: 11.5px; color: #94a3b8; }
+.mn-warranty-registry-page .mn-wrp__table tr.is-void td { color: #94a3b8; text-decoration: line-through; }
+.mn-warranty-registry-page .mn-wrp__table tr.is-void td:last-child { text-decoration: none; }
+.mn-warranty-registry-page .mn-wrp__void { font-size: 12px; font-weight: 600; color: #b91c1c; }
+.mn-warranty-registry-page .mn-wrp__voidform .mn-set__btn { height: 30px; font-size: 12px; padding: 0 10px; }
+
+/* เมนูหน้าตั้งค่า (settings — view=menu) */
+.mn-settings-page .mn-set__group { margin-bottom: 18px; }
+.mn-settings-page .mn-set__group-title { margin: 0 0 8px 2px; font-size: 13px; font-weight: 600; color: #475569; letter-spacing: 0.02em; }
+.mn-settings-page .mn-set__menu { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px; }
+.mn-settings-page .mn-set__tile {
+  display: flex; align-items: center; gap: 14px; padding: 14px 16px; min-height: 64px;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; text-decoration: none; color: #0f172a;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.mn-settings-page .mn-set__tile:hover { border-color: #0369a1; box-shadow: 0 4px 14px rgba(3, 105, 161, 0.10); transform: translateY(-1px); }
+.mn-settings-page .mn-set__tile:focus-visible { outline: 2px solid #0369a1; outline-offset: 2px; }
+.mn-settings-page .mn-set__tile-ico {
+  width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #e0f2fe; color: #0369a1; font-size: 18px;
+}
+.mn-settings-page .mn-set__tile-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mn-settings-page .mn-set__tile-txt b { font-size: 14.5px; font-weight: 600; }
+.mn-settings-page .mn-set__tile-txt small { font-size: 12.5px; color: #64748b; line-height: 1.45; }
+.mn-settings-page .mn-set__tile-badge { font-size: 11.5px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: #f1f5f9; color: #475569; white-space: nowrap; }
+.mn-settings-page .mn-set__back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 13.5px; color: #0369a1; text-decoration: none; }
+.mn-settings-page .mn-set__back:hover { text-decoration: underline; }
+.mn-settings-page .mn-set__head h1 + .mn-set__alert, .mn-settings-page .mn-set__head { margin-bottom: 14px; }
+@media (max-width: 560px) {
+  .mn-settings-page .mn-set__menu { grid-template-columns: 1fr; }
+}
+
+/* กันช่องกรอกกว้างเกินคอลัมน์จนทับกัน (site-legacy ใส่ width/padding แบบ content-box) — ใช้กับทุกหน้าตั้งค่า */
+.mn-settings-page .mn-set input,
+.mn-settings-page .mn-set select,
+.mn-settings-page .mn-set textarea,
+.mn-settings-page .mn-set-lock input { box-sizing: border-box; max-width: 100%; }
+.mn-warranty-registry-page .mn-wrp__form input,
+.mn-warranty-registry-page .mn-wrp__form select { width: 100%; min-width: 0; }
+.mn-warranty-registry-page .mn-wrp__form label { min-width: 0; }
+
+/* ช่องค้นหา S/N ไม่ล้นบนจอแคบ */
+.mn-warranty-registry-page .mn-wrp__sn { width: min(220px, 100%) !important; }
+.mn-settings-page .mn-set__pinform label { min-width: 0; max-width: 100%; }
+.mn-settings-page .mn-set__pinform input { max-width: 100%; }

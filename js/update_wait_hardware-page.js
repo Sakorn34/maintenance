@@ -179,9 +179,8 @@
         if (ageEl) {
           ageEl.value = data;
         }
-        if (!global.mnRepairWarrantyActive) {
-          mnUpdateWaitHwSuggestFromBuyDate(inputVal);
-        }
+        // สถานะประกันคำนวณจากทะเบียนประกัน (เครื่องใหม่ / งานซ่อม / ซื้อเพิ่ม) ใน js/warranty-timeline.js แทน
+        // mnUpdateWaitHwSuggestFromBuyDate (คิดจากเดือนตามรุ่นอย่างเดียว) เลิกใช้แล้ว
       })
       .fail(function () {
         global.mnMaintenanceFlowAlert('ไม่สามารถคำนวณอายุเครื่องได้ กรุณาลองใหม่', 'danger');

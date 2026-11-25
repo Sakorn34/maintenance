@@ -57,12 +57,12 @@ $insurance_param = $filters['insurance_param'];
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <link rel="stylesheet" href="css/mn-theme.css" />
 <link rel="stylesheet" href="css/mn-layout.css" />
-<link rel="stylesheet" href="css/mn-nav.css" />
+<link rel="stylesheet" href="css/mn-nav.css?v=<?php echo filemtime(__DIR__ . '/css/mn-nav.css'); ?>" />
 <link type="text/css" rel="stylesheet" href="css/site-legacy.css" />
 <link rel="stylesheet" type="text/css" href="css/smoothness/jquery-ui-1.7.2.custom.css" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" />
 <link rel="stylesheet" href="css/mn-page-addjob.css" />
-<link rel="stylesheet" href="css/mn-page-status-rate.css" />
+<link rel="stylesheet" href="css/mn-page-status-rate.css?v=<?php echo filemtime(__DIR__ . '/css/mn-page-status-rate.css'); ?>" />
 <title>รอประเมิน</title>
 <script type="text/javascript" src="js/jquery-1.3.2.min.js"></script>
 <script type="text/javascript" src="js/jquery-ui-1.7.2.custom.min.js"></script>

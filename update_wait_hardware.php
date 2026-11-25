@@ -37,9 +37,13 @@ $trp_repair_age = maintenance_flow_db_text_to_utf8(isset($row['trp_repair_age'])
 $trp_insurance = maintenance_flow_db_text_to_utf8(isset($row['trp_insurance']) ? $row['trp_insurance'] : '');
 $trp_insurance_selected = trim($trp_insurance);
 $trp_insurance_valid = maintenance_wait_hardware_is_valid_insurance($trp_insurance_selected);
+$trp_insurance_saved = $trp_insurance_valid; // ค่าประกันที่บันทึกไว้แล้ว — หน้าไม่เปลี่ยนให้เองตอนโหลด
 $trp_insurance_options = maintenance_wait_hardware_allowed_insurance_values();
 $trp_backup = maintenance_flow_db_text_to_utf8(isset($row['trp_backup']) ? $row['trp_backup'] : '');
 $trp_buy_date = maintenance_flow_db_text_to_utf8(isset($row['trp_buy_date']) ? $row['trp_buy_date'] : '');
+// วันที่รับเครื่อง: ใช้ค่าที่บันทึกไว้ ถ้ายังไม่มีใส่วันนี้ให้ก่อน (แก้ได้)
+$trp_receive_date = trim((string) maintenance_flow_db_text_to_utf8(isset($row['trp_receive_date']) ? $row['trp_receive_date'] : ''));
+$w_date_receive_value = preg_match('/^\d{4}-\d{2}-\d{2}$/', $trp_receive_date) && $trp_receive_date !== '0000-00-00' ? $trp_receive_date : date('Y-m-d');
 
 $warranty_suggestion = maintenance_warranty_suggest_insurance($connect, $trp_product, $trp_buy_date, $trp_sn, $trp_id);
 if (!$trp_insurance_valid && $warranty_suggestion['value'] !== null) {
@@ -55,12 +59,12 @@ maintenance_db_odbc_close($connect);
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <link rel="stylesheet" href="css/mn-theme.css" />
 <link rel="stylesheet" href="css/mn-layout.css" />
-<link rel="stylesheet" href="css/mn-nav.css" />
+<link rel="stylesheet" href="css/mn-nav.css?v=<?php echo filemtime(__DIR__ . '/css/mn-nav.css'); ?>" />
 <link type="text/css" rel="stylesheet" href="css/site-legacy.css" />
 <link rel="stylesheet" type="text/css" href="css/smoothness/jquery-ui-1.7.2.custom.css" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" />
 <link rel="stylesheet" href="css/mn-page-addjob.css" />
-<link rel="stylesheet" href="css/mn-page-wait-hardware-flow.css" />
+<link rel="stylesheet" href="css/mn-page-wait-hardware-flow.css?v=<?php echo filemtime(__DIR__ . '/css/mn-page-wait-hardware-flow.css'); ?>" />
 <?php
 $mnModalAssetPrefix = '';
 require_once __DIR__ . '/includes/mn_modal_assets.php';
@@ -73,7 +77,9 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
 <script type="text/javascript" src="js/jquery-add_object.min.js"></script>
 <script type="text/javascript" src="js/jquery-scroll.js"></script>
 <script type="text/javascript" src="js/mn-maintenance-flow-modals.js"></script>
-<script type="text/javascript" src="js/update_wait_hardware-page.js?v=3"></script>
+<script type="text/javascript" src="js/update_wait_hardware-page.js?v=<?php echo filemtime(__DIR__ . '/js/update_wait_hardware-page.js'); ?>"></script>
+<script type="text/javascript" src="js/warranty-timeline.js?v=<?php echo filemtime(__DIR__ . '/js/warranty-timeline.js'); ?>"></script>
+<script type="text/javascript" src="js/buy-date-suggest.js?v=<?php echo filemtime(__DIR__ . '/js/buy-date-suggest.js'); ?>"></script>
 <script type="text/javascript">
 window.mnWarrantyMonths = <?php echo json_encode($warranty_suggestion['product_months']); ?>;
 window.mnRepairWarrantyActive = <?php echo ($warranty_suggestion['repair_warranty'] !== null) ? 'true' : 'false'; ?>;
@@ -97,7 +103,7 @@ window.mnRepairWarrantyActive = <?php echo ($warranty_suggestion['repair_warrant
           <div class="mn-update-wait-hw-row">
             <label class="mn-update-wait-hw-label" for="w_date_receive">วันที่รับเครื่อง</label>
             <div class="mn-update-wait-hw-control">
-              <input type="date" class="mn-update-wait-hw-date-input" name="w_date_receive" id="w_date_receive" value="" />
+              <input type="date" class="mn-update-wait-hw-date-input" name="w_date_receive" id="w_date_receive" value="<?php echo maintenance_status_logistic_h($w_date_receive_value); ?>" />
             </div>
           </div>
           <div class="mn-update-wait-hw-row mn-update-wait-hw-row--block">
@@ -124,6 +130,7 @@ window.mnRepairWarrantyActive = <?php echo ($warranty_suggestion['repair_warrant
             <label class="mn-update-wait-hw-label" for="w_date_buy">วันที่ซื้อ</label>
             <div class="mn-update-wait-hw-control">
               <input type="date" class="mn-update-wait-hw-date-input" name="w_date_buy" id="w_date_buy" onchange="mnUpdateWaitHwCalAgeUse();" value="<?php echo maintenance_status_logistic_h($trp_buy_date); ?>" />
+              <div class="mn-bds" id="w_buy_suggest" aria-live="polite" data-trp="<?php echo (int) $trp_id; ?>"></div>
             </div>
           </div>
           <div class="mn-update-wait-hw-row">
@@ -146,6 +153,11 @@ window.mnRepairWarrantyActive = <?php echo ($warranty_suggestion['repair_warrant
               <?php else: ?>
               <div class="mn-update-wait-hw-insurance-hint" id="mn_insurance_hint" style="display:none;"></div>
               <?php endif; ?>
+              <div class="mn-wr" id="mn_wr_box" aria-live="polite" data-trp="<?php echo (int) $trp_id; ?>" data-product="<?php echo maintenance_status_logistic_h($trp_product); ?>" data-saved="<?php echo $trp_insurance_saved ? '1' : '0'; ?>"></div>
+              <div class="mn-wr-links">
+                <a class="mn-wr-link" id="mn_wr_reg_link" href="warranty_registry?sn=<?php echo rawurlencode($trp_sn); ?>" target="_blank" rel="noopener" title="เปิดแท็บใหม่ (ข้อมูลที่กรอกในหน้านี้ไม่หาย)"><i class="fa fa-certificate" aria-hidden="true"></i> ทะเบียนประกันเครื่องนี้</a>
+                <a class="mn-wr-link" href="warranty_settings" target="_blank" rel="noopener" title="เปิดแท็บใหม่"><i class="fa fa-shield" aria-hidden="true"></i> ระยะเวลาประกันรายรุ่น</a>
+              </div>
             </div>
           </div>
           <div class="mn-update-wait-hw-row">

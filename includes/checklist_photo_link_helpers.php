@@ -2,13 +2,12 @@
 /**
  * วัตถุประสงค์และขอบเขต:
  * ลิงก์ QR ให้มือถืออัปโหลดรูปเข้าใบงานโดยไม่ต้องล็อกอิน (หน้า photo_upload)
- * - 1 ลิงก์ = 1 ใบงาน, รหัสสุ่ม 32 ตัว, ใช้ได้ 3 ชั่วโมง หรือจนบันทึกการประเมิน / กดปิดลิงก์ / เสนอราคาแล้ว
+ * - 1 ลิงก์ = 1 ใบงาน, รหัสสุ่ม 32 ตัว, ใช้ได้ตามค่า qr_hours ในหน้า settings (เริ่มต้น 3 ชั่วโมง) หรือจนบันทึกการประเมิน / กดปิดลิงก์ / เสนอราคาแล้ว
  * - หน้าประเมินบนคอมส่ง "ข้อที่แนบรูปได้" + "ข้อที่เปิดอยู่" (focus) มาเก็บไว้ ให้มือถือเปลี่ยนข้อตามหน้าจอคอม
  *
  * ตาราง cl_photo_link: cpl_token, cpl_trp_id, cpl_by, cpl_created, cpl_expires, cpl_revoked, cpl_focus, cpl_items (JSON [{ci, mode}])
  */
 
-if (!defined('MN_PLINK_HOURS')) { define('MN_PLINK_HOURS', 3); }
 
 if (!function_exists('mn_plink_ensure_table')) {
     function mn_plink_ensure_table($connect)
@@ -94,7 +93,8 @@ if (!function_exists('mn_plink_create')) {
         }
         $token = bin2hex(random_bytes(16));
         $now = date('Y-m-d H:i:s');
-        $exp = date('Y-m-d H:i:s', time() + MN_PLINK_HOURS * 3600);
+        if (!function_exists('mn_sys_setting')) { require_once __DIR__ . '/system_settings_helpers.php'; }
+        $exp = date('Y-m-d H:i:s', time() + (int) mn_sys_setting($connect, 'qr_hours') * 3600); // ปรับได้ที่หน้า settings
         $who = mb_substr(trim((string) $by), 0, 80, 'UTF-8');
         $stmt = mysqli_prepare($connect, 'INSERT INTO cl_photo_link (cpl_token, cpl_trp_id, cpl_by, cpl_created, cpl_expires) VALUES (?, ?, ?, ?, ?)');
         if (!$stmt) { return array(null, 'สร้างลิงก์ไม่สำเร็จ'); }

@@ -9,6 +9,8 @@ date_default_timezone_set('Asia/Bangkok');
 require_once __DIR__ . '/includes/require_auth.php';
 header('Content-type: text/html; charset=utf-8');
 require_once __DIR__ . '/includes/bootstrap_maintenance_legacy.php';
+require_once __DIR__ . '/includes/settings_lock_helpers.php';
+mn_settings_gate($connect, 'page'); // หน้าตั้งค่าหลังบ้าน — ต้องใส่รหัส
 require_once __DIR__ . '/includes/checklist_helpers.php';
 require_once __DIR__ . '/includes/checklist_sync_helpers.php';
 
@@ -27,7 +29,7 @@ $pull_host = $can_pull ? (string) parse_url($sync_cfg['url'], PHP_URL_HOST) : ''
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="css/mn-theme.css" />
 <link rel="stylesheet" href="css/mn-layout.css" />
-<link rel="stylesheet" href="css/mn-nav.css" />
+<link rel="stylesheet" href="css/mn-nav.css?v=<?php echo filemtime(__DIR__ . '/css/mn-nav.css'); ?>" />
 <link type="text/css" rel="stylesheet" href="css/site-legacy.css" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" />
 <link rel="stylesheet" href="css/mn-page-addjob.css" />

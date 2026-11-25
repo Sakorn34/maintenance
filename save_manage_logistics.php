@@ -10,6 +10,8 @@
 date_default_timezone_set('Asia/Bangkok');
 require_once __DIR__ . '/includes/require_auth.php';
 require_once __DIR__ . '/includes/bootstrap_maintenance_legacy.php';
+require_once __DIR__ . '/includes/settings_lock_helpers.php';
+mn_settings_gate($connect, 'post'); // หน้าตั้งค่าหลังบ้าน — ต้องใส่รหัส
 require_once __DIR__ . '/includes/manage_logistics_helpers.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

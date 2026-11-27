@@ -514,3 +514,316 @@
   border: 0;
   border-top: 1px solid var(--mn-border, #e2e8f0);
 }
+
+/* ปุ่มใบประเมิน PDF ข้างปุ่มแก้ไขงานประเมิน */
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-pdf-btn,
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-pdf-btn:link,
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-pdf-btn:visited {
+  gap: 4px; margin-left: 6px; border-color: #f0b0b0; background: #fff; color: #b91c1c !important;
+}
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj-pdf-btn:hover { background: #fdecec; }
+
+/* =====================================================================
+   หน้า detail_job แบบ B2 — คอลัมน์ซ้าย (ใบงาน/ลูกค้า/ผู้ติดต่อ/ที่อยู่) + ขวา (แท็บเครื่อง แบ่งกรอบแต่ละชุด) + หน้าต่างประวัติซ่อม
+   ===================================================================== */
+.mn-addjob-page.mn-detail-job-page .content.mn-workspace {
+  width: min(1320px, 96%) !important;
+  font-family: "Noto Sans Thai", system-ui, sans-serif;
+}
+.mn-dj2 { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 14px; align-items: start; color: #0f172a; font-size: 14px; }
+.mn-dj2-side { display: flex; flex-direction: column; gap: 12px; }
+.mn-dj2-main { min-width: 0; }
+.mn-dj2-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05); }
+.mn-dj2-sp { flex: 1; }
+.mn-dj2-empty { color: #94a3b8; font-weight: 400; }
+.mn-dj2-pre { white-space: pre-line; }
+
+/* การ์ดใบงาน */
+.mn-dj2-job { overflow: hidden; }
+.mn-dj2-job-top { padding: 14px 18px 12px; background: linear-gradient(135deg, #0f4c81, #1769aa); color: #fff; }
+.mn-dj2-job-t { font-size: 12.5px; opacity: 0.8; }
+.mn-dj2-job-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mn-addjob-page .mn-dj2-job-h h1 { margin: 0; font-size: 26px; line-height: 1.3; color: #fff; font-weight: 700; }
+.mn-dj2-status { display: inline-flex; align-items: center; gap: 6px; padding: 3px 12px; border-radius: 999px; font-weight: 700; font-size: 13px; background: #fff4e5; color: #b45309; }
+.mn-dj2-status.is-ok { background: #e8f6ee; color: #15803d; }
+.mn-dj2-status.is-gray { background: #f1f5f9; color: #475569; }
+.mn-dj2-status[hidden] { display: none; }
+.mn-dj2-job-rows { padding: 8px 18px 4px; }
+.mn-dj2-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13.5px; padding: 5px 0; border-top: 1px solid #eef2f7; }
+.mn-dj2-row:first-child { border-top: 0; }
+.mn-dj2-row > span { color: #64748b; flex: none; }
+.mn-dj2-row > b { font-weight: 600; text-align: right; }
+.mn-dj2-job-prog { padding: 10px 18px 14px; border-top: 1px solid #eef2f7; background: #fbfdff; }
+.mn-dj2-job-prog[hidden] { display: none; }
+.mn-dj2-prog-t { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-weight: 600; color: #0f4c81; font-size: 13.5px; margin-bottom: 6px; }
+.mn-dj2-prog-t small { font-weight: 400; color: #64748b; }
+.mn-dj2-vsteps { list-style: none; margin: 0; padding: 0; }
+.mn-dj2-vsteps li { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: center; padding: 5px 0; position: relative; font-size: 13.5px; color: #94a3b8; }
+.mn-dj2-vsteps li:before { content: ""; position: absolute; left: 10px; top: -8px; height: 16px; width: 2px; background: #e2e8f0; }
+.mn-dj2-vsteps li:first-child:before { display: none; }
+.mn-dj2-vsteps li > i { width: 22px; height: 22px; border-radius: 50%; background: #e2e8f0; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-style: normal; z-index: 1; }
+.mn-dj2-vsteps li.is-done, .mn-dj2-vsteps li.is-no { color: #0f172a; }
+.mn-dj2-vsteps li.is-done > i { background: #16a34a; }
+.mn-dj2-vsteps li.is-done:before, .mn-dj2-vsteps li.is-no:before { background: #86efac; }
+.mn-dj2-vsteps li.is-no > i { background: #dc2626; }
+.mn-dj2-vsteps li.is-no > span { color: #b91c1c; font-weight: 600; }
+.mn-dj2-vsteps li.is-now { color: #b45309; font-weight: 600; }
+.mn-dj2-vsteps li.is-now > i { background: #f59e0b; box-shadow: 0 0 0 3px #fde9c3; }
+.mn-dj2-vsteps li.is-now:before { background: #86efac; }
+.mn-dj2-vsteps li small { color: #64748b; font-weight: 400; font-size: 12px; }
+.mn-dj2-vsteps li.is-now small { color: #b45309; }
+
+/* การ์ดลูกค้า / ผู้ติดต่อ / ที่อยู่ */
+.mn-dj2-c { padding: 14px 16px; }
+.mn-addjob-page .mn-dj2-c h2 { margin: 0 0 10px; font-size: 14.5px; color: #0f4c81; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-weight: 700; }
+.mn-addjob-page .mn-dj2-c h2.mn-dj2-h2-gap { margin-top: 14px; }
+.mn-dj2-locked { margin: -4px 0 10px; padding: 6px 10px; border-radius: 8px; background: #f1f5f9; color: #475569; font-size: 12.5px; }
+.mn-dj2-fields { display: flex; flex-direction: column; gap: 8px; }
+.mn-dj2-fields--2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+.mn-dj2-f { position: relative; min-width: 0; }
+.mn-dj2-f > small { display: block; color: #64748b; font-size: 12px; }
+.mn-dj2-val { display: block; font-weight: 500; font-size: 13.5px; word-break: break-word; }
+.mn-dj2-row .mn-dj2-val { display: inline; }
+.mn-dj2-val--long { line-height: 1.6; }
+.mn-addjob-page.mn-detail-job-page input.mn-dj2-input { display: none; width: 100%; box-sizing: border-box; padding: 5px 9px; border: 1px solid #93c5fd; border-radius: 8px; font: inherit; font-size: 13.5px; background: #fff; color: #0f172a; }
+.mn-addjob-page.mn-detail-job-page .mn-dj2-row input.mn-dj2-input { width: auto; }
+body.mn-dj2-editing .mn-dj2-val { display: none; }
+body.mn-dj2-editing.mn-addjob-page.mn-detail-job-page input.mn-dj2-input { display: block; }
+body.mn-dj2-editing.mn-addjob-page.mn-detail-job-page .mn-dj2-row input.mn-dj2-input { display: inline-block; }
+body.mn-dj2-editing .mn-dj2-by { display: none; }
+.mn-dj2-f .result, .mn-dj2-f .result_sec, .mn-dj2-f .result_tambon { position: absolute; left: 0; right: 0; z-index: 30; background: #fff; border-radius: 8px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15); max-height: 240px; overflow: auto; }
+.mn-dj2-f .result:empty, .mn-dj2-f .result_sec:empty, .mn-dj2-f .result_tambon:empty { display: none; }
+.mn-dj2-person { padding: 8px 0; border-top: 1px dashed #e2e8f0; }
+.mn-dj2-person:first-of-type { border-top: 0; padding-top: 0; }
+.mn-dj2-person-t { font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 4px; }
+.mn-dj2-c .mn-dj-header-actions-wrap { display: inline-flex; gap: 6px; margin: 0; padding: 0; }
+.mn-dj2-back { align-self: flex-start; color: #0369a1; font-size: 13.5px; text-decoration: none; padding: 2px 4px; }
+
+/* แท็บเครื่อง */
+.mn-dj2-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.mn-addjob-page .mn-dj2-tab { appearance: none; -webkit-appearance: none; font: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; margin: 0; border: 0; border-radius: 12px 12px 0 0; background: #e6f1fa; color: #0f4c81; font-weight: 600; font-size: 13.5px; box-shadow: none; min-height: 0; }
+.mn-addjob-page .mn-dj2-tab.is-on { background: #fff; }
+.mn-dj2-machine { padding: 16px 18px; border-top-left-radius: 0; }
+.mn-dj2-machine[hidden] { display: none; }
+.mn-dj2-mh { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.mn-dj2-pn { font-size: 19px; font-weight: 700; }
+.mn-dj2-sn { color: #475569; }
+.mn-dj2-chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.mn-dj2-chip.is-gray { background: #f1f5f9; color: #64748b; }
+.mn-dj2-chip.is-blue { background: #e0f2fe; color: #0369a1; }
+.mn-dj2-chip.is-ok { background: #e8f6ee; color: #15803d; }
+.mn-dj2-chip.is-no { background: #fdecec; color: #b91c1c; }
+.mn-addjob-page.mn-detail-job-page .mn-dj2-btn,
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj2-btn { display: inline-flex; align-items: center; gap: 5px; font: inherit; font-size: 12.5px; padding: 4px 11px; margin: 0; min-height: 0; border-radius: 999px; border: 1px solid #e8d4bc; background: #fffaf5; color: #b45309 !important; cursor: pointer; white-space: nowrap; text-decoration: none; box-shadow: none; line-height: 1.4; }
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj2-btn.is-blue { border-color: #bae0f7; background: #f0f9ff; color: #0369a1 !important; }
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj2-btn.is-pdf { border-color: #f0b0b0; background: #fff; color: #b91c1c !important; }
+.mn-addjob-page.mn-detail-job-page .content a.mn-dj2-btn.is-solid { border-color: #0369a1; background: #0369a1; color: #fff !important; }
+.mn-addjob-page.mn-detail-job-page .mn-dj2-btn.is-hist { border-color: #c7d2fe; background: #eef2ff; color: #4338ca !important; font-weight: 600; }
+.mn-addjob-page.mn-detail-job-page .mn-dj2-btn.is-hist b { display: inline-flex; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #4338ca; color: #fff; font-size: 11px; align-items: center; justify-content: center; }
+.mn-addjob-page.mn-detail-job-page .mn-dj2-btn.is-hist:disabled { opacity: 0.5; cursor: default; }
+
+/* กรอบแต่ละชุดในการ์ดเครื่อง */
+.mn-dj2-sets { display: flex; flex-direction: column; gap: 12px; }
+.mn-dj2-set { border: 1px solid #dbe5f0; border-radius: 12px; overflow: hidden; background: #fff; }
+.mn-dj2-set-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 9px 14px; background: #f3f8fd; border-bottom: 1px solid #dbe5f0; }
+.mn-dj2-set-ic { display: inline-flex; width: 28px; height: 28px; border-radius: 8px; background: #0f4c81; color: #fff; align-items: center; justify-content: center; font-size: 14px; flex: none; }
+.mn-dj2-set-h > b { font-size: 14.5px; color: #0f172a; }
+.mn-dj2-set-h > small { color: #64748b; font-size: 12.5px; }
+.mn-dj2-set-b { padding: 12px 14px; }
+.mn-dj2-set.is-pend .mn-dj2-set-h { background: #f8fafc; border-bottom-color: #eef2f7; }
+.mn-dj2-set.is-pend .mn-dj2-set-ic { background: #cbd5e1; }
+.mn-dj2-set.is-pend .mn-dj2-set-h > b { color: #94a3b8; }
+.mn-dj2-set.is-pend .mn-dj2-set-b { padding: 8px 14px; }
+.mn-dj2-set.is-cur { border-color: #f5c98a; }
+.mn-dj2-set.is-cur .mn-dj2-set-h { background: #fff7eb; border-bottom-color: #f5c98a; }
+.mn-dj2-set.is-cur .mn-dj2-set-ic { background: #f59e0b; }
+.mn-dj2-set.is-spare .mn-dj2-set-ic { background: #0369a1; }
+.mn-dj2-set.is-note .mn-dj2-set-ic { background: #64748b; }
+.mn-dj2-pendtxt { margin: 0; color: #94a3b8; font-size: 13px; }
+.mn-dj2-donenote { margin: 10px 0 0; color: #15803d; font-size: 13px; font-weight: 600; }
+/* ปุ่มแก้ไขเดิมทุกแบบที่หัวกรอบ: ปุ่มแคปซูลโทนส้มแบบเดียวกัน */
+.mn-addjob-page.mn-detail-job-page .mn-dj2-set-h > button,
+.mn-addjob-page.mn-detail-job-page .content .mn-dj2-set-h > a,
+.mn-addjob-page.mn-detail-job-page .content .mn-dj2-set-h > a:link,
+.mn-addjob-page.mn-detail-job-page .content .mn-dj2-set-h > a:visited {
+  display: inline-flex !important; align-items: center; gap: 5px; margin: 0 !important; padding: 4px 11px !important; min-height: 0 !important;
+  border: 1px solid #e8d4bc !important; border-radius: 999px !important; background: #fffaf5 !important; color: #b45309 !important;
+  font: inherit !important; font-size: 12.5px !important; font-weight: 500 !important; line-height: 1.4 !important; white-space: nowrap; text-decoration: none !important; box-shadow: none !important; cursor: pointer;
+}
+.mn-addjob-page.mn-detail-job-page .mn-dj2-set-h > button:hover,
+.mn-addjob-page.mn-detail-job-page .content .mn-dj2-set-h > a:hover { background: #fff1e0 !important; border-color: #e5b98a !important; }
+
+.mn-dj2-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 14px; }
+.mn-dj2-kv { min-width: 0; }
+.mn-dj2-kv small { display: block; color: #64748b; font-size: 12px; }
+.mn-dj2-kv b { font-weight: 500; word-break: break-word; }
+.mn-dj2-kv.is-w2 { grid-column: span 2; }
+.mn-dj2-kv.is-w4 { grid-column: 1 / -1; }
+.mn-addjob-page.mn-detail-job-page input.mn-dj2-track { border: 0; padding: 0; margin: 0; width: auto; max-width: 100%; background: none; color: #0369a1; text-decoration: underline; cursor: pointer; font: inherit; font-weight: 500; box-shadow: none; }
+.mn-dj2-sub { margin: 12px 0 4px; color: #64748b; font-size: 12.5px; }
+.mn-dj2-note { padding: 8px 12px; border-radius: 8px; background: #f8fafc; border: 1px solid #eef2f7; font-size: 13.5px; line-height: 1.6; }
+.mn-dj2-parts { display: flex; flex-wrap: wrap; gap: 6px; }
+.mn-dj2-parts span { padding: 2px 10px; border-radius: 8px; background: #f1f5f9; border: 1px solid #e2e8f0; font-size: 13px; }
+.mn-dj2-parts span.is-x { background: #eef6ff; border-color: #cfe3f6; color: #0f4c81; }
+.mn-dj2-parts span.is-strike { text-decoration: line-through; color: #94a3b8; }
+
+/* ตารางสรุปผลประเมิน */
+.mn-addjob-page table.mn-dj2-rt { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 0; }
+.mn-dj2-rt th { background: #0f4c81; color: #fff; text-align: left; font-weight: 600; padding: 6px 10px; }
+.mn-dj2-rt td { padding: 6px 10px; border-bottom: 1px solid #eef2f7; vertical-align: top; }
+.mn-dj2-rt tr.is-g td { background: #eef3f9; color: #0f4c81; font-weight: 700; }
+.mn-dj2-rt tr.is-p td { background: #fafafa; color: #0369a1; font-size: 13px; }
+.mn-dj2-rt td.is-bad { color: #b91c1c; font-weight: 600; }
+.mn-dj2-rt td.is-warn { color: #c2410c; font-weight: 600; }
+.mn-dj2-rt td.mn-dj2-st { white-space: nowrap; width: 120px; }
+.mn-dj2-ic { display: inline-flex; width: 16px; height: 16px; border-radius: 50%; color: #fff; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; margin-right: 5px; vertical-align: -2px; }
+.mn-dj2-ic.is-bad { background: #dc2626; }
+.mn-dj2-ic.is-warn { background: #ea580c; border-radius: 3px; }
+.mn-dj2-ic.is-good { background: #16a34a; }
+.mn-dj2-ic.is-na { background: #94a3b8; }
+
+/* Comment */
+.mn-addjob-page.mn-detail-job-page textarea.mn-dj2-comment { width: 100%; box-sizing: border-box; font: inherit; font-size: 13.5px; border: 1px solid #d5dce6; border-radius: 10px; padding: 8px 10px; min-height: 64px; resize: vertical; }
+.mn-dj2-comment-act { text-align: right; margin-top: 6px; }
+
+/* หน้าต่างประวัติซ่อม (ไทม์ไลน์ตามปี) */
+body.mn-dj2-hp-open { overflow: hidden; }
+.mn-dj2-hp { position: fixed; inset: 0; z-index: 2400; background: rgba(15, 23, 42, 0.55); display: flex; align-items: flex-start; justify-content: center; padding: 28px 16px; overflow: auto; font-family: "Noto Sans Thai", system-ui, sans-serif; }
+.mn-dj2-hp[hidden] { display: none; }
+.mn-dj2-hp-box { width: 100%; max-width: 860px; background: #f4f7fb; border-radius: 18px; box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35); overflow: hidden; }
+.mn-dj2-hp-head { display: flex; align-items: center; gap: 12px; padding: 16px 20px; background: #fff; border-bottom: 1px solid #e2e8f0; }
+.mn-dj2-hp-ic { width: 38px; height: 38px; border-radius: 10px; background: #eef2ff; color: #4338ca; display: flex; align-items: center; justify-content: center; font-size: 18px; flex: none; }
+.mn-addjob-page .mn-dj2-hp-head h2 { margin: 0; font-size: 17px; color: #0f172a; }
+.mn-dj2-hp-head small { color: #64748b; }
+.mn-addjob-page .mn-dj2-hp-x { width: 34px; height: 34px; min-height: 0; padding: 0; border-radius: 50%; border: 0; background: #f1f5f9; color: #475569; font-size: 18px; cursor: pointer; box-shadow: none; }
+.mn-dj2-hp-body { padding: 16px 20px 20px; }
+.mn-dj2-tl { position: relative; padding-left: 26px; }
+.mn-dj2-tl:before { content: ""; position: absolute; left: 9px; top: 6px; bottom: 6px; width: 2px; background: #cbd5e1; }
+.mn-dj2-tl-yr { position: relative; margin: 4px 0 8px; font-weight: 700; color: #475569; }
+.mn-dj2-tl-yr:before { content: ""; position: absolute; left: -22px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: #475569; }
+.mn-dj2-hc { position: relative; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; margin-bottom: 12px; }
+.mn-dj2-hc:before { content: ""; position: absolute; left: -22px; top: 14px; width: 12px; height: 12px; border-radius: 50%; background: #16a34a; box-shadow: 0 0 0 3px #f4f7fb; }
+.mn-dj2-hc.is-no { border-color: #f5c2c2; }
+.mn-dj2-hc.is-no:before { background: #dc2626; }
+.mn-dj2-hc-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #eef2f7; border-radius: 14px 14px 0 0; }
+.mn-dj2-hc.is-no .mn-dj2-hc-h { background: #fff7f7; }
+.mn-dj2-hc-n { font-weight: 700; color: #0f4c81; }
+.mn-dj2-hc-h a { color: #0369a1; font-weight: 600; }
+.mn-dj2-hc-d { color: #64748b; font-size: 13px; }
+.mn-dj2-hc-b { margin: 0; padding: 12px 14px; display: grid; grid-template-columns: 120px 1fr; gap: 6px 12px; font-size: 13.5px; }
+.mn-dj2-hc-b dt { color: #64748b; }
+.mn-dj2-hc-b dd { margin: 0; min-width: 0; word-break: break-word; }
+.mn-dj2-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mn-addjob-page .mn-dj2-more { appearance: none; -webkit-appearance: none; border: 0; background: none; padding: 0; margin: 0; min-height: 0; color: #0369a1; font: inherit; font-size: 12.5px; cursor: pointer; box-shadow: none; }
+.mn-dj2-more[hidden] { display: none; }
+.mn-dj2-apnote { display: inline-block; padding: 2px 10px; border-radius: 8px; background: #fff7eb; color: #9a3412; font-size: 13px; }
+.mn-dj2-hc-f { display: flex; gap: 16px; flex-wrap: wrap; padding: 8px 14px; border-top: 1px dashed #e2e8f0; font-size: 12.5px; color: #64748b; }
+.mn-dj2-hc-f b { color: #334155; font-weight: 500; }
+
+@media (max-width: 960px) {
+  .mn-dj2 { grid-template-columns: 1fr; }
+  .mn-dj2-side { position: static; }
+  .mn-dj2-grid { grid-template-columns: 1fr 1fr; }
+  .mn-dj2-kv.is-w2 { grid-column: 1 / -1; }
+  .mn-dj2-hc-b { grid-template-columns: 1fr; }
+}
+
+/* ป้ายวันที่ + ผู้บันทึกข้างหัวกรอบ */
+.mn-dj2-meta { display: inline-flex; align-items: center; gap: 5px; padding: 2px 10px; border-radius: 999px; background: #fff; border: 1px solid #dbe5f0; color: #334155; font-size: 12.5px; white-space: nowrap; font-weight: 400; }
+.mn-dj2-meta .fa { color: #64748b; }
+.mn-dj2-meta.is-none { color: #94a3b8; border-style: dashed; }
+.mn-dj2-meta.is-none .fa { color: #cbd5e1; }
+
+/* กรอบ QC */
+.mn-dj2-set.is-qc.is-done .mn-dj2-set-ic { background: #16a34a; }
+.mn-dj2-qc-sum { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+.mn-dj2-qc-pass { display: inline-flex; align-items: center; gap: 6px; padding: 3px 12px; border-radius: 999px; background: #e8f6ee; color: #15803d; font-weight: 700; font-size: 13px; }
+.mn-dj2-qc-pass.is-bad { background: #fdecec; color: #b91c1c; }
+.mn-dj2-qc-count { color: #64748b; font-size: 13px; }
+.mn-dj2-qc-g { margin: 10px 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: #0f4c81; }
+.mn-dj2-qc-sum + .mn-dj2-qc-g { margin-top: 0; }
+.mn-dj2-qc { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.mn-dj2-qc > div { border: 1px solid #eef2f7; border-radius: 10px; padding: 6px 10px; background: #fbfdff; min-width: 0; }
+.mn-dj2-qc small { display: block; color: #64748b; font-size: 12px; }
+.mn-dj2-qc b { font-weight: 600; font-size: 13.5px; word-break: break-word; }
+.mn-dj2-qc .is-ok b { color: #15803d; }
+.mn-dj2-qc .is-ok b:before { content: "\f00c"; font-family: FontAwesome; margin-right: 5px; font-size: 12px; }
+.mn-dj2-qc .is-bad { border-color: #f5c2c2; background: #fff7f7; }
+.mn-dj2-qc .is-bad b { color: #b91c1c; }
+@media (max-width: 960px) { .mn-dj2-qc { grid-template-columns: 1fr 1fr; } }
+
+/* ปุ่มแก้ไข/บันทึก/ยกเลิก หัวใบงาน (การ์ดลูกค้า) ให้เป็นแคปซูลแบบเดียวกับปุ่มในหัวกรอบ */
+.mn-addjob-page.mn-detail-job-page .mn-dj2-c .mn-dj-header-edit-btn,
+.mn-addjob-page.mn-detail-job-page .mn-dj2-c .mn-dj-header-save-btn,
+.mn-addjob-page.mn-detail-job-page .mn-dj2-c .mn-dj-header-cancel-btn {
+  display: inline-flex !important; align-items: center; gap: 5px; margin: 0 !important; padding: 4px 11px !important; min-height: 0 !important; height: auto !important;
+  border: 1px solid #e8d4bc !important; border-radius: 999px !important; background: #fffaf5 !important; color: #b45309 !important;
+  font: inherit !important; font-size: 12.5px !important; font-weight: 500 !important; line-height: 1.4 !important; white-space: nowrap; box-shadow: none !important; cursor: pointer;
+}
+.mn-addjob-page.mn-detail-job-page .mn-dj2-c .mn-dj-header-edit-btn:hover { background: #fff1e0 !important; border-color: #e5b98a !important; }
+.mn-addjob-page.mn-detail-job-page .mn-dj2-c .mn-dj-header-save-btn { border-color: #16a34a !important; background: #16a34a !important; color: #fff !important; }
+.mn-addjob-page.mn-detail-job-page .mn-dj2-c .mn-dj-header-save-btn:hover { background: #15803d !important; }
+.mn-addjob-page.mn-detail-job-page .mn-dj2-c .mn-dj-header-cancel-btn { border-color: #cbd5e1 !important; background: #f8fafc !important; color: #475569 !important; }
+.mn-addjob-page.mn-detail-job-page .mn-dj2-c .mn-dj-header-cancel-btn:hover { background: #f1f5f9 !important; }
+.mn-dj2-c .mn-dj-header-edit-actions { gap: 6px; }
+
+/* กรอบที่มีแต่หัว (ซ่อม: วันที่ + ช่างอยู่ที่ป้าย) */
+.mn-dj2-set.is-compact .mn-dj2-set-h { border-bottom: 0; }
+
+/* รูปที่แนบตอนประเมิน (แถบรูปเล็ก กดดูใหญ่) */
+.mn-dj2-photos .mn-photo-strip { margin: 2px 0 4px; }
+
+/* ---------- เครื่องสำรอง แบบ S1: สถานะต่อเครื่อง + ไทม์ไลน์ + ปุ่มตามสถานะ ---------- */
+.mn-sp-st { display: inline-flex; align-items: center; gap: 4px; }
+.mn-sp-st.is-prep, .mn-sp-st.is-cancel { background: #f1f5f9 !important; color: #475569 !important; }
+.mn-sp-st.is-cancel { color: #94a3b8 !important; }
+.mn-sp-st.is-ship { background: #fef9c3 !important; color: #854d0e !important; }
+.mn-sp-st.is-bounce { background: #fdf0f0 !important; color: #b91c1c !important; }
+.mn-sp-st.is-cust { background: #e6f1fa !important; color: #0b5d8f !important; }
+.mn-sp-st.is-wait { background: #fff4ec !important; color: #c2410c !important; }
+.mn-sp-st.is-back { background: #ecfdf3 !important; color: #15803d !important; }
+.mn-sp-st.is-lost { background: #f3effe !important; color: #6d28d9 !important; }
+.mn-sp-unit { border: 1px solid #e5e9f0; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+.mn-sp-unit:last-child { margin-bottom: 0; }
+.mn-sp-unit.is-cur { border-color: #9cc3e0; }
+.mn-sp-unit.is-back, .mn-sp-unit.is-cancel { background: #fafbfc; }
+.mn-sp-u1 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 6px; }
+.mn-sp-sn { font-weight: 700; font-size: 15px; }
+.mn-sp-none { margin: 0; font-size: 13px; color: #64748b; }
+.mn-sp-ev { list-style: none; margin: 0; padding: 0 0 0 18px; position: relative; }
+.mn-sp-ev::before { content: ''; position: absolute; left: 5px; top: 7px; bottom: 9px; width: 2px; background: #e2e8f0; }
+.mn-sp-ev li { position: relative; padding: 0 0 7px; font-size: 13.5px; line-height: 1.5; }
+.mn-sp-ev li::before { content: ''; position: absolute; left: -17px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1; border: 2px solid #fff; box-shadow: 0 0 0 1px #cbd5e1; }
+.mn-sp-ev li.is-ship::before { background: #eab308; box-shadow: 0 0 0 1px #eab308; }
+.mn-sp-ev li.is-bad::before { background: #b91c1c; box-shadow: 0 0 0 1px #b91c1c; }
+.mn-sp-ev li.is-blue::before { background: #0b5d8f; box-shadow: 0 0 0 1px #0b5d8f; }
+.mn-sp-ev li.is-warn::before { background: #c2410c; box-shadow: 0 0 0 1px #c2410c; }
+.mn-sp-ev li.is-ok::before { background: #15803d; box-shadow: 0 0 0 1px #15803d; }
+.mn-sp-ev li.is-vio::before { background: #6d28d9; box-shadow: 0 0 0 1px #6d28d9; }
+.mn-sp-ev li.is-bad b { color: #b91c1c; }
+.mn-sp-ev .mn-sp-w { font-size: 12px; color: #64748b; white-space: nowrap; }
+.mn-sp-ev .mn-dj2-track { display: inline; width: auto; max-width: 170px; padding: 0; border: 0; background: none; font: inherit; color: #0b5d8f; text-decoration: underline; cursor: pointer; }
+.mn-sp-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; padding-top: 8px; border-top: 1px dashed #e5e9f0; }
+.mn-addjob-page.mn-detail-job-page .mn-sp-act {
+  display: inline-flex !important; align-items: center; gap: 5px; margin: 0 !important; padding: 3px 11px !important; min-height: 0 !important; height: auto !important;
+  border: 1px solid #e8d4bc !important; border-radius: 999px !important; background: #fffaf5 !important; color: #b45309 !important;
+  font: inherit !important; font-size: 12.5px !important; font-weight: 500 !important; line-height: 1.5 !important; box-shadow: none !important; cursor: pointer; white-space: nowrap;
+}
+.mn-addjob-page.mn-detail-job-page .mn-sp-act:hover { background: #fff1e0 !important; }
+.mn-addjob-page.mn-detail-job-page .mn-sp-act.is-pri { background: #0b5d8f !important; border-color: #0b5d8f !important; color: #fff !important; }
+.mn-addjob-page.mn-detail-job-page .mn-sp-act.is-quiet { border-color: #cbd5e1 !important; background: #f8fafc !important; color: #475569 !important; }
+
+/* หน้าต่างกรอกข้อมูลเครื่องสำรอง */
+.mn-sp-dialog { max-width: 460px; }
+.mn-sp-dlg-ic { color: #0b5d8f; margin-right: 6px; }
+.mn-sp-cur { display: flex; align-items: center; gap: 6px; padding: 8px 10px; margin-bottom: 4px; background: #f8fafc; border-radius: 8px; font-size: 13.5px; }
+.mn-sp-cur .fa { color: #64748b; }
+.mn-sp-f { margin-top: 10px; }
+.mn-sp-l { display: block; margin-bottom: 4px; font-size: 12.5px; color: #64748b; }
+.mn-sp-f .mn-modal-field-edit-input { width: 100%; box-sizing: border-box; }
+.mn-sp-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.mn-sp-pill { border: 1px solid #d5dce6; border-radius: 999px; padding: 3px 11px; font: inherit; font-size: 12.5px; background: #fff; cursor: pointer; color: #334155; }
+.mn-sp-pill.is-on { background: #fff4ec; border-color: #f6c19f; color: #c2410c; font-weight: 600; }
+.mn-sp-note { margin: 12px 0 0; padding: 8px 10px; border-radius: 8px; background: #f8fafc; font-size: 12.5px; color: #475569; line-height: 1.55; }
+.mn-sp-err { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: #fdf0f0; color: #b91c1c; font-size: 13px; }
+.mn-sp-f [hidden], .mn-sp-err[hidden] { display: none !important; }

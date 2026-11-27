@@ -27,7 +27,7 @@
   };
   var palOpen = -1;
 
-  function optColor(o, i) { return COLORS[o.color] ? o.color : (i === 0 ? 'green' : (i === 1 ? 'orange' : 'red')); }
+  function optColor(o, i) { return COLORS[o.color] ? o.color : (i === 0 || o.ok ? 'green' : (i === 1 ? 'orange' : 'red')); }
 
   function colorVars(key) {
     var c = COLORS[key];
@@ -861,7 +861,34 @@
     };
   }
 
-  function blankOpt(label) { return { label: label, note: false, note_default: '', rate: '', color: '', group: 0, photo: 1 }; }
+  function blankOpt(label) { return { label: label, note: false, note_default: '', rate: '', color: '', group: 0, photo: 1, hides: [], ok: false }; }
+
+  // ---------- กฎซ่อนข้อ: เลือกคำตอบนี้แล้วซ่อนข้อตรวจอื่นของรุ่นเดียวกัน ----------
+  function itemLabel(it) {
+    var g = state.data.groups.filter(function (x) { return x.id === it.group_id; })[0];
+    var sy = state.data.symptoms.filter(function (x) { return x.id === it.symptom_id; })[0];
+    return it.question + (g ? ' (' + g.name + ')' : '') + (sy ? ' [อาการ: ' + sy.name + ']' : '');
+  }
+
+  function hideControl(o, d) {
+    var hides = o.hides || [];
+    var chips = hides.map(function (id) {
+      var it = state.data.items.filter(function (x) { return x.id === id; })[0];
+      if (!it) { return ''; }
+      // วนกัน: ข้อที่จะซ่อน มีคำตอบที่ซ่อนข้อนี้กลับ
+      var loop = d.id && (it.options || []).some(function (x) { return (x.hides || []).indexOf(d.id) !== -1; });
+      return '<span class="mn-cls-hide' + (loop ? ' is-loop' : '') + '" title="' + (loop ? 'ตั้งวนกัน: ข้อนี้ก็ซ่อนข้อที่กำลังแก้อยู่' : 'ช่างเลือกคำตอบนี้แล้ว ข้อนี้จะถูกข้าม') + '">'
+        + '<i class="fa ' + (loop ? 'fa-exclamation-triangle' : 'fa-eye-slash') + '" aria-hidden="true"></i> ' + esc(it.question)
+        + '<button type="button" data-o-unhide="' + id + '" aria-label="เลิกซ่อน ' + esc(it.question) + '">&times;</button></span>';
+    }).join('');
+    var opts = state.data.items.filter(function (x) { return x.id !== d.id && hides.indexOf(x.id) === -1; })
+      .map(function (x) { return '<option value="' + x.id + '">' + esc(itemLabel(x)) + '</option>'; }).join('');
+    return '<div class="mn-cls-hides">'
+      + (chips ? '<span class="mn-cls-hides__lbl">เมื่อเลือก ซ่อนข้อ</span>' + chips : '')
+      + (opts ? '<select class="mn-cls-input mn-cls-input--sm mn-cls-hideadd" data-o-hide="1" title="ช่างเลือกคำตอบนี้แล้ว ข้ามข้อที่เลือก (ไม่ต้องตรวจ)">'
+        + '<option value="">' + (chips ? '+ ซ่อนข้ออื่นเพิ่ม' : '+ เมื่อเลือกคำตอบนี้ ซ่อนข้อ…') + '</option>' + opts + '</select>' : '')
+      + '</div>';
+  }
 
   // การแนบรูปของคำตอบ: 0 ไม่แนบ / 1 แนบได้ / 2 ต้องแนบ
   var PHOTO_MODES = ['ไม่แนบรูป', 'แนบรูปได้', 'ต้องแนบรูป'];
@@ -965,10 +992,14 @@
           + '<div class="mn-cls-opt__main"><input type="text" class="mn-cls-input mn-cls-input--sm" data-o="label" maxlength="100" value="' + esc(o.label) + '" placeholder="' + (i === 0 ? 'ผลปกติ เช่น ใช้งานได้ปกติ' : 'ตัวเลือก ' + (i + 1)) + '" />'
           + (palOpen === i ? palette(o) : '')
           + (i === 0 ? '<p class="mn-cls-fhint">ตัวเลือกแรก = ผลปกติ ไม่แนะนำอะไหล่</p>'
-            : '<div class="mn-cls-opt__sub">' + rateSelect('rate', o.rate).replace('data-f="rate"', 'data-o="rate"')
-              + (d.multi ? groupSelect(o) : '')
-              + photoSelect('data-o="photo"', o.photo, 'เมื่อช่างเลือกคำตอบนี้ ให้แนบรูปได้หรือต้องแนบ')
+            : '<div class="mn-cls-opt__sub">'
+              + '<label class="mn-cls-check mn-cls-okchk" title="เช่น ไม่มีมา / ไม่ได้ใช้ — ไม่ถือว่าผิดปกติ"><input type="checkbox" data-o="ok"' + (o.ok ? ' checked' : '') + ' /> นับเป็นผลปกติ</label>'
+              + (o.ok ? '<p class="mn-cls-fhint">ผลปกติ ไม่แนะนำอะไหล่ ไม่แนบรูป</p>'
+                : rateSelect('rate', o.rate).replace('data-f="rate"', 'data-o="rate"')
+                + (d.multi ? groupSelect(o) : '')
+                + photoSelect('data-o="photo"', o.photo, 'เมื่อช่างเลือกคำตอบนี้ ให้แนบรูปได้หรือต้องแนบ'))
               + '<label class="mn-cls-check"><input type="checkbox" data-o="note"' + (o.note ? ' checked' : '') + ' /> ให้พิมพ์รายละเอียด</label>'
+              + hideControl(o, d)
               + '<textarea class="mn-cls-input mn-cls-input--sm mn-cls-notedef" data-o="note_default" rows="2" maxlength="200"' + (o.note ? '' : ' hidden')
               + ' placeholder="ค่าเริ่มต้นของรายละเอียด (ไม่บังคับ) เช่น พบที่ตำแหน่ง…">' + esc(o.note_default || '') + '</textarea></div>')
           + '</div>'
@@ -976,7 +1007,7 @@
           + '</li>';
       }).join('');
       return field('ตัวเลือก → รายการซ่อมที่แนะนำ', '<label class="mn-cls-multi' + (d.multi ? ' is-on' : '') + '"><input type="checkbox" data-f="multi"' + (d.multi ? ' checked' : '') + ' />'
-        + '<span><b>เลือกได้หลายค่า</b><small>ช่างกดได้หลายปุ่มพร้อมกัน (ยกเว้นตัวเลือกแรก) และแนะนำรายการซ่อมของทุกปุ่มที่กด'
+        + '<span><b>เลือกได้หลายค่า</b><small>ช่างกดได้หลายปุ่มพร้อมกัน (ยกเว้นตัวเลือกที่เป็นผลปกติ) และแนะนำรายการซ่อมของทุกปุ่มที่กด'
         + ' | ตั้ง “กลุ่ม” ให้ตัวเลือกที่ห้ามเลือกพร้อมกัน เช่น กล่องแตกเล็กน้อย / กล่องแตกเยอะ</small></span></label>'
         + '<ul class="mn-cls-opts">' + rows + '</ul>'
         + (d.options.length < MAX_OPTS ? '<button type="button" class="mn-cls-add mn-cls-add--sm" id="mn_cls_e_addopt"><i class="fa fa-plus" aria-hidden="true"></i> เพิ่มตัวเลือก</button>' : ''),
@@ -1016,9 +1047,10 @@
       body = d.options.map(function (o, i) {
         if (!o.label) { return ''; }
         return '<span class="mn-cls-pv-opt mn-cls-pv-opt--c" style="' + colorVars(optColor(o, i)) + '">'
-          + (d.multi && i > 0 ? '<i class="fa fa-check-square-o" aria-hidden="true"></i> ' : '') + esc(o.label)
+          + (d.multi && i > 0 && !o.ok ? '<i class="fa fa-check-square-o" aria-hidden="true"></i> ' : '') + esc(o.label)
           + (d.multi && i > 0 && o.group ? '<sup class="mn-cls-pv-grp">' + o.group + '</sup>' : '')
-          + (i > 0 && o.photo ? ' <i class="fa fa-camera mn-cls-pv-cam' + (o.photo === 2 ? ' is-req' : '') + '" title="' + PHOTO_MODES[o.photo] + '" aria-hidden="true"></i>' : '') + '</span>';
+          + (i > 0 && o.photo ? ' <i class="fa fa-camera mn-cls-pv-cam' + (o.photo === 2 ? ' is-req' : '') + '" title="' + PHOTO_MODES[o.photo] + '" aria-hidden="true"></i>' : '')
+          + (o.hides && o.hides.length ? ' <i class="fa fa-eye-slash mn-cls-pv-cam" title="ซ่อน ' + o.hides.length + ' ข้อ" aria-hidden="true"></i>' : '') + '</span>';
       }).join('') + (d.multi ? '<span class="mn-cls-muted mn-cls-pv-note">เลือกได้หลายค่า</span>' : '');
     } else if (d.type === 'number') {
       body = '<span class="mn-cls-pv-in">0</span><span class="mn-cls-muted">' + esc(d.unit || 'หน่วย') + '</span>'
@@ -1059,9 +1091,22 @@
       else if (f === 'photo_fail') { d.photo_fail = parseInt(t.value, 10) || 0; t.className = t.className.replace(/is-m\d/, 'is-m' + d.photo_fail); }
       else { d[f] = t.value; }
       markDirty();
+    } else if (t.hasAttribute('data-o-hide')) {
+      var hi = parseInt(t.closest('.mn-cls-opt').getAttribute('data-i'), 10);
+      var hid = parseInt(t.value, 10);
+      if (hid > 0 && (d.options[hi].hides || []).indexOf(hid) === -1) {
+        d.options[hi].hides = (d.options[hi].hides || []).concat([hid]);
+        $('mn_cls_typebody').innerHTML = typeBody(d);
+        markDirty();
+      }
     } else if (o) {
       var i = parseInt(t.closest('.mn-cls-opt').getAttribute('data-i'), 10);
-      d.options[i][o] = o === 'note' ? t.checked : (o === 'group' || o === 'photo' ? parseInt(t.value, 10) || 0 : t.value);
+      d.options[i][o] = o === 'note' || o === 'ok' ? t.checked : (o === 'group' || o === 'photo' ? parseInt(t.value, 10) || 0 : t.value);
+      if (o === 'ok') {
+        // ผลปกติ: ไม่แนะนำอะไหล่ ไม่แนบรูป ไม่มีกลุ่ม
+        if (t.checked) { d.options[i].rate = ''; d.options[i].photo = 0; d.options[i].group = 0; } else { d.options[i].photo = 1; }
+        $('mn_cls_typebody').innerHTML = typeBody(d);
+      }
       if (o === 'photo') { t.className = t.className.replace(/is-m\d/, 'is-m' + d.options[i].photo); }
       if (o === 'group') { t.classList.toggle('is-set', d.options[i].group > 0); }
       if (o === 'note') {
@@ -1109,6 +1154,15 @@
       $('mn_cls_typebody').innerHTML = typeBody(d);
       var ins = $('mn_cls_typebody').querySelectorAll('[data-o="label"]');
       ins[ins.length - 1].focus();
+      markDirty();
+      return;
+    }
+    var unhide = e.target.closest('[data-o-unhide]');
+    if (unhide) {
+      var ui = parseInt(unhide.closest('.mn-cls-opt').getAttribute('data-i'), 10);
+      var uid = parseInt(unhide.getAttribute('data-o-unhide'), 10);
+      d.options[ui].hides = (d.options[ui].hides || []).filter(function (x) { return x !== uid; });
+      $('mn_cls_typebody').innerHTML = typeBody(d);
       markDirty();
       return;
     }

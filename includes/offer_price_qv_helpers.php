@@ -213,6 +213,21 @@ if (!function_exists('maintenance_offer_price_qv_apply_from_get')) {
             return array('ok' => false, 'message' => 'บันทึกไม่สำเร็จ: commit ล้มเหลว');
         }
 
+        // ผู้บันทึกใบเสนอราคา (รวมรายการซ่อมในงานเดียวกันที่ได้ใบเสนอราคาเดียวกัน)
+        require_once __DIR__ . '/job_stamp_helpers.php';
+        $stamp_ids = array($id);
+        $stmt_ids = mysqli_prepare($connect, 'SELECT trp_id FROM transac_repair WHERE trp_ts_id = ? AND trp_qv_number = ? AND trp_qv_date = ?');
+        if ($stmt_ids !== false) {
+            mysqli_stmt_bind_param($stmt_ids, 'iss', $trp_ts_id, $num, $date);
+            mysqli_stmt_execute($stmt_ids);
+            $res_ids = mysqli_stmt_get_result($stmt_ids);
+            while ($res_ids && ($row_id = mysqli_fetch_assoc($res_ids))) {
+                $stamp_ids[] = (int) $row_id['trp_id'];
+            }
+            mysqli_stmt_close($stmt_ids);
+        }
+        mn_job_stamp_set($connect, $stamp_ids, 'qv');
+
         $message = 'บันทึกสำเร็จ';
         if ($synced > 0) {
             $message .= ' (อัปเดตรายการซ่อมในงานเดียวกัน ' . $synced . ' รายการ)';

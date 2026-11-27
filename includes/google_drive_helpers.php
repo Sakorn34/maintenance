@@ -155,12 +155,49 @@ if (!function_exists('mn_gd_q')) {
     }
 }
 
-/** หา/สร้างโฟลเดอร์ชื่อ $name ใต้ $parent (จำ id ไว้ในตาราง cl_drive_folder) → array(id, error) */
-if (!function_exists('mn_gd_folder')) {
-    function mn_gd_folder($connect, $parent, $name)
+/** ชื่อโฟลเดอร์ที่ใช้ได้บน Drive (ตัดอักษรต้องห้าม) */
+if (!function_exists('mn_gd_folder_name')) {
+    function mn_gd_folder_name($name)
     {
-        $name = trim(preg_replace('/[\\\\\/:*?"<>|]+/u', ' ', (string) $name));
-        if ($name === '') { $name = 'อื่น ๆ'; }
+        $name = trim((string) preg_replace('/[\\\\\/:*?"<>|]+/u', ' ', (string) $name));
+        return $name === '' ? 'อื่น ๆ' : $name;
+    }
+}
+
+/** จำ id โฟลเดอร์ $name ใต้ $parent ลง cl_drive_folder */
+if (!function_exists('mn_gd_folder_remember')) {
+    function mn_gd_folder_remember($connect, $parent, $name, $id)
+    {
+        $key = md5($parent . '|' . mn_gd_folder_name($name));
+        $ins = mysqli_prepare($connect, 'REPLACE INTO cl_drive_folder (cdf_key, cdf_id) VALUES (?, ?)');
+        if ($ins) {
+            $id = (string) $id;
+            mysqli_stmt_bind_param($ins, 'ss', $key, $id);
+            mysqli_stmt_execute($ins);
+            mysqli_stmt_close($ins);
+        }
+    }
+}
+
+/** ลืม id โฟลเดอร์ (หลังย้ายลงถังขยะ / เปลี่ยนชื่อ) ให้ครั้งหน้าค้นหรือสร้างใหม่ */
+if (!function_exists('mn_gd_folder_forget')) {
+    function mn_gd_folder_forget($connect, $id)
+    {
+        $del = mysqli_prepare($connect, 'DELETE FROM cl_drive_folder WHERE cdf_id = ?');
+        if ($del) {
+            $id = (string) $id;
+            mysqli_stmt_bind_param($del, 's', $id);
+            mysqli_stmt_execute($del);
+            mysqli_stmt_close($del);
+        }
+    }
+}
+
+/** หาโฟลเดอร์ชื่อ $name ใต้ $parent (จากที่จำไว้ หรือค้นบน Drive) ไม่สร้างใหม่ → array(id ว่าง = ไม่มี, error) */
+if (!function_exists('mn_gd_find_folder')) {
+    function mn_gd_find_folder($connect, $parent, $name)
+    {
+        $name = mn_gd_folder_name($name);
         $key = md5($parent . '|' . $name);
         $stmt = mysqli_prepare($connect, 'SELECT cdf_id FROM cl_drive_folder WHERE cdf_key = ?');
         if ($stmt) {
@@ -178,6 +215,65 @@ if (!function_exists('mn_gd_folder')) {
         )));
         if ($err !== '') { return array('', $err); }
         $id = !empty($res['files'][0]['id']) ? (string) $res['files'][0]['id'] : '';
+        if ($id !== '') { mn_gd_folder_remember($connect, $parent, $name, $id); }
+        return array($id, '');
+    }
+}
+
+/** ข้อมูลไฟล์/โฟลเดอร์ (fields เช่น "id,name,parents") → array(data|null, error) | ไม่พบ = (null, '') */
+if (!function_exists('mn_gd_meta')) {
+    function mn_gd_meta($id, $fields)
+    {
+        list($code, $res, $err) = mn_gd_api('GET', 'https://www.googleapis.com/drive/v3/files/' . rawurlencode((string) $id) . '?supportsAllDrives=true&fields=' . rawurlencode($fields));
+        if ($code === 404) { return array(null, ''); }
+        return array($err === '' ? $res : null, $err);
+    }
+}
+
+/** โฟลเดอร์ยังมีของข้างใน (ที่ไม่อยู่ในถังขยะ) ไหม → array(bool, error) */
+if (!function_exists('mn_gd_has_children')) {
+    function mn_gd_has_children($folder)
+    {
+        $q = "'" . mn_gd_q($folder) . "' in parents and trashed = false";
+        list($code, $res, $err) = mn_gd_api('GET', 'https://www.googleapis.com/drive/v3/files?' . http_build_query(array(
+            'q' => $q, 'fields' => 'files(id)', 'pageSize' => 1,
+            'supportsAllDrives' => 'true', 'includeItemsFromAllDrives' => 'true', 'corpora' => 'allDrives',
+        )));
+        if ($err !== '') { return array(true, $err); }
+        return array(!empty($res['files']), '');
+    }
+}
+
+/** โฟลเดอร์ย่อยของ $parent (ไม่รวมถังขยะ สูงสุด 1000) → array(array(id => name), error) */
+if (!function_exists('mn_gd_list_folders')) {
+    function mn_gd_list_folders($parent)
+    {
+        $out = array();
+        $token = '';
+        for ($page = 0; $page < 5; $page++) {
+            $q = "'" . mn_gd_q($parent) . "' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false";
+            $params = array('q' => $q, 'fields' => 'nextPageToken,files(id,name)', 'pageSize' => 200,
+                'supportsAllDrives' => 'true', 'includeItemsFromAllDrives' => 'true', 'corpora' => 'allDrives');
+            if ($token !== '') { $params['pageToken'] = $token; }
+            list($code, $res, $err) = mn_gd_api('GET', 'https://www.googleapis.com/drive/v3/files?' . http_build_query($params));
+            if ($err !== '') { return array($out, $err); }
+            foreach ((array) (isset($res['files']) ? $res['files'] : array()) as $f) { $out[(string) $f['id']] = (string) $f['name']; }
+            $token = isset($res['nextPageToken']) ? (string) $res['nextPageToken'] : '';
+            if ($token === '') { break; }
+        }
+        return array($out, '');
+    }
+}
+
+/** หา/สร้างโฟลเดอร์ชื่อ $name ใต้ $parent (จำ id ไว้ในตาราง cl_drive_folder) → array(id, error) */
+if (!function_exists('mn_gd_folder')) {
+    function mn_gd_folder($connect, $parent, $name)
+    {
+        $name = mn_gd_folder_name($name);
+        $key = md5($parent . '|' . $name);
+        list($id, $err) = mn_gd_find_folder($connect, $parent, $name);
+        if ($err !== '') { return array('', $err); }
+        if ($id !== '') { return array($id, ''); }
         if ($id === '') {
             list($code, $res, $err) = mn_gd_api('POST', 'https://www.googleapis.com/drive/v3/files?supportsAllDrives=true&fields=id',
                 array('Content-Type: application/json; charset=UTF-8'),

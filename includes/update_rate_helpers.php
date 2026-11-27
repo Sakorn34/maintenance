@@ -290,8 +290,8 @@ if (!function_exists('maintenance_update_rate_fetch_bundle')) {
             . 'tr.trp_buy_date, tr.trp_repair_age, tr.trp_repair_inform, tr.trp_repair_technician, tr.trp_rate_date, '
             . 'tr.trp_repair_no1, tr.trp_repair_no2, tr.trp_repair_no3, tr.trp_repair_no4, tr.trp_repair_no5, '
             . 'tr.trp_repair_no6, tr.trp_repair_no7, tr.trp_repair_no8, tr.trp_repair_no9, tr.trp_repair_no10, '
-            . 'tr.trp_clean, tr.trp_repeat_solder, tr.trp_spray, tr.trp_fw, tr.trp_user_rate, tr.trp_repair_remarks, tr.trp_status_job, '
-            . 'ts.ts_enduser_com, ts.ts_security_com, ts.ts_remarks '
+            . 'tr.trp_clean, tr.trp_repeat_solder, tr.trp_spray, tr.trp_fw, tr.trp_user_rate, tr.trp_repair_remarks, tr.trp_status_job, tr.trp_qv_number, tr.trp_qv_price, '
+            . 'ts.ts_enduser_com, ts.ts_security_com, ts.ts_remarks, ts.ts_mtn_number '
             . 'FROM transac_repair tr INNER JOIN transac ts ON ts.ts_id = tr.trp_ts_id WHERE tr.trp_id = ? LIMIT 1';
 
         $stmt = mysqli_prepare($connect, $sql);

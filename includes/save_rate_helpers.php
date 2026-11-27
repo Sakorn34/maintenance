@@ -58,8 +58,15 @@ if (!function_exists('maintenance_save_rate_apply_from_get')) {
         }
 
         require_once __DIR__ . '/detail_job_edit_helpers.php';
+        // เสนอราคาแล้ว: บันทึกได้เฉพาะงานรออนุมัติซ่อมที่ปลดล็อกด้วยรหัสตั้งค่าแล้ว (คงใบเสนอราคาและสถานะเดิม)
+        $qv_edit = false;
         if (maintenance_detail_job_repair_rate_edit_locked($connect, $id)) {
-            return array('ok' => false, 'message' => 'ไม่สามารถแก้ไขงานประเมินซ่อมได้ เนื่องจากมีการเสนอราคาซ่อมแล้ว');
+            $qv_edit = !empty($get['qv_edit'])
+                && maintenance_detail_job_repair_rate_qv_edit_eligible($connect, $id)
+                && maintenance_detail_job_repair_rate_qv_edit_granted($id);
+            if (!$qv_edit) {
+                return array('ok' => false, 'message' => 'ไม่สามารถแก้ไขงานประเมินซ่อมได้ เนื่องจากมีการเสนอราคาซ่อมแล้ว');
+            }
         }
 
         $tech = isset($get['trp_repair_technician']) ? (string) $get['trp_repair_technician'] : '';
@@ -81,6 +88,11 @@ if (!function_exists('maintenance_save_rate_apply_from_get')) {
 
         $warranty = ($insurance === 'อยู่ในประกัน' || $insurance === 'อยู่ในประกันซ่อม');
         $status_job = ($warranty || $prev_status === 'รอซ่อม') ? 'รอซ่อม' : 'รอเสนอราคา';
+        if ($qv_edit) {
+            // ไม่แตะใบเสนอราคา (ไม่เข้าทางในประกันที่เขียนทับ QV) สถานะคงเป็นรออนุมัติซ่อม
+            $warranty   = false;
+            $status_job = 'รออนุมัติซ่อม';
+        }
 
         if ($warranty) {
             $sql = 'UPDATE transac_repair SET '
@@ -175,7 +187,13 @@ if (!function_exists('maintenance_save_rate_apply_from_get')) {
         mysqli_stmt_close($stmt);
 
         if ($ok) {
-            return array('ok' => true, 'message' => 'บันทึกสำเร็จ');
+            if ($warranty) {
+                // ในประกัน: ระบบตั้งใบเสนอราคา "-" และอนุมัติให้เองตอนบันทึกประเมิน → ผู้บันทึกคือผู้บันทึกประเมิน
+                require_once __DIR__ . '/job_stamp_helpers.php';
+                mn_job_stamp_set($connect, array($id), 'qv');
+                mn_job_stamp_set($connect, array($id), 'firm');
+            }
+            return array('ok' => true, 'message' => $qv_edit ? 'บันทึกผลประเมินแล้ว ใบเสนอราคาและสถานะคงเดิม' : 'บันทึกสำเร็จ', 'redirect' => $qv_edit ? 'status_wait_firmQV' : 'status_rate');
         }
 
         return array('ok' => false, 'message' => 'บันทึกไม่สำเร็จ: ' . $err);

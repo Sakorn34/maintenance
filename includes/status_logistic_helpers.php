@@ -733,6 +733,12 @@ if (!function_exists('maintenance_status_logistic_fetch_spare_pending_rows')) {
         maintenance_status_logistic_fix_zero_tsp_ids($connect);
 
         $status = maintenance_status_logistic_spare_pending_status_literal();
+        // flow เครื่องสำรองใหม่: เครื่องที่ตีกลับ/ส่งแทนเครื่องอื่น ต้องส่ง แม้รายการซ่อมเลยขั้น «รอส่งสำรอง» แล้ว
+        $extra = '';
+        if (function_exists('mn_spare_pending_send_ids')) {
+            $ids = array_map('intval', mn_spare_pending_send_ids($connect));
+            if ($ids) { $extra = ' OR tsp.tsp_id IN (' . implode(',', $ids) . ')'; }
+        }
         // ระบุคอลัมน์แบบ explicit เพื่อให้ key ใน result ชัดเจน (โดยเฉพาะ `tsp_id`)
         $sql = 'SELECT '
             . 'tsp.tsp_id AS tsp_id, tsp.tsp_ts_id AS tsp_ts_id, tsp.tsp_trp_id AS tsp_trp_id, '
@@ -743,7 +749,8 @@ if (!function_exists('maintenance_status_logistic_fetch_spare_pending_rows')) {
             . ' FROM transac_repair tr'
             . ' INNER JOIN transac ts ON ts.ts_id = tr.trp_ts_id AND tr.trp_ts_id > 0'
             . ' INNER JOIN transac_spare tsp ON tsp.tsp_trp_id = tr.trp_id'
-            . ' WHERE tr.trp_status_job = ? AND tr.trp_id > 0'
+            . ' WHERE (tr.trp_status_job = ?' . $extra . ') AND tr.trp_id > 0'
+            . " AND (tsp.tsp_datereturn IS NULL OR TRIM(tsp.tsp_datereturn) = '')"
             . ' ORDER BY tsp.tsp_id ASC';
         $stmt = mysqli_prepare($connect, $sql);
         if ($stmt === false) {

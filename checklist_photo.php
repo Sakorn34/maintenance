@@ -54,14 +54,17 @@ if ($action === 'drive_check') {
     $chk['pending'] = mn_photo_pending_count($connect);
     $chk['trash_pending'] = mn_photo_trash_count($connect); // ไฟล์บน Drive ที่ลบจากระบบแล้วแต่ยังย้ายลงถังขยะไม่สำเร็จ
     $chk['ok'] = $chk['token'] && $chk['error'] === '';
+    $chk['stats'] = mn_photo_stats($connect); // ตัวเลขบนหน้าตั้งค่า (อัปเดตหลังลบรูป)
     mn_photo_json($connect, $chk);
 }
 // ส่งรูปที่ค้างขึ้น Drive ทีละชุด (เปิดซ้ำได้จนค้างเป็น 0)
 if ($action === 'drive_push') {
     list($sent, $failed, $err) = mn_photo_push_pending($connect, 20);
     $trash_left = mn_photo_trash_count($connect);
+    // เก็บกวาดโฟลเดอร์ว่างบน Drive (ใบงานที่ลบรูปหมดแล้ว)
+    list($pruned, $perr) = ($failed === 0 && $trash_left === 0) ? mn_photo_drive_prune_all($connect) : array(0, '');
     mn_photo_json($connect, array('ok' => $failed === 0 && $trash_left === 0, 'sent' => $sent, 'pending' => mn_photo_pending_count($connect),
-        'trash_pending' => $trash_left, 'error' => $err));
+        'trash_pending' => $trash_left, 'pruned' => $pruned, 'error' => $err !== '' ? $err : $perr));
 }
 // ตั้งชื่อไฟล์บน Drive ใหม่ตามรูปแบบปัจจุบัน ทีละ 30 รูป (?after=id ล่าสุดที่ทำแล้ว — เปิดซ้ำตาม next จนได้ done)
 if ($action === 'drive_rename') {

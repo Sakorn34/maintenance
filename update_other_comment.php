@@ -26,9 +26,16 @@ if ($trp_id <= 0 || $ts_id <= 0) {
     exit;
 }
 
-$e = mysqli_real_escape_string($connect, $comment);
-$sql_update = "UPDATE transac_repair SET trp_other_comment = '" . $e . "' WHERE trp_id = " . $trp_id;
-maintenance_db_odbc_exec($connect, $sql_update);
+$stmt = mysqli_prepare($connect, 'UPDATE transac_repair SET trp_other_comment = ? WHERE trp_id = ? LIMIT 1');
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, 'si', $comment, $trp_id);
+    if (mysqli_stmt_execute($stmt)) {
+        // ผู้บันทึก Comment
+        require_once __DIR__ . '/includes/job_stamp_helpers.php';
+        mn_job_stamp_set($connect, array($trp_id), 'comment');
+    }
+    mysqli_stmt_close($stmt);
+}
 maintenance_db_odbc_close($connect);
 
 header('Location: detail_job?ts_id=' . $ts_id);

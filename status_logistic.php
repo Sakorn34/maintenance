@@ -14,6 +14,7 @@ require_once __DIR__ . '/includes/require_auth.php';
 header('Content-type: text/html; charset=utf-8');
 require_once __DIR__ . '/includes/bootstrap_status_logistic_page.php';
 require_once __DIR__ . '/includes/status_logistic_helpers.php';
+require_once __DIR__ . '/includes/spare_flow_helpers.php';
 
 $rows_spare_pending = maintenance_status_logistic_fetch_spare_pending_rows($connect);
 $rows_repair_return = maintenance_status_logistic_fetch_repair_return_rows($connect);
@@ -31,7 +32,7 @@ $strLabel = '';
 <link rel="stylesheet" type="text/css" href="css/smoothness/jquery-ui-1.7.2.custom.css" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" />
 <link rel="stylesheet" href="css/mn-page-addjob.css" />
-<link rel="stylesheet" href="css/mn-page-status-logistic.css" />
+<link rel="stylesheet" href="css/mn-page-status-logistic.css?v=<?php echo filemtime(__DIR__ . '/css/mn-page-status-logistic.css'); ?>" />
 <?php
 $mnModalAssetPrefix = '';
 require_once __DIR__ . '/includes/mn_modal_assets.php';
@@ -123,6 +124,7 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
       <tr class="mn-status-logistic-row" onmouseover="mnStatusLogisticHover(this, true)" onmouseout="mnStatusLogisticHover(this, false)">
         <td align="center"><?php echo (int) $i; ?></td>
         <td align="left"><?php echo maintenance_status_logistic_h(maintenance_status_logistic_row($result_tsp, 'tsp_product')); ?><br />
+          <?php echo mn_spare_resend_badge($connect, (int) maintenance_status_logistic_row($result_tsp, 'tsp_id', 0)); ?>
           <input type="hidden" id="tspTrpId<?php echo (int) $i; ?>" value="<?php echo (int) $trp_id_spare; ?>" />
           <input type="hidden" id="tspTsId<?php echo (int) $i; ?>" value="<?php echo (int) $tsp_ts_id_spare; ?>" />
           <input type="hidden" id="tspProduct<?php echo (int) $i; ?>" value="<?php echo maintenance_status_logistic_h($tsp_product_spare); ?>" />

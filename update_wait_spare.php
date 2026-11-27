@@ -15,6 +15,7 @@ date_default_timezone_set('Asia/Bangkok');
 require_once __DIR__ . '/includes/require_auth.php';
 require_once __DIR__ . '/includes/bootstrap_maintenance_legacy.php';
 require_once __DIR__ . '/includes/maintenance_flow_sql_helpers.php';
+require_once __DIR__ . '/includes/spare_flow_helpers.php';
 
 $tsp_id = maintenance_flow_get_int($_GET, 'tsp_id', 0);
 $tsp_datereturn = isset($_GET['tsp_datereturn']) ? trim((string) $_GET['tsp_datereturn']) : '';
@@ -75,6 +76,10 @@ if ($stmt3 === false) {
     // ไม่มี statement — ถือว่าล้มเหลว
 } elseif ($trp_id < 1) {
     mysqli_stmt_close($stmt3);
+} elseif (mn_spare_outstanding_count($connect, $trp_id) > 0) {
+    // ยังมีเครื่องสำรองอื่นค้างอยู่ (เช่น สลับเครื่อง) — คงสถานะรอเครื่องสำรองไว้
+    mysqli_stmt_close($stmt3);
+    $ok3 = true;
 } else {
     mysqli_stmt_bind_param($stmt3, 'si', $done_status, $trp_id);
     $ok3 = mysqli_stmt_execute($stmt3);

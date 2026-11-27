@@ -8,6 +8,9 @@ require_once __DIR__ . '/includes/checklist_helpers.php';
 $product    = isset($_GET['product'])    ? trim((string) $_GET['product'])    : '';
 $symptom_id = isset($_GET['symptom_id']) ? (int) $_GET['symptom_id']           : 0;
 $trp_id     = isset($_GET['trp_id'])     ? (int) $_GET['trp_id']               : 0;
+// หน้าทดลอง: ใบงานจริงที่ดึงมาจาก S/N ใช้คำนวณข้ออัตโนมัติเท่านั้น (ไม่ส่งผลที่บันทึกไว้)
+$ref_trp_id = isset($_GET['ref_trp_id']) ? (int) $_GET['ref_trp_id']           : 0;
+$auto_trp   = $trp_id > 0 ? $trp_id : $ref_trp_id;
 
 if ($product === '' || $symptom_id < 0) {
     maintenance_db_odbc_close($connect);
@@ -34,6 +37,8 @@ foreach ($items as $item) {
         $notes    = json_decode((string) (isset($item['ci_opt_notes']) ? $item['ci_opt_notes'] : ''), true);
         $groups   = json_decode((string) (isset($item['ci_opt_groups']) ? $item['ci_opt_groups'] : ''), true);
         $photos   = json_decode((string) (isset($item['ci_opt_photos']) ? $item['ci_opt_photos'] : ''), true);
+        $hides    = json_decode((string) (isset($item['ci_opt_hides']) ? $item['ci_opt_hides'] : ''), true);
+        $oks      = json_decode((string) (isset($item['ci_opt_oks']) ? $item['ci_opt_oks'] : ''), true);
         $opts_arr = array();
         foreach ($parts as $pi => $part) {
             $part     = trim($part);
@@ -47,7 +52,9 @@ foreach ($items as $item) {
                 $note_default = $has_note && is_array($notes) && isset($notes[$pi]) ? (string) $notes[$pi] : '';
                 $group = is_array($groups) && isset($groups[$pi]) ? (int) $groups[$pi] : 0;
                 $photo = is_array($photos) && isset($photos[$pi]) ? (int) $photos[$pi] : ($pi > 0 ? 1 : 0);
-                $opts_arr[] = array('label' => $label, 'has_note' => $has_note, 'note_default' => $note_default, 'rate' => $rate, 'color' => $color, 'group' => $group, 'photo' => $photo);
+                $hide = is_array($hides) && isset($hides[$pi]) && is_array($hides[$pi]) ? array_values(array_map('intval', $hides[$pi])) : array();
+                $opts_arr[] = array('label' => $label, 'has_note' => $has_note, 'note_default' => $note_default, 'rate' => $rate, 'color' => $color, 'group' => $group, 'photo' => $photo, 'hides' => $hide,
+                    'ok' => $pi > 0 && is_array($oks) && !empty($oks[$pi]));
             }
         }
         if (count($opts_arr) === 0) { $opts_arr = null; }
@@ -59,8 +66,8 @@ foreach ($items as $item) {
     $auto_label  = null;
     $auto_detail = null;
     $auto_near   = false;
-    if ($auto_source !== '' && $trp_id > 0) {
-        $auto_data   = maintenance_checklist_auto_result($connect, $trp_id, $auto_source);
+    if ($auto_source !== '' && $auto_trp > 0) {
+        $auto_data   = maintenance_checklist_auto_result($connect, $auto_trp, $auto_source);
         $auto_result = $auto_data['result'];
         $auto_label  = $auto_data['label'];
         $auto_detail = $auto_data['detail'];

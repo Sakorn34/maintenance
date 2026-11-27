@@ -605,3 +605,18 @@
 .mn-checklist-settings-page .mn-cls-photosel.is-m2 { color: #b91c1c; background: #fdf0f0; border-color: #f0b0b0; font-weight: 500; }
 .mn-checklist-settings-page .mn-cls-pv-cam { font-size: 11px; opacity: 0.75; margin-left: 2px; }
 .mn-checklist-settings-page .mn-cls-pv-cam.is-req { color: #b91c1c; opacity: 1; }
+
+/* กฎซ่อนข้อต่อคำตอบ (เมื่อเลือกคำตอบนี้ ซ่อนข้อ…) */
+.mn-checklist-settings-page .mn-cls-hides { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
+.mn-checklist-settings-page .mn-cls-hides__lbl { font-size: 12px; color: #475569; }
+.mn-checklist-settings-page .mn-cls-hide {
+  display: inline-flex; align-items: center; gap: 5px; padding: 2px 4px 2px 9px; border-radius: 999px;
+  font-size: 12px; background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe;
+}
+.mn-checklist-settings-page .mn-cls-hide.is-loop { background: #fff4ec; color: #c2410c; border-color: #f6c19f; }
+.mn-checklist-settings-page .mn-cls-hide button {
+  appearance: none; -webkit-appearance: none; border: 0; background: transparent; color: inherit; cursor: pointer;
+  width: 18px; height: 18px; border-radius: 50%; font-size: 14px; line-height: 1;
+}
+.mn-checklist-settings-page .mn-cls-hide button:hover { background: rgba(55, 48, 163, 0.12); }
+.mn-checklist-settings-page .mn-cls-hideadd { max-width: 100%; color: #475569; }

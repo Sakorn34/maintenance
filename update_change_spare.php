@@ -12,6 +12,8 @@ require_once __DIR__ . '/includes/require_auth.php';
 header('Content-type: text/html; charset=utf-8');
 require_once __DIR__ . '/includes/mysql_odbc_compat.php';
 require_once __DIR__ . '/includes/status_logistic_helpers.php';
+require_once __DIR__ . '/includes/job_stamp_helpers.php';
+require_once __DIR__ . '/includes/spare_flow_helpers.php';
 
 $tsp_id = isset($_GET['tsp_id']) ? (int) $_GET['tsp_id'] : 0;
 $trp_id = isset($_GET['trp_id']) ? (int) $_GET['trp_id'] : 0;
@@ -47,6 +49,18 @@ if ($tsp_id <= 0) {
             } else {
                 $mn_modal_msg = 'บันทึกสำเร็จ';
                 $mn_modal_variant = 'success';
+            }
+        }
+        // ประวัติเครื่องสำรอง: เปลี่ยน S/N ก่อนส่ง (หน้ารอส่งพัสดุ)
+        if ($mn_modal_variant === 'success' && $tsp_sn_old !== '' && $tsp_sn_old !== $tsp_sn_new) {
+            try {
+                $who = function_exists('mn_job_stamp_who') ? mn_job_stamp_who($connect) : '';
+                $exr = maintenance_db_odbc_exec($connect, 'SELECT tsp_trp_id, tsp_ts_id FROM transac_spare WHERE tsp_id = ' . (int) $tsp_id);
+                $rr = $exr ? maintenance_db_odbc_fetch_array($exr) : null;
+                mn_spare_log($connect, array('se_tsp_id' => (int) $tsp_id, 'se_trp_id' => $rr ? (int) $rr['tsp_trp_id'] : $trp_id, 'se_ts_id' => $rr ? (int) $rr['tsp_ts_id'] : $tsp_ts_id,
+                    'se_type' => 'change_sn', 'se_sn' => $tsp_sn_new, 'se_sn_old' => $tsp_sn_old, 'se_date' => date('Y-m-d'), 'se_reason' => 'เปลี่ยนที่หน้ารอส่งพัสดุ', 'se_by' => $who));
+            } catch (Throwable $e) {
+                // ประวัติไม่สำเร็จไม่ทำให้การเปลี่ยน S/N ล้ม
             }
         }
     }

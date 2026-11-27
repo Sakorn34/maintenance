@@ -39,6 +39,26 @@ if (!function_exists('mn_settings_pin_hash')) {
     }
 }
 
+/** จำนวนหลักของรหัส (ให้หน้าใส่รหัสส่งเองเมื่อพิมพ์ครบ) — 0 = ไม่ทราบ ต้องกดปุ่มเอง */
+if (!function_exists('mn_settings_pin_len')) {
+    function mn_settings_pin_len($connect)
+    {
+        if ($connect instanceof mysqli) {
+            if (!function_exists('mn_sys_settings_saved')) { require_once __DIR__ . '/system_settings_helpers.php'; }
+            $saved = mn_sys_settings_saved($connect);
+            if (!empty($saved['settings_pin_hash'][0])) {
+                return !empty($saved['settings_pin_len'][0]) ? (int) $saved['settings_pin_len'][0] : 0;
+            }
+        }
+        $file = dirname(__DIR__) . '/config/settings_pin.local.php';
+        if (is_file($file)) {
+            $cfg = require $file;
+            if (is_array($cfg) && !empty($cfg['len'])) { return (int) $cfg['len']; }
+        }
+        return 0;
+    }
+}
+
 if (!function_exists('mn_settings_unlocked')) {
     function mn_settings_unlocked($connect)
     {
@@ -101,6 +121,16 @@ if (!function_exists('mn_settings_change_pin')) {
         mysqli_stmt_bind_param($stmt, 'sss', $h, $who, $now);
         $ok = mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
+        if ($ok) {
+            // เก็บจำนวนหลักไว้ให้หน้าใส่รหัสส่งเองเมื่อพิมพ์ครบ
+            $len = mysqli_prepare($connect,
+                'INSERT INTO cl_setting (cs_key, cs_value, cs_by, cs_at) VALUES (\'settings_pin_len\', ?, ?, ?)'
+                . ' ON DUPLICATE KEY UPDATE cs_value = VALUES(cs_value), cs_by = VALUES(cs_by), cs_at = VALUES(cs_at)');
+            $n = (string) strlen((string) $new);
+            mysqli_stmt_bind_param($len, 'sss', $n, $who, $now);
+            mysqli_stmt_execute($len);
+            mysqli_stmt_close($len);
+        }
         return array((bool) $ok, $ok ? '' : 'บันทึกรหัสไม่สำเร็จ');
     }
 }
@@ -109,9 +139,10 @@ if (!function_exists('mn_settings_change_pin')) {
  * ด่านใส่รหัสของหน้าตั้งค่า — เรียกหลัง require_auth + bootstrap ก่อนส่ง HTML
  * ยังไม่ปลดล็อก: แสดงหน้าใส่รหัส (POST settings_pin มาที่ URL เดิม) แล้ว exit
  * $mode = 'page' | 'json' (API → 403) | 'post' (ตัวบันทึก → กลับไปหน้าเดิมให้ใส่รหัส)
+ * $ui   = ข้อความหน้าใส่รหัสเมื่อใช้กับหน้าอื่น: title, text, info (กล่องแจ้งเตือน), note (บรรทัดท้าย), btn, page (เมนูที่ไฮไลต์), cancel_href, cancel_label
  */
 if (!function_exists('mn_settings_gate')) {
-    function mn_settings_gate($connect, $mode = 'page')
+    function mn_settings_gate($connect, $mode = 'page', $ui = array())
     {
         $err = '';
         if ($mode === 'page' && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['settings_pin'])) {
@@ -124,6 +155,7 @@ if (!function_exists('mn_settings_gate')) {
             }
         }
         if (mn_settings_unlocked($connect)) { return; }
+        $pin_len = mn_settings_pin_len($connect);
         maintenance_db_odbc_close($connect);
         if ($mode === 'json') {
             while (ob_get_level() > 0) { ob_end_clean(); }
@@ -136,7 +168,9 @@ if (!function_exists('mn_settings_gate')) {
             header('Location: settings');
             exit;
         }
-        $page = 'settings';
+        $ui = array_merge(array('title' => 'ตั้งค่าระบบหลังบ้าน', 'text' => 'ใส่รหัสเพื่อเข้าหน้าตั้งค่า', 'btn' => 'เข้าหน้าตั้งค่า', 'page' => 'settings', 'cancel_href' => '', 'cancel_label' => 'ยกเลิก', 'info' => '', 'note' => 'ปลดล็อกแล้วใช้ได้ ' . (int) MN_SETTINGS_UNLOCK_MINUTES . ' นาทีนับจากใช้งานล่าสุด'), $ui);
+        $uh = function ($k) use ($ui) { return htmlspecialchars((string) $ui[$k], ENT_QUOTES, 'UTF-8'); };
+        $page = (string) $ui['page'];
         header('Content-type: text/html; charset=utf-8');
         header('Cache-Control: no-store');
         ?>
@@ -152,7 +186,7 @@ if (!function_exists('mn_settings_gate')) {
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" />
 <link rel="stylesheet" href="css/mn-page-addjob.css" />
 <link rel="stylesheet" href="css/mn-page-settings.css?v=<?php echo filemtime(dirname(__DIR__) . '/css/mn-page-settings.css'); ?>" />
-<title>ตั้งค่าระบบ (ล็อก)</title>
+<title><?php echo $uh('title'); ?> (ล็อก)</title>
 </head>
 <body class="mn-addjob-page mn-settings-page">
   <div class="header">
@@ -162,14 +196,30 @@ if (!function_exists('mn_settings_gate')) {
   <div class="content mn-workspace">
     <form class="mn-set-lock" method="post" action="" autocomplete="off">
       <i class="fa fa-lock mn-set-lock__icon" aria-hidden="true"></i>
-      <h1>ตั้งค่าระบบหลังบ้าน</h1>
-      <p>ใส่รหัสเพื่อเข้าหน้าตั้งค่า</p>
+      <h1><?php echo $uh('title'); ?></h1>
+      <p><?php echo nl2br($uh('text')); ?></p>
+      <?php if ($ui['info'] !== '') { ?><p class="mn-set-lock__info"><?php echo nl2br($uh('info')); ?></p><?php } ?>
       <?php if ($err !== '') { ?><p class="mn-set-lock__err" role="alert"><i class="fa fa-exclamation-circle" aria-hidden="true"></i> <?php echo htmlspecialchars($err, ENT_QUOTES, 'UTF-8'); ?></p><?php } ?>
-      <input type="password" name="settings_pin" inputmode="numeric" pattern="[0-9]*" maxlength="8" autofocus="autofocus" aria-label="รหัสเข้าหน้าตั้งค่า" class="mn-set-lock__pin" />
-      <button type="submit" class="mn-set__btn is-primary"><i class="fa fa-unlock" aria-hidden="true"></i> เข้าหน้าตั้งค่า</button>
-      <p class="mn-set-lock__note">ปลดล็อกแล้วใช้ได้ <?php echo (int) MN_SETTINGS_UNLOCK_MINUTES; ?> นาทีนับจากใช้งานล่าสุด</p>
+      <input type="password" name="settings_pin" id="mn_set_pin" inputmode="numeric" pattern="[0-9]*" maxlength="<?php echo $pin_len > 0 ? (int) $pin_len : 8; ?>" autofocus="autofocus" autocomplete="off" aria-label="รหัสตั้งค่าระบบ" class="mn-set-lock__pin" data-len="<?php echo (int) $pin_len; ?>" />
+      <button type="submit" class="mn-set__btn is-primary"><i class="fa fa-unlock" aria-hidden="true"></i> <?php echo $uh('btn'); ?></button>
+      <?php if ($ui['cancel_href'] !== '') { ?><a class="mn-set__btn" href="<?php echo $uh('cancel_href'); ?>"><?php echo $uh('cancel_label'); ?></a><?php } ?>
+      <p class="mn-set-lock__note"><?php echo $uh('note'); ?></p>
     </form>
   </div>
+<script type="text/javascript">
+// พิมพ์รหัสครบจำนวนหลัก → ส่งเองอัตโนมัติ (รับเฉพาะตัวเลข)
+(function () {
+  var pin = document.getElementById('mn_set_pin');
+  if (!pin) { return; }
+  var len = parseInt(pin.getAttribute('data-len'), 10) || 0;
+  var sent = false;
+  pin.addEventListener('input', function () {
+    var v = pin.value.replace(/[^0-9]/g, '');
+    if (v !== pin.value) { pin.value = v; }
+    if (len > 0 && v.length === len && !sent) { sent = true; pin.form.submit(); }
+  });
+}());
+</script>
 </body>
 </html>
 <?php

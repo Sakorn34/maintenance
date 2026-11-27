@@ -20,7 +20,17 @@
       + '<span><b>' + esc(label) + '</b>' + (detail ? '<small>' + esc(detail) + '</small>' : '') + '</span></li>';
   }
 
+  // ตัวเลขรวมด้านบน (รูปทั้งหมด / ขึ้น Drive แล้ว / พื้นที่บน server)
+  function renderStats(st) {
+    if (!st) { return; }
+    var set = function (k, txt) { var el = doc.querySelector('[data-stat="' + k + '"]'); if (el) { el.textContent = txt; } };
+    set('n', Number(st.n || 0).toLocaleString('en-US'));
+    set('on_drive', Number(st.on_drive || 0).toLocaleString('en-US'));
+    set('bytes', (Number(st.bytes || 0) / 1048576).toFixed(1) + ' MB');
+  }
+
   function renderCheck(box, c) {
+    renderStats(c.stats);
     if (!c.enabled) {
       box.innerHTML = '<ul class="mn-set__status">' + row(false, 'ยังไม่ได้เปิดใช้ Google Drive', 'รูปเก็บบน server อย่างเดียว (storage/photos)') + '</ul>';
       return;
@@ -60,7 +70,8 @@
     getJSON('action=drive_push').then(function (r) {
       busy(btn, false);
       return check().then(function () {
-        note(r.error ? 'ส่งไม่สำเร็จ: ' + r.error : 'ส่งแล้ว ' + (r.sent || 0) + ' รูป เหลือค้าง ' + (r.pending || 0) + ' รูป', !!r.error);
+        note(r.error ? 'ส่งไม่สำเร็จ: ' + r.error : 'ส่งแล้ว ' + (r.sent || 0) + ' รูป เหลือค้าง ' + (r.pending || 0) + ' รูป'
+          + (r.pruned ? ' | ลบโฟลเดอร์ว่างบน Drive ' + r.pruned + ' โฟลเดอร์' : ''), !!r.error);
       });
     }).catch(function () { busy(btn, false); note('ส่งไม่สำเร็จ', true); });
   }
@@ -84,9 +95,75 @@
     }).catch(function (e) { busy(btn, false); note((e && e.message) || 'ตั้งชื่อไม่สำเร็จ', true); });
   }
 
+  // ลบรูปจากรายการใบงานที่มีรูป: ลบบน server + ย้ายไฟล์บน Drive ลงถังขยะ (checklist_photo action=delete)
+  function removeThumb(btn) {
+    var ph = btn.closest('.mn-pj__ph');
+    var strip = btn.closest('[data-mn-photos]');
+    var li = btn.closest('.mn-pj__row');
+    var idx = Array.prototype.indexOf.call(strip.querySelectorAll('.mn-pj__ph'), ph);
+    var items = [];
+    try { items = JSON.parse(strip.getAttribute('data-mn-photos') || '[]'); } catch (err) { items = []; }
+    items.splice(idx, 1);
+    strip.setAttribute('data-mn-photos', JSON.stringify(items));
+    ph.parentNode.removeChild(ph);
+    Array.prototype.forEach.call(strip.querySelectorAll('[data-mn-photo]'), function (b, i) { b.setAttribute('data-mn-photo', String(i)); });
+    var left = strip.querySelectorAll('.mn-pj__ph').length;
+    if (left === 0) {
+      var list = li.parentNode;
+      list.removeChild(li);
+      var cnt = doc.querySelector('.mn-pj__count');
+      if (cnt) {
+        var total = Math.max(0, (parseInt(cnt.getAttribute('data-total'), 10) || 1) - 1);
+        cnt.setAttribute('data-total', String(total));
+        cnt.textContent = total.toLocaleString('en-US') + ' ใบงาน';
+      }
+      if (!list.querySelector('.mn-pj__row')) {
+        var empty = doc.querySelector('.mn-pj__empty');
+        if (empty) { empty.hidden = false; }
+      }
+      return;
+    }
+    var n = li.querySelector('.mn-pj__n');
+    if (n) { n.textContent = left + ' รูป'; }
+  }
+
+  function delPhoto(btn) {
+    var onDrive = btn.getAttribute('data-on-drive') === '1';
+    var msg = 'ลบรูป "' + (btn.getAttribute('data-cap') || '') + '" ออกจากใบงาน\n\n'
+      + (onDrive ? 'ไฟล์บน Google Drive ย้ายลงถังขยะพร้อมกัน (กู้คืนจากถังขยะ Drive ได้ภายใน 30 วัน)' : 'รูปนี้ยังไม่ขึ้น Drive ลบจาก server อย่างเดียว');
+    var go = function () {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa fa-circle-o-notch fa-spin" aria-hidden="true"></i>';
+      var fd = new FormData();
+      fd.append('action', 'delete');
+      fd.append('id', btn.getAttribute('data-del-photo'));
+      fd.append('trp_id', btn.getAttribute('data-trp'));
+      fetch('checklist_photo', { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { if (!r.ok) { throw new Error('HTTP ' + r.status); } return r.json(); })
+        .then(function (r) {
+          if (!r.ok) { throw new Error(r.error || 'ลบรูปไม่สำเร็จ'); }
+          removeThumb(btn);
+          check();
+        })
+        .catch(function (e) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa fa-trash" aria-hidden="true"></i>';
+          var t = (e && e.message) || 'ลบรูปไม่สำเร็จ';
+          if (typeof global.mnModalAlert === 'function') { global.mnModalAlert(t, { variant: 'danger' }); } else { global.alert(t); }
+        });
+    };
+    if (typeof global.mnModalConfirm === 'function') {
+      global.mnModalConfirm(msg, { title: 'ลบรูป', variant: 'danger', okLabel: 'ลบรูป', cancelLabel: 'ยกเลิก', onConfirm: go });
+    } else if (global.confirm(msg)) {
+      go();
+    }
+  }
+
   function init() {
     check();
     doc.addEventListener('click', function (e) {
+      var d = e.target.closest('[data-del-photo]');
+      if (d && !d.disabled) { delPhoto(d); return; }
       var b = e.target.closest('[data-drive]');
       if (!b || b.disabled) { return; }
       var act = b.getAttribute('data-drive');

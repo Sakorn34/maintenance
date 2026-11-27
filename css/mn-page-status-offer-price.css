@@ -85,3 +85,9 @@
 
 /* สรุปการประเมินจากหน้า assess_repair มีหลายบรรทัด — แสดงขึ้นบรรทัดตามต้นฉบับ */
 .mn-addjob-page.mn-status-offer-price-page .mn-status-offer-price-tech { white-space: pre-wrap; display: inline-block; }
+
+/* ผลตรวจรายข้อ (หน้าประเมินแบบใหม่) พับไว้ แสดงเฉพาะสรุปรายการที่เสนอ + ความเห็นช่าง */
+.mn-addjob-page.mn-status-offer-price-page .mn-status-offer-price-full { margin: 4px 0 2px; }
+.mn-addjob-page.mn-status-offer-price-page .mn-status-offer-price-full > summary { cursor: pointer; font-size: 0.85rem; color: #64748b; }
+.mn-addjob-page.mn-status-offer-price-page .mn-status-offer-price-full > summary:hover { color: #0369a1; }
+.mn-addjob-page.mn-status-offer-price-page .mn-status-offer-price-full[open] > summary { margin-bottom: 4px; }

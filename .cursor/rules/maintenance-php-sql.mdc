@@ -93,7 +93,7 @@ alwaysApply: true
 | `status_logistic_pickup` | `status_logistic_pickup` | `mn-status-logistic-pickup-page` | `mn-page-status-logistic-pickup.css` |
 | `status_borrow` | `status_borrow` | `mn-status-borrow-page` | `mn-page-status-borrow.css` |
 | `add_job` | `add_job` | *(ไม่มี class ที่สอง — ใช้แค่ `mn-addjob-page`)* | *(ไม่มี — ใช้แค่ `mn-page-addjob.css`)* |
-| `detail_job` | `''` (ว่าง) | `mn-detail-job-page` | `mn-page-detail-job.css` |
+| `detail_job` | `''` (ว่าง) | `mn-detail-job-page` | `mn-page-detail-job.css` *(แบบ B2: ซ้าย การ์ดใบงาน+ความคืบหน้า/ลูกค้า/ผู้ติดต่อ/ที่อยู่, ขวา แท็บเครื่องแบ่งกรอบแต่ละชุด + หน้าต่างประวัติซ่อม; คลาส `mn-dj2-*`, ตัวช่วย `includes/detail_job_view_helpers.php`, JS `js/detail_job-layout.js` คู่กับ `detail_job-page.js` และ `detail_job-field-edit-modal.js` ปุ่มแก้ไขใช้คลาส/data-* เดิม; กรอบ QC อ่าน `logqc_*` ผ่าน `mn_dj_qc_detail`; ป้ายวันที่/ผู้บันทึกทุกกรอบ — ใบเสนอราคา/อนุมัติ/Comment อ่านจาก `cl_job_stamp` ที่บันทึกโดย `includes/job_stamp_helpers.php` ใน update_offer_price, update_wait_firmQV, update_other_comment, save_rate (ในประกัน) และแก้ QV จาก detail_job)* |
 | `update_wait_hardware` | `status_wait_hardware` | `mn-wait-hardware-flow-page` **และ** `mn-update-wait-hardware-page` | `mn-page-wait-hardware-flow.css` |
 | `pickup_wait_hardware` | *(ไม่มีแถบ `title-h`)* | `mn-wait-hardware-flow-page` **และ** `mn-pickup-wait-hardware-page` | `mn-page-wait-hardware-flow.css` |
 | `tracking_history` | *(ไม่มีแถบ `title-h`)* | `mn-wait-hardware-flow-page` **และ** `mn-tracking-history-page` | `mn-page-wait-hardware-flow.css` |
@@ -124,6 +124,9 @@ alwaysApply: true
 | `save_warranty_settings` | *(ไม่มี `title-h` — redirect)* | *(ไม่มี class ที่สอง)* | *(ไม่มี)* |
 | `checklist_items` | *(AJAX JSON — ไม่มี HTML)* | *(ไม่มี)* | *(ไม่มี)* |
 | `save_checklist` | *(AJAX JSON — ไม่มี HTML)* | *(ไม่มี)* | *(ไม่มี)* |
+| `assess_pdf` | *(AJAX JSON — POST save/clear ฉบับแก้ไขของใบประเมิน PDF ต่อใบงาน เก็บใน `cl_pdf_edit` ผ่าน sanitize ไม่แตะผลประเมิน; หน้า `assess_repair?trp_id=&pdf=1` เปิดดู PDF อย่างเดียวจาก `detail_job`)* | *(ไม่มี)* | *(ไม่มี)* |
+| `spare_action` | *(AJAX JSON — POST ปุ่มตามสถานะเครื่องสำรองในการ์ด S1 ของ detail_job: ส่ง/ส่งใหม่/ลูกค้ามารับเอง/ถึงลูกค้า/ตีกลับ/เปลี่ยน S/N/สลับเครื่อง/รับคืน/ยกเลิก/สูญหาย; logic + สถานะ + ไทม์ไลน์ใน `includes/spare_flow_helpers.php` เหตุการณ์เก็บใน `cl_spare_event` ส่วนข้อมูลส่ง/คืนปัจจุบันยังอยู่ `transac_spare`; JS `js/detail_job-spare.js`; เครื่องตีกลับ/ส่งแทนขึ้นหน้า status_logistic, ปิดงานใช้ `mn_spare_outstanding_count`)* | *(ไม่มี)* | *(ไม่มี)* |
+| `training` | `'settings'` | `mn-training-page` | `mn-page-training.css` *(เทรนการใช้งาน เข้าจากเมนูตั้งค่า กลุ่ม "การเทรน": คู่มือ Admin/ช่าง/DDT จาก `includes/training_content.php` (id หัวข้อห้ามเปลี่ยน) + ภาพหน้าจอ `_img/training/*.jpg` ที่ gitignore ไว้เพราะมีข้อมูลลูกค้า แต่ใส่ในชุดอัปโหลด; สถานะรายหัวข้อของทั้งทีม `cl_training_mark` (tm_person = 0) + ข้อเสนอแนะจากผู้ใช้งาน `cl_training_feedback` ผ่าน `includes/training_helpers.php`; อ่านและส่งข้อเสนอแนะได้ทุกคน บันทึกสถานะ/ปิดข้อเสนอแนะ/เปลี่ยนรูปต้องปลดล็อกรหัสตั้งค่า; มือถือซ่อนแถบเมนูระบบและรายการหัวข้อ แสดงเต็มจอ (`training?unlock=1`); รูปที่เปลี่ยนเก็บ `storage/training/` เสิร์ฟผ่าน `training_img`)* |
 | `suggest_rates` | *(AJAX JSON — ไม่มี HTML)* | *(ไม่มี)* | *(ไม่มี)* |
 | `checklist_settings_api` | *(AJAX JSON — GET products/load/history | POST บันทึก/ลบ/เรียงลำดับ)* | *(ไม่มี)* | *(ไม่มี)* |
 | `checklist_export` | *(JSON — ส่งออกการตั้งค่า checklist ให้ localhost ดึงไปใช้ ยืนยันด้วย header `X-Checklist-Token` ตาม `config/checklist_sync.local.php` ไม่ใช้ session)* | *(ไม่มี)* | *(ไม่มี)* |

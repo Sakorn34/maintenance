@@ -29,6 +29,44 @@ if (!in_array($product, $try_products, true)) {
     $product = $try_products ? $try_products[0] : '';
 }
 
+// ดึงใบงานจริงจาก S/N มาทดลอง (อ่านอย่างเดียว ไม่บันทึกอะไรลงใบงาน)
+$try_sn   = isset($_GET['sn']) ? mb_substr(trim((string) $_GET['sn']), 0, 60, 'UTF-8') : '';
+$try_pick = 0;
+$try_jobs = array();
+$try_row  = null;
+$try_msg  = '';
+if ($try_sn !== '') {
+    $stmt = mysqli_prepare($connect,
+        'SELECT r.trp_id, r.trp_product, r.trp_receive_date, r.trp_status_job, t.ts_mtn_number'
+        . ' FROM transac t INNER JOIN transac_repair r ON t.ts_id = r.trp_ts_id'
+        . ' WHERE TRIM(r.trp_sn) = ? ORDER BY r.trp_id DESC LIMIT 1'
+    );
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 's', $try_sn);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        while ($res && ($r = mysqli_fetch_assoc($res))) { $try_jobs[] = $r; }
+        mysqli_stmt_close($stmt);
+    }
+    if (!$try_jobs) {
+        $try_msg = 'ไม่พบใบงานของ S/N นี้';
+    } else {
+        $pick = (int) $try_jobs[0]['trp_id'];
+        $row = maintenance_update_rate_fetch_bundle($connect, $pick);
+        $job_product = is_array($row) ? trim((string) $row['trp_product']) : '';
+        if (!is_array($row)) {
+            $try_msg = 'อ่านใบงานไม่สำเร็จ';
+        } elseif (!maintenance_checklist_product_supported($connect, $job_product)) {
+            $try_msg = 'รุ่น ' . $job_product . ' ยังไม่มีข้อตรวจ ตั้งข้อตรวจก่อนแล้วลองใหม่';
+        } else {
+            $try_row = $row;
+            $try_pick = $pick;
+            $product = $job_product;
+        }
+    }
+}
+$try_history = $try_row ? mn_ar_fetch_history($connect, (string) $try_row['trp_sn'], (int) $try_row['trp_ts_id']) : array();
+
 $symptoms = array();
 $rate_options = array();
 $bundles = array();
@@ -47,6 +85,9 @@ $user_rate = (string) $mn_logistic_recorder_value;
 $boot = array(
     'demo'           => true,
     'trpId'          => 0,
+    // ใบงานจริงที่ดึงมาทดลอง: ใช้คำนวณข้ออัตโนมัติ (อายุเครื่อง / MA) เท่านั้น
+    'refTrpId'       => $try_row ? (int) $try_pick : 0,
+    'jobNo'          => $try_row && $try_jobs ? (string) $try_jobs[0]['ts_mtn_number'] : '',
     'product'        => $product,
     'symptoms'       => $symptoms,
     'savedSymptomIds' => array(),
@@ -62,7 +103,40 @@ function mn_try_h($v)
 {
     return htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
 }
-?>
+
+/**
+ * ฟอร์มดึงใบงานจริงจาก S/N (+ เลือกรุ่นเมื่อยังไม่ได้ดึง) — แสดงในแผงข้าง (จอกว้าง) และขั้นแรก (จอแคบ)
+ */
+function mn_try_form($key, array $products, $product, $sn, array $jobs, $pick, $row, $msg)
+{
+    $h = 'mn_try_h';
+    $html = '<form class="mn-ar-try" method="get" action="checklist_try">'
+        . '<label class="mn-ar-label" for="mn_try_sn_' . $key . '">ดึงใบงานจริงมาทดลอง</label>'
+        . '<div class="mn-ar-try__row">'
+        . '<input type="search" name="sn" id="mn_try_sn_' . $key . '" class="mn-ar-input" maxlength="60" placeholder="หมายเลขเครื่อง (S/N)" value="' . $h($sn) . '" autocomplete="off" />'
+        . '<button type="submit" class="mn-ar-try__go"><i class="fa fa-download" aria-hidden="true"></i> ดึงข้อมูล</button>'
+        . '</div>';
+    if ($msg !== '') {
+        $html .= '<p class="mn-ar-try__msg"><i class="fa fa-exclamation-circle" aria-hidden="true"></i> ' . $h($msg) . '</p>';
+    }
+    if ($row && $jobs) {
+        // ใช้ใบงานล่าสุดของเครื่องนี้เสมอ
+        $j = $jobs[0];
+        $html .= '<p class="mn-ar-try__job"><i class="fa fa-file-text-o" aria-hidden="true"></i> ใบงานล่าสุด <b>' . $h($j['ts_mtn_number']) . '</b>'
+            . ' รับ ' . $h($j['trp_receive_date']) . ($j['trp_status_job'] !== '' ? ' | ' . $h($j['trp_status_job']) : '') . '</p>';
+    }
+    if ($row) {
+        $html .= '<a class="mn-ar-try__clear" href="checklist_try?product=' . rawurlencode($product) . '"><i class="fa fa-times" aria-hidden="true"></i> ล้าง กลับไปใช้ข้อมูลตัวอย่าง</a>';
+    } elseif ($products) {
+        $html .= '<label class="mn-ar-label mn-ar-try__or" for="mn_try_product_' . $key . '">หรือเลือกรุ่น (ข้อมูลตัวอย่าง)</label>'
+            . '<select id="mn_try_product_' . $key . '" class="mn-ar-input" data-try-product="1">';
+        foreach ($products as $p) {
+            $html .= '<option value="' . $h($p) . '"' . ($p === $product ? ' selected' : '') . '>' . $h($p) . '</option>';
+        }
+        $html .= '</select>';
+    }
+    return $html . '</form>';
+}?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -95,9 +169,33 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
   </div>
   <div class="content mn-workspace">
     <?php
+    $try_form = mn_try_form('side', $try_products, $product, $try_sn, $try_jobs, $try_pick, $try_row, $try_msg);
+    if ($try_row) {
+        // ข้อมูลจริงจากใบงานที่ดึงมา (อ่านอย่างเดียว)
+        $tf = function ($k) use ($try_row) { return isset($try_row[$k]) ? (string) $try_row[$k] : ''; };
+        $try_no = '';
+        foreach ($try_jobs as $j) { if ((int) $j['trp_id'] === (int) $try_pick) { $try_no = (string) $j['ts_mtn_number']; } }
+        $try_ins = $tf('trp_insurance');
+        echo mn_ar_info_panel(array(
+            'top_html'  => $try_form,
+            'product'   => $product,
+            'sn'        => $tf('trp_sn'),
+            'receive'   => $tf('trp_receive_date'),
+            'company'   => trim($tf('ts_enduser_com') . "\n" . $tf('ts_security_com')),
+            'buy'       => $tf('trp_buy_date'),
+            'age'       => $tf('trp_repair_age'),
+            'insurance' => $try_ins,
+            'ins_in'    => $try_ins === 'อยู่ในประกัน' || $try_ins === 'อยู่ในประกันซ่อม',
+            'inform'    => $tf('trp_repair_inform'),
+            'remarks'   => $tf('ts_remarks'),
+            'foot'      => 'ข้อมูลจริงจากใบงาน ' . $try_no . ' ทดลองตอบได้ ไม่บันทึกลงใบงาน',
+        ));
+        echo mn_ar_history_panel($try_history);
+    } else {
     // โหมดทดลองไม่มีใบงานจริง — แสดงข้อมูลตัวอย่างให้เห็นหน้าตาแผงข้างแบบงานจริง
     $demo_buy = date('d/m/Y', strtotime('-3 years -2 months'));
     echo mn_ar_info_panel(array(
+        'top_html'  => $try_form,
         'product'   => $product,
         'sn'        => 'ตัวอย่าง-0001',
         'receive'   => date('d/m/Y'),
@@ -113,11 +211,14 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
     echo mn_ar_history_panel(array(
         array('no' => 2, 'date' => date('d/m/Y', strtotime('-8 months')), 'number' => 'MTN-ตัวอย่าง-0002', 'company' => '',
             'inform' => 'กล้องภาพมัว', 'assess' => 'เลนส์กล้องมีฝ้า ทำความสะอาดแล้วภาพชัด',
-            'parts' => array('ทำความสะอาดเลนส์กล้อง'), 'remarks' => '', 'rater' => 'ช่างตัวอย่าง', 'by' => 'ช่างตัวอย่าง', 'status' => 'ส่งคืนลูกค้า'),
+            'parts' => array('ทำความสะอาดเลนส์กล้อง'), 'remarks' => '', 'rater' => 'ช่างตัวอย่าง', 'by' => 'ช่างตัวอย่าง', 'status' => 'ส่งคืนลูกค้า',
+            'firm' => 'อนุมัติซ่อม', 'firm_date' => date('Y-m-d', strtotime('-8 months')), 'qv_no' => 'QV-ตัวอย่าง', 'qv_price' => '1,070', 'firm_note' => 'ซ่อมด่วน'),
         array('no' => 1, 'date' => date('d/m/Y', strtotime('-2 years')), 'number' => 'MTN-ตัวอย่าง-0001', 'company' => '',
             'inform' => 'เปิดไม่ติด', 'assess' => 'Adapter เสีย', 'parts' => array('Adapter 12V 5A'),
-            'remarks' => 'เปลี่ยนในประกัน', 'rater' => 'ช่างตัวอย่าง', 'by' => 'ช่างตัวอย่าง', 'status' => 'ส่งคืนลูกค้า'),
+            'remarks' => 'เปลี่ยนในประกัน', 'rater' => 'ช่างตัวอย่าง', 'by' => 'ช่างตัวอย่าง', 'status' => 'ส่งคืนลูกค้า',
+            'firm' => 'อนุมัติซ่อม', 'firm_date' => date('Y-m-d', strtotime('-2 years')), 'qv_no' => '-', 'qv_price' => '', 'firm_note' => ''),
     ), true);
+    }
     ?>
     <main class="mn-ar" id="mn_ar">
 
@@ -126,7 +227,8 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
           <a class="mn-ar-top__back" href="checklist_settings?product=<?php echo rawurlencode($product); ?>" aria-label="กลับหน้าตั้งค่ารายการตรวจเช็ค"><i class="fa fa-angle-left" aria-hidden="true"></i></a>
           <div class="mn-ar-top__id">
             <span class="mn-ar-top__product"><?php echo mn_try_h($product !== '' ? $product : 'ทดลองใช้งาน'); ?></span>
-            <span class="mn-ar-top__sn"><span class="mn-ar-demo-badge">โหมดทดลอง</span> ไม่บันทึกข้อมูล</span>
+            <span class="mn-ar-top__sn"><span class="mn-ar-demo-badge">โหมดทดลอง</span> <?php echo $try_row ? 'SN ' . mn_try_h($try_row['trp_sn']) . ' ' : ''; ?>ไม่บันทึกข้อมูล</span>
+
           </div>
           <span class="mn-ar-top__count" id="mn_ar_stepcount">1/4</span>
         </div>
@@ -149,18 +251,15 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
           </div>
           <?php } else { ?>
           <div class="mn-ar-card">
-            <label class="mn-ar-label" for="mn_ar_demo_product">รุ่นสินค้า</label>
-            <select id="mn_ar_demo_product" class="mn-ar-input">
-              <?php foreach ($try_products as $p) { ?>
-              <option value="<?php echo mn_try_h($p); ?>"<?php echo $p === $product ? ' selected' : ''; ?>><?php echo mn_try_h($p); ?></option>
-              <?php } ?>
-            </select>
+            <?php echo mn_try_form('step', $try_products, $product, $try_sn, $try_jobs, $try_pick, $try_row, $try_msg); ?>
           </div>
           <?php } ?>
           <div class="mn-ar-note">
             <span class="mn-ar-note__lbl">หน้านี้คืออะไร</span>
             <p class="mn-ar-note__txt">หน้าเดียวกับที่ช่างใช้ประเมินเครื่องจริง ลองกดตอบได้เต็มที่ — ไม่มีการบันทึกลงใบงานหรือฐานข้อมูล
-ข้ออัตโนมัติ (อายุเครื่อง / ประวัติ MA) งานจริงระบบคำนวณจากใบงาน ในโหมดทดลองให้กดเลือกผลเอง</p>
+<?php echo $try_row
+    ? 'ดึงใบงานล่าสุดของเครื่องนี้มาแล้ว ข้ออัตโนมัติ (อายุเครื่อง / ประวัติ MA) ระบบคำนวณจากใบงานจริง'
+    : 'ข้ออัตโนมัติ (อายุเครื่อง / ประวัติ MA) งานจริงระบบคำนวณจากใบงาน ในโหมดทดลองให้กดเลือกผลเอง หรือกรอก S/N เพื่อดึงใบงานจริงมาทดลอง'; ?></p>
           </div>
         </section>
 
@@ -183,7 +282,10 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
         </section>
 
         <section class="mn-ar-step" data-step="4" aria-label="สรุปผลและอะไหล่">
-          <h1 class="mn-ar-h">สรุปผล</h1>
+          <div class="mn-ar-h-row">
+            <h1 class="mn-ar-h">สรุปผล</h1>
+            <button type="button" class="mn-ar-pdf" id="mn_ar_pdf" title="เปิดตัวอย่างใบประเมิน A4 แก้ข้อความได้ก่อนบันทึกเป็น PDF"><i class="fa fa-file-pdf-o" aria-hidden="true"></i> ส่งออก PDF</button>
+          </div>
 
           <div class="mn-ar-card mn-ar-findings" id="mn_ar_findings"></div>
 
@@ -266,6 +368,7 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
 
       <footer class="mn-ar-foot">
         <button type="button" class="mn-ar-btn mn-ar-btn--ghost" id="mn_ar_prev"><i class="fa fa-angle-left" aria-hidden="true"></i> ย้อน</button>
+        <span class="mn-ar-foot__left" id="mn_ar_left" hidden></span>
         <button type="button" class="mn-ar-btn mn-ar-btn--primary" id="mn_ar_next"<?php echo $product === '' ? ' disabled' : ''; ?>><span class="mn-ar-btn__txt">เริ่มตรวจ</span> <i class="fa fa-angle-right" aria-hidden="true"></i></button>
       </footer>
 
@@ -273,6 +376,11 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
   </div>
 <script type="text/javascript">
 window.mnAr = <?php echo json_encode($boot, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP); ?>;
+// เลือกรุ่น (ข้อมูลตัวอย่าง) → เปิดหน้าทดลองของรุ่นนั้น
+document.addEventListener('change', function (e) {
+  var sel = e.target.closest ? e.target.closest('[data-try-product]') : null;
+  if (sel) { window.location.href = 'checklist_try?product=' + encodeURIComponent(sel.value); }
+});
 </script>
 <script type="text/javascript" src="js/mn-photo-lightbox.js?v=<?php echo filemtime(__DIR__ . '/js/mn-photo-lightbox.js'); ?>"></script>
 <script type="text/javascript" src="js/assess_repair-page.js?v=<?php echo filemtime(__DIR__ . '/js/assess_repair-page.js'); ?>"></script>

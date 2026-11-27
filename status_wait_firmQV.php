@@ -36,6 +36,15 @@ foreach ($join_rows as $jr) {
 }
 $spare_by_trp = maintenance_wait_hardware_prefetch_spare_by_trp_ids($connect, $trp_ids);
 $track_by_trp = maintenance_wait_hardware_prefetch_tracking_latest_by_trp_ids($connect, $trp_ids);
+// รุ่นที่มีแบบประเมินใหม่ (checklist) — แสดงลิงก์ "แก้ผลประเมิน" (ต้องใส่รหัสตั้งค่าในหน้า assess_repair)
+require_once __DIR__ . '/includes/checklist_helpers.php';
+$assess_ok = array();
+foreach ($join_rows as $jr) {
+    $p = isset($jr['trp_product']) ? (string) $jr['trp_product'] : '';
+    if ($p !== '' && !isset($assess_ok[$p])) {
+        $assess_ok[$p] = maintenance_checklist_product_supported($connect, $p);
+    }
+}
 maintenance_db_odbc_close($connect);
 
 $row_count = count($join_rows);
@@ -155,7 +164,11 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
             ?>
       <tr id="row<?php echo (int) $i; ?>" title="<?php echo $tooltip_title; ?>" class="mn-status-wait-firmQV-row-under" style="border-collapse:collapse; background-color:#fff;" onmouseover="ChangeHoverBGColor(this)" onmouseout="RestoreHoverBGColor(this)">
         <td width="5%" align="center"><?php echo maintenance_status_logistic_h(isset($result_join['ts_mtn_number']) ? (string) $result_join['ts_mtn_number'] : ''); ?></td>
-        <td width="20%" align="left"><a target="_blank" href="detail_job?ts_id=<?php echo $ts_id; ?>"><?php echo $detail_html; ?></a><br /></td>
+        <td width="20%" align="left"><a target="_blank" href="detail_job?ts_id=<?php echo $ts_id; ?>"><?php echo $detail_html; ?></a><br />
+          <?php if ($trp_id > 0 && !empty($assess_ok[$trp_product])) { ?>
+          <a class="mn-wfq-assess" href="assess_repair?trp_id=<?php echo (int) $trp_id; ?>" title="แก้ผลประเมินด้วยแบบประเมินใหม่ ต้องใส่รหัสตั้งค่า ใบเสนอราคาเดิมไม่เปลี่ยน"><i class="fa fa-lock" aria-hidden="true"></i> แก้ผลประเมิน</a>
+          <?php } ?>
+        </td>
         <td width="15%" align="left">
           <?php if ($has_spare) { ?>
           <div style="color: #FF0000;"><u><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> มีสำรอง </u></div>

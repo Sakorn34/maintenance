@@ -174,3 +174,34 @@ if (!function_exists('maintenance_status_offer_price_repair_list_html')) {
         return $html;
     }
 }
+
+if (!function_exists('maintenance_status_offer_price_tech_short')) {
+    /**
+     * Purpose:
+     * ผลประเมินจากหน้าประเมินแบบใหม่ ("1) กลุ่ม" + "   - ข้อ: ผล" ...) ยาวมากในตาราง — ตัดเหลือ
+     * ความเห็นช่าง (ข้อความหลัง "// ") แยกข้อ "1. 2. 3." คนละบรรทัด
+     * ไม่มีความเห็นช่าง → ใช้ "สรุปรายการที่เสนอเปลี่ยน/ซ่อม" แทน; ข้อความแบบเดิมคืนทั้งหมด
+     *
+     * Return value:
+     * - array('short' => ข้อความที่แสดง, 'cut' => true เมื่อตัดผลตรวจรายข้อออก)
+     */
+    function maintenance_status_offer_price_tech_short($tech)
+    {
+        $text = trim(str_replace("\r\n", "\n", (string) $tech));
+        $out = array('short' => $text, 'cut' => false);
+        if (!preg_match('/^\d+\) /m', $text) || !preg_match('/^\s+-\s.+?:\s/mu', $text)) {
+            return $out;
+        }
+        $short = '';
+        $k = strpos($text, "\n// ");
+        if ($k !== false) {
+            $short = trim(substr($text, $k + 4));
+            // "1.xxx 2.xxx" → ขึ้นบรรทัดใหม่ก่อนเลขข้อ (ไม่แตะเลขทศนิยม/เวอร์ชัน เช่น 2.4.2)
+            $short = preg_replace('/(?<=\S)[ \t]+(?=\d{1,2}\.(?!\d))/u', "\n", $short);
+        } elseif (preg_match('/^(?:สรุปรายการที่เสนอ|สรุป:)/mu', $text, $m, PREG_OFFSET_CAPTURE)) {
+            $short = trim(substr($text, $m[0][1]));
+        }
+        if ($short === '') { return $out; }
+        return array('short' => $short, 'cut' => true);
+    }
+}

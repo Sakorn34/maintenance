@@ -4,7 +4,7 @@
  * หน้า "ตั้งค่าระบบ" (เมนูโปรไฟล์บนแถบหัว → ตั้งค่าระบบ) — ต้องใส่รหัส (includes/settings_lock_helpers.php)
  * เปิดมาเป็นเมนูการตั้งค่าก่อน กดเมนูไหนค่อยเข้าเรื่องนั้น (?view=)
  * - เมนูไปหน้าตั้งค่าเดิม: checklist_settings, checklist_try, warranty_settings, warranty_registry, manage_logistics
- * - view=conditions เงื่อนไขที่ปรับได้ (cl_setting) | drive สถานะ Google Drive (js/settings-page.js) | sources แหล่งหลักฐานวันที่ซื้อ
+ * - view=conditions เงื่อนไขที่ปรับได้ (cl_setting) | drive สถานะ Google Drive (js/settings-page.js) + ใบงานที่มีรูป | sources แหล่งหลักฐานวันที่ซื้อ
  *   rules เงื่อนไขอัตโนมัติที่ใช้อยู่ | pin เปลี่ยนรหัส | about ข้อมูลระบบ
  *
  * Flow: require_auth → bootstrap → ด่านรหัส → (POST บันทึก → redirect) → ดึงข้อมูล → ปิด connect → render เมนู / หน้าย่อย
@@ -19,12 +19,60 @@ require_once __DIR__ . '/includes/system_settings_helpers.php';
 require_once __DIR__ . '/includes/checklist_photo_helpers.php';
 require_once __DIR__ . '/includes/buy_date_suggest_helpers.php';
 require_once __DIR__ . '/includes/settings_lock_helpers.php';
+require_once __DIR__ . '/includes/checklist_sync_helpers.php';
 
 mn_settings_gate($connect, 'page'); // ต้องใส่รหัสก่อนเข้า
 
 function mn_set_h($v)
 {
     return htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
+}
+
+/** แถบรูปของใบงาน (view=drive): กดรูป = ดูใหญ่ (mn-photo-lightbox) | ปุ่มถังขยะ = ลบรูป (js/settings-page.js) */
+function mn_set_photo_strip(array $photos, $trp_id)
+{
+    $items = array();
+    foreach ($photos as $p) {
+        $items[] = array('url' => 'checklist_photo?id=' . (int) $p['id'] . '&s=f', 'download' => 'checklist_photo?id=' . (int) $p['id'] . '&s=f&dl=1',
+            'caption' => $p['label'] !== '' ? $p['label'] : 'รูปประกอบเพิ่มเติม');
+    }
+    $html = '<div class="mn-photo-strip" data-mn-photos="' . mn_set_h(json_encode($items, JSON_UNESCAPED_UNICODE)) . '">';
+    foreach ($photos as $i => $p) {
+        $cap = mn_set_h($items[$i]['caption']);
+        $html .= '<span class="mn-pj__ph">'
+            . '<button type="button" class="mn-photo-strip__img" data-mn-photo="' . $i . '" title="' . $cap . '" aria-label="ดูรูป ' . $cap . '">'
+            . '<img src="checklist_photo?id=' . (int) $p['id'] . '&amp;s=t" alt="" loading="lazy" />'
+            . (!empty($p['drive']) ? mn_photo_drive_badge() : '') . '</button>'
+            . '<button type="button" class="mn-pj__del" data-del-photo="' . (int) $p['id'] . '" data-trp="' . (int) $trp_id . '" data-on-drive="' . (!empty($p['drive']) ? '1' : '0') . '"'
+            . ' data-cap="' . $cap . '" title="ลบรูปนี้" aria-label="ลบรูป ' . $cap . '"><i class="fa fa-trash" aria-hidden="true"></i></button>'
+            . '</span>';
+    }
+    $html .= '<a class="mn-photo-strip__zip" href="checklist_photo?action=zip&amp;trp_id=' . (int) $trp_id . '" title="ดาวน์โหลดรูปทั้งหมดของใบงานนี้ (zip)">'
+        . '<i class="fa fa-download" aria-hidden="true"></i> ทั้งหมด</a>';
+    return $html . '</div>';
+}
+
+// ดึงการตั้งค่าทั้งหมดจาก server (เครื่องที่ตั้ง url/token ใน config/checklist_sync.local.php — localhost)
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sync_all'])) {
+    $res = mn_cl_sync_pull($connect, mn_cl_sync_tables_all());
+    maintenance_db_odbc_close($connect);
+    if (empty($res['ok'])) {
+        header('Location: settings?err=' . rawurlencode('ดึงการตั้งค่าไม่สำเร็จ: ' . $res['error']));
+        exit;
+    }
+    $names = array('cl_product' => 'รุ่นที่ใช้ checklist', 'cl_symptom' => 'อาการ', 'cl_group' => 'กลุ่ม', 'cl_item' => 'ข้อตรวจ',
+        'cl_rate_bundle' => 'ชุดอะไหล่', 'cl_rate_reason' => 'เหตุผลการเปลี่ยน', 'cl_setting' => 'เงื่อนไขที่ปรับได้',
+        'product_warranty' => 'ประกันรายรุ่น', 'logistics_carrier' => 'รายการขนส่ง');
+    $parts = array();
+    $missing = array();
+    foreach ($names as $t => $label) {
+        if (isset($res['counts'][$t])) { $parts[] = $label . ' ' . (int) $res['counts'][$t]; } else { $missing[] = $label; }
+    }
+    $msg = 'ดึงการตั้งค่าจาก server แล้ว (ข้อมูล ณ ' . $res['exported_at'] . ') ' . implode(', ', $parts)
+        . ($missing ? ' | server ยังไม่มี: ' . implode(', ', $missing) . ' (อัปชุดใหม่ขึ้น server ก่อน)' : '')
+        . ' | สำรองของเดิมไว้ที่ ' . $res['backup'];
+    header('Location: settings?synced=' . rawurlencode($msg));
+    exit;
 }
 
 if (isset($_GET['lock'])) {
@@ -66,9 +114,28 @@ $values = array();
 foreach ($defs as $k => $d) { $values[$k] = mn_sys_setting($connect, $k); }
 
 mn_photo_ensure_table($connect);
-$ps = mysqli_query($connect, 'SELECT COUNT(*) AS n, COALESCE(SUM(cp_drive_id IS NOT NULL), 0) AS on_drive, COALESCE(SUM(cp_size + cp_thumb_size), 0) AS bytes FROM cl_photo');
-$photo_stat = $ps ? mysqli_fetch_assoc($ps) : array('n' => 0, 'on_drive' => 0, 'bytes' => 0);
+$photo_stat = mn_photo_stats($connect);
 $sources = ($view === 'menu' || $view === 'sources') ? mn_bds_source_status($connect) : array();
+// view=drive: รายการใบงานที่มีรูป + รูปตัวอย่าง (ค้นด้วย ?q= แบ่งหน้า ?pg=)
+$pj_q = isset($_GET['q']) ? trim((string) $_GET['q']) : '';
+$pj_per = 20;
+$pj_pg = isset($_GET['pg']) ? max(1, (int) $_GET['pg']) : 1;
+$pj = array('rows' => array(), 'total' => 0);
+$pj_photos = array();
+if ($view === 'drive') {
+    require_once __DIR__ . '/includes/maintenance_flow_sql_helpers.php';
+    $pj = mn_photo_jobs($connect, $pj_q, ($pj_pg - 1) * $pj_per, $pj_per);
+    $pj_pages = max(1, (int) ceil($pj['total'] / $pj_per));
+    if ($pj_pg > $pj_pages) {
+        $pj_pg = $pj_pages;
+        $pj = mn_photo_jobs($connect, $pj_q, ($pj_pg - 1) * $pj_per, $pj_per);
+    }
+    $pj_photos = mn_photo_by_trps($connect, array_map(function ($r) { return $r['trp_id']; }, $pj['rows']));
+}
+$pj_pages = max(1, (int) ceil($pj['total'] / $pj_per));
+// ป้ายเมนูเทรน: จำนวนคน | ความคืบหน้าเฉลี่ย
+require_once __DIR__ . '/includes/training_helpers.php';
+$tr_overall = mn_tr_overall($connect);
 maintenance_db_odbc_close($connect);
 
 $sources_ok = 1;
@@ -77,9 +144,13 @@ $version = is_file(__DIR__ . '/VERSION.txt') ? trim((string) file_get_contents(_
 $banner_file = __DIR__ . '/config/site_banner.local.php';
 $banner = is_file($banner_file) ? (string) (require $banner_file) : '';
 $is_prod = function_exists('maintenance_new_app_env_is_production') && maintenance_new_app_env_is_production();
-$flash_ok = isset($_GET['saved']) || isset($_GET['pin']);
+$flash_ok = isset($_GET['saved']) || isset($_GET['pin']) || isset($_GET['synced']);
 $flash_msg = isset($_GET['pin']) ? 'เปลี่ยนรหัสเข้าหน้าตั้งค่าแล้ว' : 'บันทึกการตั้งค่าแล้ว';
 $flash_err = isset($_GET['err']) ? (string) $_GET['err'] : '';
+if (isset($_GET['synced'])) { $flash_msg = (string) $_GET['synced']; }
+$sync_cfg = mn_cl_sync_config();
+$can_sync = $sync_cfg['url'] !== '' && $sync_cfg['token'] !== '';
+$sync_host = $can_sync ? (string) parse_url($sync_cfg['url'], PHP_URL_HOST) . rtrim(dirname((string) parse_url($sync_cfg['url'], PHP_URL_PATH)), '/\\') : '';
 
 // เมนู: href, ไอคอน, ชื่อ, คำอธิบาย, ป้ายสถานะ
 $menu = array(
@@ -93,8 +164,12 @@ $menu = array(
         array('warranty_registry', 'fa-certificate', 'ทะเบียนประกัน', 'ประวัติประกันต่อ S/N, บันทึก/ยกเลิกประกันซื้อเพิ่ม', ''),
     ),
     'รูปและข้อมูล' => array(
-        array('settings?view=drive', 'fa-cloud-upload', 'รูปประกอบ / Google Drive', 'สถานะการเชื่อมต่อ, ส่งรูปค้าง, ตั้งชื่อไฟล์ใหม่', number_format((int) $photo_stat['n']) . ' รูป'),
+        array('settings?view=drive', 'fa-cloud-upload', 'รูปประกอบ / Google Drive', 'รูปรายใบงาน, สถานะการเชื่อมต่อ, ส่งรูปค้าง, ตั้งชื่อไฟล์ใหม่', number_format((int) $photo_stat['n']) . ' รูป'),
         array('settings?view=sources', 'fa-search', 'แหล่งหลักฐานวันที่ซื้อ', 'ประวัติซ่อม, คลังเครื่อง, ติดตั้ง, ส่งมอบ', $sources_ok . '/' . (count($sources) + 1) . ' เชื่อมแล้ว'),
+    ),
+    'การเทรน' => array(
+        array('training', 'fa-graduation-cap', 'เทรนการใช้งาน', 'คู่มือทีละหัวข้อ Admin / ช่าง / DDT พร้อมรูปตัวอย่าง ติดตามว่าเทรนถึงไหน และข้อเสนอแนะจากผู้ใช้งาน',
+            $tr_overall[0] . '/' . $tr_overall[1] . ' หัวข้อ' . ($tr_overall[2] > 0 ? ' | ข้อเสนอแนะ ' . $tr_overall[2] : '')),
     ),
     'ระบบ' => array(
         array('manage_logistics', 'fa-truck', 'รายการขนส่ง', 'ชื่อขนส่ง, ลิงก์ตรวจ tracking, เปิด/ปิดใช้งาน', ''),
@@ -117,6 +192,13 @@ $page = 'settings';
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" />
 <link rel="stylesheet" href="css/mn-page-addjob.css" />
 <link rel="stylesheet" href="css/mn-page-settings.css?v=<?php echo filemtime(__DIR__ . '/css/mn-page-settings.css'); ?>" />
+<?php if ($view === 'drive') { ?>
+<link rel="stylesheet" href="css/mn-photo-lightbox.css?v=<?php echo filemtime(__DIR__ . '/css/mn-photo-lightbox.css'); ?>" />
+<?php } ?>
+<?php
+$mnModalAssetPrefix = '';
+require_once __DIR__ . '/includes/mn_modal_assets.php';
+?>
 <title><?php echo $view === 'menu' ? 'ตั้งค่าระบบ' : mn_set_h($views[$view][1]) . ' | ตั้งค่าระบบ'; ?></title>
 </head>
 <body class="mn-addjob-page mn-settings-page">
@@ -130,6 +212,13 @@ $page = 'settings';
         <?php if ($view === 'menu') { ?>
         <h1><i class="fa fa-cog" aria-hidden="true"></i> ตั้งค่าระบบ</h1>
         <p>เลือกเรื่องที่ต้องการตั้งค่า <a class="mn-set__lockbtn" href="settings?lock=1" title="ล็อกหน้าตั้งค่าทันที"><i class="fa fa-lock" aria-hidden="true"></i> ล็อกหน้าตั้งค่า</a></p>
+        <?php if ($can_sync) { ?>
+        <form method="post" action="settings" class="mn-set__sync" id="mn_set_sync">
+          <input type="hidden" name="sync_all" value="1" />
+          <button type="submit" class="mn-set__btn" id="mn_set_sync_btn" title="ดึงจาก <?php echo mn_set_h($sync_host); ?>"><i class="fa fa-cloud-download" aria-hidden="true"></i> ดึงการตั้งค่าทั้งหมดจาก server</button>
+          <small>จาก <?php echo mn_set_h($sync_host); ?></small>
+        </form>
+        <?php } ?>
         <?php } else { ?>
         <a class="mn-set__back" href="settings"><i class="fa fa-angle-left" aria-hidden="true"></i> ตั้งค่าระบบ</a>
         <h1><i class="fa <?php echo mn_set_h($views[$view][0]); ?>" aria-hidden="true"></i> <?php echo mn_set_h($views[$view][1]); ?></h1>
@@ -195,17 +284,68 @@ $page = 'settings';
       <?php if ($view === 'drive') { ?>
       <section class="mn-set__card">
         <dl class="mn-set__stats">
-          <div><dt>รูปทั้งหมด</dt><dd><?php echo number_format((int) $photo_stat['n']); ?></dd></div>
-          <div><dt>ขึ้น Drive แล้ว</dt><dd><?php echo number_format((int) $photo_stat['on_drive']); ?></dd></div>
-          <div><dt>พื้นที่บน server</dt><dd><?php echo number_format((int) $photo_stat['bytes'] / 1048576, 1); ?> MB</dd></div>
+          <div><dt>รูปทั้งหมด</dt><dd data-stat="n"><?php echo number_format((int) $photo_stat['n']); ?></dd></div>
+          <div><dt>ขึ้น Drive แล้ว</dt><dd data-stat="on_drive"><?php echo number_format((int) $photo_stat['on_drive']); ?></dd></div>
+          <div><dt>พื้นที่บน server</dt><dd data-stat="bytes"><?php echo number_format((int) $photo_stat['bytes'] / 1048576, 1); ?> MB</dd></div>
         </dl>
         <div class="mn-set__drive" id="mn_set_drive" aria-live="polite"><p class="mn-set__muted"><i class="fa fa-circle-o-notch fa-spin" aria-hidden="true"></i> กำลังตรวจการเชื่อมต่อ Google Drive</p></div>
         <div class="mn-set__actions">
           <button type="button" class="mn-set__btn" data-drive="check"><i class="fa fa-refresh" aria-hidden="true"></i> ตรวจอีกครั้ง</button>
           <button type="button" class="mn-set__btn" data-drive="push"><i class="fa fa-upload" aria-hidden="true"></i> ส่งรูปที่ค้างขึ้น Drive</button>
-          <button type="button" class="mn-set__btn" data-drive="rename" title="ใช้หลังเปลี่ยนรูปแบบชื่อไฟล์ หรือย้ายข้อตรวจ"><i class="fa fa-i-cursor" aria-hidden="true"></i> ตั้งชื่อไฟล์บน Drive ใหม่</button>
+          <button type="button" class="mn-set__btn" data-drive="rename" title="ตั้งชื่อไฟล์และโฟลเดอร์ใบงานตามรูปแบบปัจจุบัน ใช้หลังเปลี่ยนรูปแบบชื่อ หรือย้ายข้อตรวจ"><i class="fa fa-i-cursor" aria-hidden="true"></i> ตั้งชื่อไฟล์บน Drive ใหม่</button>
         </div>
         <p class="mn-set__help">ตั้งค่าการเชื่อม Drive ที่ไฟล์ config/google_drive.local.php บน server (ดูขั้นตอนใน google_drive.example.php)</p>
+      </section>
+
+      <section class="mn-set__card" id="jobs">
+        <div class="mn-pj__head">
+          <h2><i class="fa fa-file-image-o" aria-hidden="true"></i> ใบงานที่มีรูป <span class="mn-pj__count" data-total="<?php echo (int) $pj['total']; ?>"><?php echo number_format((int) $pj['total']); ?> ใบงาน</span></h2>
+          <form method="get" action="settings#jobs" class="mn-pj__search" role="search">
+            <input type="hidden" name="view" value="drive" />
+            <input type="search" name="q" value="<?php echo mn_set_h($pj_q); ?>" placeholder="ค้นเลขงาน S/N รุ่น ลูกค้า" aria-label="ค้นใบงาน" />
+            <button type="submit" class="mn-set__btn"><i class="fa fa-search" aria-hidden="true"></i> ค้น</button>
+            <?php if ($pj_q !== '') { ?><a class="mn-pj__clear" href="settings?view=drive#jobs">ล้าง</a><?php } ?>
+          </form>
+        </div>
+        <?php if (!$pj['rows']) { ?>
+        <p class="mn-set__muted mn-pj__empty"><?php echo $pj_q !== '' ? 'ไม่พบใบงานที่ตรงกับ "' . mn_set_h($pj_q) . '"' : 'ยังไม่มีใบงานที่แนบรูป'; ?></p>
+        <?php } else { ?>
+        <p class="mn-set__muted mn-pj__empty" hidden="hidden">ไม่มีรูปเหลือในรายการนี้</p>
+        <ul class="mn-pj">
+          <?php foreach ($pj['rows'] as $r) {
+              $ph = isset($pj_photos[$r['trp_id']]) ? $pj_photos[$r['trp_id']] : array();
+              $wait = $r['n'] - $r['on_drive'];
+          ?>
+          <li class="mn-pj__row">
+            <div class="mn-pj__job">
+              <?php if ($r['ts_id'] > 0) { ?>
+              <a class="mn-pj__mtn" href="detail_job?ts_id=<?php echo (int) $r['ts_id']; ?>" title="เปิดใบงาน"><?php echo mn_set_h($r['mtn'] !== '' ? $r['mtn'] : 'ใบงาน'); ?> <i class="fa fa-external-link" aria-hidden="true"></i></a>
+              <?php } else { ?>
+              <span class="mn-pj__mtn is-gone">ไม่พบใบงาน (รายการ <?php echo (int) $r['trp_id']; ?>)</span>
+              <?php } ?>
+              <?php if ($r['status'] !== '') { ?><span class="mn-pj__status"><?php echo mn_set_h($r['status']); ?></span><?php } ?>
+              <span class="mn-pj__prod"><?php echo mn_set_h($r['product']); ?><?php if ($r['sn'] !== '') { ?> <small>SN <?php echo mn_set_h($r['sn']); ?></small><?php } ?></span>
+              <?php if ($r['customer'] !== '') { ?><span class="mn-pj__cus"><?php echo mn_set_h($r['customer']); ?></span><?php } ?>
+              <span class="mn-pj__meta">
+                <b class="mn-pj__n"><?php echo (int) $r['n']; ?> รูป</b>
+                <?php if ($wait > 0) { ?><span class="mn-pj__wait"><i class="fa fa-clock-o" aria-hidden="true"></i> รอขึ้น Drive <?php echo $wait; ?></span><?php } else { ?><span class="mn-pj__ok"><i class="fa fa-check" aria-hidden="true"></i> ขึ้น Drive ครบ</span><?php } ?>
+                <?php if ($r['last_at'] !== '') { ?><span>ล่าสุด <?php echo mn_set_h(date('d/m/Y H:i', strtotime($r['last_at']))); ?></span><?php } ?>
+              </span>
+            </div>
+            <div class="mn-pj__photos"><?php echo mn_set_photo_strip($ph, $r['trp_id']); ?></div>
+          </li>
+          <?php } ?>
+        </ul>
+        <?php if ($pj_pages > 1) { ?>
+        <nav class="mn-pj__pager" aria-label="หน้ารายการ">
+          <?php $qs = 'settings?view=drive' . ($pj_q !== '' ? '&q=' . rawurlencode($pj_q) : '') . '&pg='; ?>
+          <?php if ($pj_pg > 1) { ?><a class="mn-set__btn" href="<?php echo mn_set_h($qs . ($pj_pg - 1)); ?>#jobs"><i class="fa fa-angle-left" aria-hidden="true"></i> ก่อนหน้า</a><?php } ?>
+          <span>หน้า <?php echo $pj_pg; ?> / <?php echo $pj_pages; ?></span>
+          <?php if ($pj_pg < $pj_pages) { ?><a class="mn-set__btn" href="<?php echo mn_set_h($qs . ($pj_pg + 1)); ?>#jobs">ถัดไป <i class="fa fa-angle-right" aria-hidden="true"></i></a><?php } ?>
+        </nav>
+        <?php } ?>
+        <?php } ?>
+        <p class="mn-set__help">กดรูปเพื่อดูขนาดใหญ่และดาวน์โหลด | ติ๊กถูกมุมรูป = ขึ้น Google Drive แล้ว | "ทั้งหมด" = ดาวน์โหลดรูปของใบงานเป็น zip | ถังขยะ = ลบรูป ไฟล์บน Drive ย้ายลงถังขยะพร้อมกัน (กู้คืนได้ 30 วัน)</p>
       </section>
       <?php } ?>
 
@@ -232,7 +372,8 @@ $page = 'settings';
           <li>เครื่องอายุไม่ถึง 2 ปี ข้อ MA ล่าสุดเป็น N/A</li>
           <li>ชุดอะไหล่ (ตั้งในรายการตรวจเช็ค): มีรายการชุดในใบงานแล้ว ไม่ส่งรายการย่อยแยก</li>
           <li>รูปจากคอมและมือถือย่อเหลือด้านยาว 1600px ก่อนส่ง | ขึ้น Drive แล้วลบรูปขนาดดูบน server เก็บรูปเล็กไว้</li>
-          <li>ลบรูป = ย้ายไฟล์บน Drive ลงถังขยะ (กู้คืนได้ 30 วัน) ลบไม่สำเร็จจะลองซ้ำเอง</li>
+          <li>โฟลเดอร์บน Drive: ปี-เดือน / เลขงาน_ลูกค้า_รุ่น_SN</li>
+          <li>ลบรูป = ย้ายไฟล์บน Drive ลงถังขยะ (กู้คืนได้ 30 วัน) ลบไม่สำเร็จจะลองซ้ำเอง | ลบจนใบงานไม่เหลือรูป โฟลเดอร์ใบงานลงถังขยะด้วย เดือนที่ว่างก็ลบด้วย</li>
           <li>QR มือถือใช้ได้ <b><?php echo (int) $values['qr_hours']; ?> ชั่วโมง</b> ปิดเองเมื่อบันทึกการประเมิน หรือใบงานเสนอราคาแล้ว</li>
           <li>แก้ไขงานประเมินได้จนกว่าจะออกเลขเสนอราคา</li>
           <li>ประกันเครื่องใหม่ใช้เดือนตามรุ่น รุ่นที่ยังไม่ได้ตั้งใช้ค่าเริ่มต้น <b><?php echo (int) $values['default_warranty_months']; ?> เดือน</b> | ไม่มีวันที่ซื้อ = ให้เลือกเอง</li>
@@ -265,8 +406,32 @@ $page = 'settings';
       <?php } ?>
     </div>
   </div>
+<script type="text/javascript">
+// ยืนยันก่อนดึงการตั้งค่าทั้งหมด — ใช้ modal ของระบบ (confirm() ของเบราว์เซอร์ถูกปิดได้ในบางแอป)
+(function () {
+  var form = document.getElementById('mn_set_sync');
+  if (!form) { return; }
+  var btn = document.getElementById('mn_set_sync_btn');
+  var go = function () {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa fa-circle-o-notch fa-spin" aria-hidden="true"></i> กำลังดึงการตั้งค่าจาก server';
+    form.submit();
+  };
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var msg = 'รายการตรวจเช็ค ชุดอะไหล่ เหตุผลการเปลี่ยน เงื่อนไขที่ปรับได้ ประกันรายรุ่น และรายการขนส่ง ในเครื่องนี้ จะถูกแทนที่ด้วยของ server\n\n'
+      + 'รหัสเข้าหน้าตั้งค่าของเครื่องนี้ไม่เปลี่ยน | ระบบสำรองของเดิมเป็นไฟล์ไว้ก่อน | ข้อมูลงาน (ใบงาน ผลตรวจ รูป ทะเบียนประกัน) ไม่ถูกแตะ';
+    if (typeof window.mnModalConfirm === 'function') {
+      window.mnModalConfirm(msg, { title: 'ดึงการตั้งค่าทั้งหมดจาก server', variant: 'warning', okLabel: 'ดึงค่า', cancelLabel: 'ยกเลิก', onConfirm: go });
+    } else {
+      go();
+    }
+  });
+}());
+</script>
 <?php if ($view === 'drive') { ?>
 <script type="text/javascript" src="js/settings-page.js?v=<?php echo filemtime(__DIR__ . '/js/settings-page.js'); ?>"></script>
+<script type="text/javascript" src="js/mn-photo-lightbox.js?v=<?php echo filemtime(__DIR__ . '/js/mn-photo-lightbox.js'); ?>"></script>
 <?php } ?>
 </body>
 </html>

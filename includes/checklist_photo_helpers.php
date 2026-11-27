@@ -233,7 +233,7 @@ if (!function_exists('mn_photo_delete')) {
             // ลบไม่สำเร็จ (เน็ตหลุด / Drive ขัดข้อง / ปิดการตั้งค่าไว้) → จำไว้ใน cl_drive_trash แล้วลองใหม่รอบถัดไป
             if (!empty($row['cp_drive_id'])) {
                 $fid = (string) $row['cp_drive_id'];
-                $err = mn_photo_drive_ready() ? mn_gd_trash($fid) : 'ยังไม่ได้ตั้งค่า Google Drive';
+                $err = mn_photo_drive_ready() ? mn_photo_drive_trash_file($connect, $fid) : 'ยังไม่ได้ตั้งค่า Google Drive';
                 if ($err !== '') {
                     mn_photo_trash_queue($connect, $fid, $err);
                     if (function_exists('mn_gd_log')) { mn_gd_log('trash ' . $fid . ': ' . $err . ' (จะลองใหม่)'); }
@@ -387,6 +387,56 @@ if (!function_exists('mn_photo_by_trps')) {
     }
 }
 
+/** ตัวเลขรวมของรูป → array(n, on_drive, bytes, jobs) */
+if (!function_exists('mn_photo_stats')) {
+    function mn_photo_stats($connect)
+    {
+        mn_photo_ensure_table($connect);
+        $res = mysqli_query($connect, 'SELECT COUNT(*) AS n, COALESCE(SUM(cp_drive_id IS NOT NULL), 0) AS on_drive,'
+            . ' COALESCE(SUM(cp_size + cp_thumb_size), 0) AS bytes, COUNT(DISTINCT cp_trp_id) AS jobs FROM cl_photo');
+        $r = $res ? mysqli_fetch_assoc($res) : null;
+        if ($res) { mysqli_free_result($res); }
+        return array('n' => (int) ($r ? $r['n'] : 0), 'on_drive' => (int) ($r ? $r['on_drive'] : 0),
+            'bytes' => (int) ($r ? $r['bytes'] : 0), 'jobs' => (int) ($r ? $r['jobs'] : 0));
+    }
+}
+
+/**
+ * ใบงานที่มีรูป (หน้าตั้งค่า → รูปประกอบ) ล่าสุดก่อน
+ * $q ค้นเลขงาน / S/N / รุ่น / ลูกค้า | คืน array('rows' => [...], 'total' => n)
+ * กรองฝั่ง PHP เพราะตาราง transac อาจคนละ charset กับ cl_photo
+ */
+if (!function_exists('mn_photo_jobs')) {
+    function mn_photo_jobs($connect, $q, $offset, $limit)
+    {
+        mn_photo_ensure_table($connect);
+        $sql = 'SELECT p.trp_id, p.n, p.on_drive, p.last_at, r.trp_ts_id, r.trp_product, r.trp_sn, r.trp_status_job, t.ts_mtn_number, t.ts_enduser_com'
+            . ' FROM (SELECT cp_trp_id AS trp_id, COUNT(*) AS n, SUM(cp_drive_id IS NOT NULL) AS on_drive, MAX(cp_at) AS last_at FROM cl_photo GROUP BY cp_trp_id) p'
+            . ' LEFT JOIN transac_repair r ON r.trp_id = p.trp_id'
+            . ' LEFT JOIN transac t ON t.ts_id = r.trp_ts_id'
+            . ' ORDER BY p.last_at DESC, p.trp_id DESC';
+        $res = mysqli_query($connect, $sql);
+        $all = array();
+        $needle = function_exists('mb_strtolower') ? mb_strtolower(trim((string) $q), 'UTF-8') : strtolower(trim((string) $q));
+        $u = function_exists('maintenance_flow_db_text_to_utf8') ? 'maintenance_flow_db_text_to_utf8' : 'strval';
+        while ($res && ($r = mysqli_fetch_assoc($res))) {
+            $row = array(
+                'trp_id' => (int) $r['trp_id'], 'ts_id' => (int) $r['trp_ts_id'], 'n' => (int) $r['n'], 'on_drive' => (int) $r['on_drive'],
+                'last_at' => (string) $r['last_at'], 'mtn' => $u($r['ts_mtn_number']), 'product' => $u($r['trp_product']),
+                'sn' => $u($r['trp_sn']), 'status' => trim($u($r['trp_status_job'])), 'customer' => trim($u($r['ts_enduser_com'])),
+            );
+            if ($needle !== '') {
+                $hay = $row['mtn'] . ' ' . $row['sn'] . ' ' . $row['product'] . ' ' . $row['customer'];
+                $hay = function_exists('mb_strtolower') ? mb_strtolower($hay, 'UTF-8') : strtolower($hay);
+                if (strpos($hay, $needle) === false) { continue; }
+            }
+            $all[] = $row;
+        }
+        if ($res) { mysqli_free_result($res); }
+        return array('rows' => array_slice($all, max(0, (int) $offset), max(1, (int) $limit)), 'total' => count($all));
+    }
+}
+
 /** เครื่องหมายติ๊กถูกมุมรูป = รูปขึ้น Google Drive แล้ว (สไตล์ .mn-photo-drive ใน css/mn-photo-lightbox.css) */
 if (!function_exists('mn_photo_drive_badge')) {
     function mn_photo_drive_badge()
@@ -448,9 +498,10 @@ if (!function_exists('mn_photo_topic')) {
 if (!function_exists('mn_photo_job_info')) {
     function mn_photo_job_info($connect, array $row)
     {
-        $job = array('mtn' => '', 'product' => '', 'sn' => '', 'q' => '', 'g' => '');
+        $job = array('mtn' => '', 'product' => '', 'sn' => '', 'customer' => '', 'q' => '', 'g' => '');
         $stmt = mysqli_prepare($connect,
             'SELECT COALESCE(t.ts_mtn_number, \'\') AS mtn, COALESCE(r.trp_product, \'\') AS product, COALESCE(r.trp_sn, \'\') AS sn,'
+            . ' COALESCE(NULLIF(TRIM(t.ts_enduser_com), \'\'), t.ts_security_com, \'\') AS customer,'
             . ' COALESCE(i.ci_question, \'\') AS q, COALESCE(g.cg_name, \'\') AS g'
             . ' FROM transac_repair r LEFT JOIN transac t ON t.ts_id = r.trp_ts_id'
             . ' LEFT JOIN cl_item i ON i.ci_id = ? LEFT JOIN cl_group g ON g.cg_id = i.ci_group_id'
@@ -466,8 +517,124 @@ if (!function_exists('mn_photo_job_info')) {
             mysqli_stmt_close($stmt);
             if ($found) { $job = $found; }
         }
+        if (!function_exists('maintenance_flow_db_text_to_utf8')) { require_once __DIR__ . '/maintenance_flow_sql_helpers.php'; }
+        $job['customer'] = trim(maintenance_flow_db_text_to_utf8($job['customer']));
         $job['topic'] = mn_photo_topic($job['q'], $job['g']);
         return $job;
+    }
+}
+
+/**
+ * ชื่อโฟลเดอร์ใบงานบน Drive: <เลขงาน>_<ลูกค้า>_<รุ่น>_<SN>
+ * เช่น 69-0610_TT Fuji Tool Support Co., Ltd._bitVisitor Plus_BP16080018
+ * $old = true คืนชื่อแบบเดิม "<เลขงาน> <รุ่น> <SN>" (ใช้หาโฟลเดอร์เก่ามาเปลี่ยนชื่อ)
+ */
+if (!function_exists('mn_photo_job_folder_name')) {
+    function mn_photo_job_folder_name(array $job, $trp_id, $old = false)
+    {
+        if ($old) {
+            $n = trim($job['mtn'] . ' ' . $job['product'] . ' ' . $job['sn']);
+            return $n !== '' ? $n : ('ใบงาน ' . (int) $trp_id);
+        }
+        $clean = function ($s, $max) {
+            $s = trim((string) preg_replace('/\s+/u', ' ', (string) preg_replace('#[\\\\/:*?"<>|_]+#u', ' ', (string) $s)));
+            return mb_substr($s, 0, $max, 'UTF-8');
+        };
+        $parts = array($clean($job['mtn'], 30), $clean(isset($job['customer']) ? $job['customer'] : '', 60), $clean($job['product'], 40), $clean($job['sn'], 40));
+        $parts = array_values(array_filter($parts, function ($p) { return $p !== ''; }));
+        return $parts ? implode('_', $parts) : ('ใบงาน ' . (int) $trp_id);
+    }
+}
+
+/**
+ * โฟลเดอร์ใบงานใต้โฟลเดอร์เดือน → array(id, error)
+ * ถ้ามีโฟลเดอร์ชื่อแบบเดิม (ไม่มีชื่อลูกค้า) เปลี่ยนชื่อโฟลเดอร์นั้นแทนการสร้างใหม่ รูปใบงานเดียวกันจะได้อยู่ที่เดียว
+ */
+if (!function_exists('mn_photo_job_folder')) {
+    function mn_photo_job_folder($connect, $month_id, array $job, $trp_id, $create = true)
+    {
+        $new = mn_gd_folder_name(mn_photo_job_folder_name($job, $trp_id));
+        $old = mn_gd_folder_name(mn_photo_job_folder_name($job, $trp_id, true));
+        list($id, $err) = mn_gd_find_folder($connect, $month_id, $new);
+        if ($err !== '' || $id !== '') { return array($id, $err); }
+        if ($old !== $new) {
+            list($oid, $err) = mn_gd_find_folder($connect, $month_id, $old);
+            if ($err !== '') { return array('', $err); }
+            if ($oid !== '') {
+                $err = mn_gd_rename($oid, $new);
+                if ($err !== '') { return array('', $err); }
+                mn_gd_folder_forget($connect, $oid);
+                mn_gd_folder_remember($connect, $month_id, $new, $oid);
+                return array($oid, '');
+            }
+        }
+        return $create ? mn_gd_folder($connect, $month_id, $new) : array('', '');
+    }
+}
+
+/**
+ * ย้ายไฟล์บน Drive ลงถังขยะ แล้วลบโฟลเดอร์ใบงาน (และโฟลเดอร์เดือน) ที่ว่างตามไปด้วย → error
+ * ไม่แตะโฟลเดอร์รากที่ตั้งไว้ใน config
+ */
+if (!function_exists('mn_photo_drive_trash_file')) {
+    function mn_photo_drive_trash_file($connect, $file_id)
+    {
+        list($meta, $err) = mn_gd_meta($file_id, 'parents');
+        $parent = ($err === '' && !empty($meta['parents'][0])) ? (string) $meta['parents'][0] : '';
+        $err = mn_gd_trash($file_id);
+        if ($err !== '') { return $err; }
+        if ($parent !== '') { mn_photo_drive_prune($connect, $parent); }
+        return '';
+    }
+}
+
+/**
+ * เก็บกวาดโฟลเดอร์ว่างทั้งหมดใต้ราก (โฟลเดอร์ใบงานที่ไม่มีไฟล์ + เดือนที่ว่าง) → array(จำนวนที่ลบ, error)
+ * เรียกจากปุ่ม "ส่งรูปที่ค้างขึ้น Drive" ใช้กับโฟลเดอร์ว่างที่ค้างจากก่อนมีการลบอัตโนมัติ
+ */
+if (!function_exists('mn_photo_drive_prune_all')) {
+    function mn_photo_drive_prune_all($connect)
+    {
+        if (!mn_photo_drive_ready()) { return array(0, ''); }
+        $cfg = mn_gd_config();
+        list($months, $err) = mn_gd_list_folders((string) $cfg['folder_id']);
+        if ($err !== '') { return array(0, $err); }
+        $n = 0;
+        foreach ($months as $mid => $mname) {
+            if (!preg_match('/^\d{4}-\d{2}$/', $mname)) { continue; } // แตะเฉพาะโฟลเดอร์เดือนที่ระบบสร้าง
+            list($jobs, $err) = mn_gd_list_folders($mid);
+            if ($err !== '') { return array($n, $err); }
+            foreach ($jobs as $jid => $jname) {
+                list($has, $err) = mn_gd_has_children($jid);
+                if ($err !== '') { return array($n, $err); }
+                if ($has) { continue; }
+                if (mn_gd_trash($jid) === '') { mn_gd_folder_forget($connect, $jid); $n++; }
+            }
+            list($has, $err) = mn_gd_has_children($mid);
+            if ($err === '' && !$has && mn_gd_trash($mid) === '') { mn_gd_folder_forget($connect, $mid); $n++; }
+        }
+        if ($n > 0) { mn_gd_log('prune_all: trash ' . $n . ' empty folders'); }
+        return array($n, '');
+    }
+}
+
+/** โฟลเดอร์ว่าง → ลงถังขยะ แล้วไล่ขึ้นไปโฟลเดอร์แม่ (สูงสุด 2 ชั้น: ใบงาน → เดือน) */
+if (!function_exists('mn_photo_drive_prune')) {
+    function mn_photo_drive_prune($connect, $folder)
+    {
+        $cfg = mn_gd_config();
+        $root = (string) $cfg['folder_id'];
+        for ($i = 0; $i < 2 && $folder !== '' && $folder !== $root; $i++) {
+            list($has, $err) = mn_gd_has_children($folder);
+            if ($err !== '' || $has) { return; }
+            list($meta, $err) = mn_gd_meta($folder, 'parents,mimeType');
+            if ($err !== '' || !$meta || $meta['mimeType'] !== 'application/vnd.google-apps.folder') { return; }
+            $up = !empty($meta['parents'][0]) ? (string) $meta['parents'][0] : '';
+            if (mn_gd_trash($folder) !== '') { return; }
+            mn_gd_folder_forget($connect, $folder);
+            if (function_exists('mn_gd_log')) { mn_gd_log('trash empty folder ' . $folder); }
+            $folder = $up;
+        }
     }
 }
 
@@ -529,7 +696,34 @@ if (!function_exists('mn_photo_rename_drive')) {
         if (!mn_photo_drive_ready()) { return 'ยังไม่ได้ตั้งค่า Google Drive'; }
         $row = mn_photo_row($connect, $id);
         if (!$row || empty($row['cp_drive_id'])) { return ''; }
-        return mn_gd_rename((string) $row['cp_drive_id'], mn_photo_drive_name(mn_photo_job_info($connect, $row), $row));
+        $job = mn_photo_job_info($connect, $row);
+        $err = mn_gd_rename((string) $row['cp_drive_id'], mn_photo_drive_name($job, $row));
+        if ($err !== '') { return $err; }
+        return mn_photo_rename_job_folder($connect, (string) $row['cp_drive_id'], $job, (int) $row['cp_trp_id']);
+    }
+}
+
+/** ตั้งชื่อโฟลเดอร์ใบงานที่ไฟล์อยู่ให้ตรงรูปแบบปัจจุบัน (มีชื่อลูกค้า) ทำครั้งเดียวต่อโฟลเดอร์ในแต่ละรอบ → error */
+if (!function_exists('mn_photo_rename_job_folder')) {
+    function mn_photo_rename_job_folder($connect, $file_id, array $job, $trp_id)
+    {
+        static $done = array();
+        list($meta, $err) = mn_gd_meta($file_id, 'parents');
+        if ($err !== '' || empty($meta['parents'][0])) { return $err; }
+        $folder = (string) $meta['parents'][0];
+        if (isset($done[$folder])) { return ''; }
+        $done[$folder] = true;
+        $cfg = mn_gd_config();
+        if ($folder === (string) $cfg['folder_id']) { return ''; }
+        list($fm, $err) = mn_gd_meta($folder, 'name,parents');
+        if ($err !== '' || !$fm) { return $err; }
+        $new = mn_gd_folder_name(mn_photo_job_folder_name($job, $trp_id));
+        if ((string) $fm['name'] === $new) { return ''; }
+        $err = mn_gd_rename($folder, $new);
+        if ($err !== '') { return $err; }
+        mn_gd_folder_forget($connect, $folder);
+        if (!empty($fm['parents'][0])) { mn_gd_folder_remember($connect, (string) $fm['parents'][0], $new, $folder); }
+        return '';
     }
 }
 
@@ -563,7 +757,7 @@ if (!function_exists('mn_photo_finish_upload')) {
 }
 
 /**
- * ส่งรูป 1 รูปขึ้น Drive: โฟลเดอร์ <ราก>/<ปี-เดือน>/<เลขงาน รุ่น SN>/ ชื่อไฟล์ตาม mn_photo_drive_name()
+ * ส่งรูป 1 รูปขึ้น Drive: โฟลเดอร์ <ราก>/<ปี-เดือน>/<เลขงาน_ลูกค้า_รุ่น_SN>/ (mn_photo_job_folder) ชื่อไฟล์ตาม mn_photo_drive_name()
  * สำเร็จแล้วลบไฟล์ขนาดดูบน server (เก็บรูปเล็กไว้) เว้นแต่ตั้ง keep_local
  */
 if (!function_exists('mn_photo_push_drive')) {
@@ -580,8 +774,7 @@ if (!function_exists('mn_photo_push_drive')) {
         $month = substr((string) $row['cp_at'], 0, 7);
         list($f_month, $err) = mn_gd_folder($connect, $cfg['folder_id'], $month !== '' ? $month : date('Y-m'));
         if ($err !== '') { return $err; }
-        $job_name = trim($job['mtn'] . ' ' . $job['product'] . ' ' . $job['sn']);
-        list($f_job, $err) = mn_gd_folder($connect, $f_month, $job_name !== '' ? $job_name : ('ใบงาน ' . $row['cp_trp_id']));
+        list($f_job, $err) = mn_photo_job_folder($connect, $f_month, $job, (int) $row['cp_trp_id']);
         if ($err !== '') { return $err; }
         list($file_id, $err) = mn_gd_upload($f_job, mn_photo_drive_name($job, $row), $path, (string) $row['cp_mime']);
         if ($err !== '') { return $err; }
@@ -627,7 +820,7 @@ if (!function_exists('mn_photo_trash_pending')) {
         while ($res && ($r = mysqli_fetch_row($res))) { $ids[] = (string) $r[0]; }
         $done = 0;
         foreach ($ids as $fid) {
-            $err = mn_gd_trash($fid);
+            $err = mn_photo_drive_trash_file($connect, $fid);
             if ($err !== '') {
                 mn_photo_trash_queue($connect, $fid, $err);
                 break; // Drive ยังมีปัญหา — ไว้ลองรอบหน้า

@@ -55,6 +55,10 @@ if (!mysqli_stmt_execute($stmt)) {
 }
 mysqli_stmt_close($stmt);
 
+// ผู้บันทึกการอนุมัติ
+require_once __DIR__ . '/includes/job_stamp_helpers.php';
+mn_job_stamp_set($connect, array($trp_id), 'firm');
+
 maintenance_db_odbc_close($connect);
 
 header('Location: status_wait_firmQV');

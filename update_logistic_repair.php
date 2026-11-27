@@ -14,6 +14,7 @@ require_once __DIR__ . '/includes/require_auth.php';
 header('Content-type: text/html; charset=utf-8');
 require_once __DIR__ . '/includes/mysql_odbc_compat.php';
 require_once __DIR__ . '/includes/sendtracking_history_helpers.php';
+require_once __DIR__ . '/includes/spare_flow_helpers.php';
 
 $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 $trp_send_date = isset($_GET['trp_send_date']) ? (string) $_GET['trp_send_date'] : '';
@@ -45,7 +46,9 @@ if ($id <= 0) {
 
     $sql_update = "UPDATE transac_repair SET trp_send_date = '" . $e_date . "', trp_logistics = '" . $e_log
         . "', trp_tracking = '" . $e_trk . "', trp_sendby = '" . $e_by . "'";
-    if ($tsp_trp_id === '' || $tsp_trp_id === '0' || $datereturn !== '') {
+    // มีเครื่องสำรองค้าง (ยังไม่คืน/ยกเลิก/สูญหาย) อย่างน้อย 1 เครื่อง → รอเครื่องสำรอง (รองรับหลายเครื่องจากการสลับ/ส่งใหม่)
+    $spare_left = ($tsp_trp_id === '' || $tsp_trp_id === '0') ? 0 : mn_spare_outstanding_count($connect, (int) $id);
+    if ($spare_left < 1) {
         $sql_update .= ", trp_status_job = 'เสร็จสิ้น' ";
     } else {
         $sql_update .= ", trp_status_job = 'รอเครื่องสำรอง' ";

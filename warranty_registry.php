@@ -157,9 +157,11 @@ $page = 'settings';
                 <?php if ((int) $r['wr_void'] === 1) { ?>
                 <span class="mn-wrp__void" title="<?php echo mn_wrp_h($r['wr_void_reason']); ?>">ยกเลิกแล้ว</span><small><?php echo mn_wrp_h($r['wr_void_reason']); ?></small>
                 <?php } else { ?>
-                <form method="post" action="warranty_registry" class="mn-wrp__voidform" onsubmit="var r = prompt('เหตุผลที่ยกเลิกประกันนี้'); if (!r) { return false; } this.reason.value = r; return true;">
+                <?php // ใส่เหตุผลในช่องแทน prompt() ของเบราว์เซอร์ (ถูกปิดได้ในบางแอป) ?>
+                <form method="post" action="warranty_registry" class="mn-wrp__voidform">
                   <input type="hidden" name="act" value="void" /><input type="hidden" name="id" value="<?php echo (int) $r['wr_id']; ?>" />
-                  <input type="hidden" name="sn" value="<?php echo mn_wrp_h($sn); ?>" /><input type="hidden" name="reason" value="" />
+                  <input type="hidden" name="sn" value="<?php echo mn_wrp_h($sn); ?>" />
+                  <input type="text" name="reason" required="required" maxlength="300" placeholder="เหตุผลที่ยกเลิก" aria-label="เหตุผลที่ยกเลิก" />
                   <button type="submit" class="mn-set__btn"><i class="fa fa-ban" aria-hidden="true"></i> ยกเลิก</button>
                 </form>
                 <?php } ?>

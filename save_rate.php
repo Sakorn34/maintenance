@@ -17,6 +17,7 @@ $rate_input = (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] =
 $result = maintenance_save_rate_apply_from_get($connect, $rate_input);
 $mn_modal_msg = $result['message'];
 $mn_modal_variant = $result['ok'] ? 'success' : 'danger';
+$mn_redirect = !empty($result['redirect']) ? (string) $result['redirect'] : 'status_rate';
 
 maintenance_db_odbc_close($connect);
 ?>
@@ -35,7 +36,7 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
 <script type="text/javascript">
 mnModalAlert(<?php echo json_encode($mn_modal_msg, JSON_UNESCAPED_UNICODE); ?>, {
     variant: <?php echo json_encode($mn_modal_variant); ?>,
-    onClose: function () { window.location.href = 'status_rate'; }
+    onClose: function () { window.location.href = <?php echo json_encode($mn_redirect); ?>; }
 });
 </script>
 </body>

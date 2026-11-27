@@ -11,6 +11,8 @@ require_once __DIR__ . '/includes/require_auth.php';
 require_once __DIR__ . '/includes/bootstrap_maintenance_legacy.php';
 require_once __DIR__ . '/includes/maintenance_flow_sql_helpers.php';
 require_once __DIR__ . '/includes/status_logistic_helpers.php';
+require_once __DIR__ . '/includes/job_stamp_helpers.php';
+require_once __DIR__ . '/includes/spare_flow_helpers.php';
 
 $ts_id = maintenance_flow_get_int($_GET, 'ts_id', 0);
 $trp_id = maintenance_flow_get_int($_GET, 'trp_id', 0);
@@ -61,6 +63,19 @@ try {
         mysqli_stmt_bind_param($st_blank, 'ss', $blank, $tsp_sn_old);
         mysqli_stmt_execute($st_blank);
         mysqli_stmt_close($st_blank);
+        // ประวัติเครื่องสำรอง: เปลี่ยน S/N ในรายการเดิม
+        $st_id = mysqli_prepare($connect, 'SELECT tsp_id FROM transac_spare WHERE tsp_trp_id = ? AND tsp_sn = ? ORDER BY tsp_id DESC LIMIT 1');
+        if ($st_id !== false) {
+            mysqli_stmt_bind_param($st_id, 'is', $trp_id, $tsp_sn);
+            mysqli_stmt_execute($st_id);
+            $res_id = mysqli_stmt_get_result($st_id);
+            $row_id = $res_id ? mysqli_fetch_assoc($res_id) : null;
+            mysqli_stmt_close($st_id);
+            if ($row_id) {
+                mn_spare_log($connect, array('se_tsp_id' => (int) $row_id['tsp_id'], 'se_trp_id' => $trp_id, 'se_ts_id' => $ts_id, 'se_type' => 'change_sn',
+                    'se_sn' => $tsp_sn, 'se_sn_old' => $tsp_sn_old, 'se_date' => date('Y-m-d'), 'se_by' => mn_job_stamp_who($connect)));
+            }
+        }
     } else {
         $sql_ins = 'INSERT INTO transac_spare (tsp_ts_id, tsp_trp_id, tsp_product, tsp_sn) VALUES (?,?,?,?)';
         $st_i = mysqli_prepare($connect, $sql_ins);

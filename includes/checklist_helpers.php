@@ -261,6 +261,8 @@ if (!function_exists('maintenance_checklist_ensure_tables')) {
             . '`ci_opt_notes` TEXT ' . $col . ' NULL DEFAULT NULL,'
             . '`ci_opt_groups` VARCHAR(100) ' . $col . ' NULL DEFAULT NULL,'
             . '`ci_opt_photos` VARCHAR(100) ' . $col . ' NULL DEFAULT NULL,'
+            . '`ci_opt_hides` TEXT ' . $col . ' NULL DEFAULT NULL,'
+            . '`ci_opt_oks` VARCHAR(100) ' . $col . ' NULL DEFAULT NULL,'
             . '`ci_photo_fail` TINYINT(1) NOT NULL DEFAULT 1,'
             . '`ci_auto_source` VARCHAR(50) ' . $col . ' NULL DEFAULT NULL,'
             . '`ci_enabled` TINYINT(1) NOT NULL DEFAULT 1,'
@@ -384,6 +386,14 @@ if (!function_exists('maintenance_checklist_ensure_tables')) {
         // migrate: การแนบรูปต่อคำตอบ (0 ไม่แนบ / 1 แนบได้ / 2 ต้องแนบ) — ตัวเลือก: JSON array · ผ่าน/ไม่ผ่าน, ค่าตัวเลข: ci_photo_fail
         if (!maintenance_checklist_column_exists($connect, 'cl_item', 'ci_opt_photos')) {
             mysqli_query($connect, 'ALTER TABLE cl_item ADD COLUMN ci_opt_photos VARCHAR(100) ' . $col . ' NULL DEFAULT NULL AFTER ci_opt_groups');
+        }
+        // migrate: กฎซ่อนข้อ — เลือกคำตอบนี้แล้วซ่อนข้อตรวจอื่น: JSON array ต่อคำตอบ เช่น [[],[],[12,15]]
+        if (!maintenance_checklist_column_exists($connect, 'cl_item', 'ci_opt_hides')) {
+            mysqli_query($connect, 'ALTER TABLE cl_item ADD COLUMN ci_opt_hides TEXT ' . $col . ' NULL DEFAULT NULL AFTER ci_opt_photos');
+        }
+        // migrate: คำตอบที่นับเป็นผลปกติ (นอกจากตัวเลือกแรก) เช่น "ไม่มีมา" — JSON array 0/1 ตามลำดับตัวเลือก
+        if (!maintenance_checklist_column_exists($connect, 'cl_item', 'ci_opt_oks')) {
+            mysqli_query($connect, 'ALTER TABLE cl_item ADD COLUMN ci_opt_oks VARCHAR(100) ' . $col . ' NULL DEFAULT NULL AFTER ci_opt_hides');
         }
         if (!maintenance_checklist_column_exists($connect, 'cl_item', 'ci_photo_fail')) {
             mysqli_query($connect, 'ALTER TABLE cl_item ADD COLUMN ci_photo_fail TINYINT(1) NOT NULL DEFAULT 1 AFTER ci_opt_photos');
@@ -525,7 +535,7 @@ if (!function_exists('maintenance_checklist_fetch_items')) {
     function maintenance_checklist_fetch_items($connect, $product, $symptom_id)
     {
         $sql = 'SELECT i.ci_id, i.ci_step, i.ci_question, i.ci_rate_on_fail, i.ci_hint,'
-            . ' i.ci_unit, i.ci_val_min, i.ci_val_max, i.ci_opts, i.ci_opt_rates, i.ci_opt_colors, i.ci_multi, i.ci_opt_notes, i.ci_opt_groups, i.ci_opt_photos, i.ci_photo_fail, i.ci_auto_source, i.ci_group_id,'
+            . ' i.ci_unit, i.ci_val_min, i.ci_val_max, i.ci_opts, i.ci_opt_rates, i.ci_opt_colors, i.ci_multi, i.ci_opt_notes, i.ci_opt_groups, i.ci_opt_photos, i.ci_opt_hides, i.ci_opt_oks, i.ci_photo_fail, i.ci_auto_source, i.ci_group_id,'
             . ' COALESCE(g.cg_name, \'\') AS group_name, COALESCE(g.cg_order, 9999) AS group_order'
             . ' FROM cl_item i'
             . ' LEFT JOIN cl_group g ON g.cg_id = i.ci_group_id'

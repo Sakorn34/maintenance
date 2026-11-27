@@ -278,6 +278,64 @@ if (!function_exists('maintenance_detail_job_repair_ma_approved_locked')) {
     }
 }
 
+if (!function_exists('maintenance_detail_job_repair_rate_qv_edit_eligible')) {
+    /**
+     * Purpose:
+     * งานที่เสนอราคาแล้วแต่ยัง "รออนุมัติซ่อม" (ยังไม่อนุมัติ) — แก้ผลประเมินได้ด้วยรหัสตั้งค่า โดยคงใบเสนอราคาเดิม
+     *
+     * Return value:
+     * - bool true เมื่อเข้าเงื่อนไขปลดล็อกด้วยรหัสได้
+     */
+    function maintenance_detail_job_repair_rate_qv_edit_eligible($connect, $trp_id)
+    {
+        $id = (int) $trp_id;
+        if ($id < 1 || !($connect instanceof mysqli)) {
+            return false;
+        }
+        $stmt = mysqli_prepare($connect, 'SELECT trp_status_job, trp_firm_qv_date, trp_status_firmma FROM transac_repair WHERE trp_id = ? LIMIT 1');
+        if ($stmt === false) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, 'i', $id);
+        if (!mysqli_stmt_execute($stmt)) {
+            mysqli_stmt_close($stmt);
+
+            return false;
+        }
+        $row = maintenance_flow_mysqli_stmt_fetch_assoc($stmt);
+        mysqli_stmt_close($stmt);
+        if (!is_array($row)) {
+            return false;
+        }
+        $status = trim(maintenance_flow_db_text_to_utf8(isset($row['trp_status_job']) ? $row['trp_status_job'] : ''));
+        $firm_date = maintenance_flow_db_text_to_utf8(isset($row['trp_firm_qv_date']) ? $row['trp_firm_qv_date'] : '');
+        $firmma = maintenance_flow_db_text_to_utf8(isset($row['trp_status_firmma']) ? $row['trp_status_firmma'] : '');
+
+        return $status === 'รออนุมัติซ่อม' && !maintenance_detail_job_repair_ma_approved_locked($firm_date, $status, $firmma);
+    }
+}
+
+if (!function_exists('maintenance_detail_job_repair_rate_qv_edit_grant')) {
+    /** ใส่รหัสผ่านแล้ว: จำใน session ว่าแก้ผลประเมินของใบงานนี้ได้ (8 ชั่วโมง) */
+    function maintenance_detail_job_repair_rate_qv_edit_grant($trp_id)
+    {
+        if (session_status() === PHP_SESSION_NONE && !headers_sent()) { @session_start(); }
+        if (session_status() !== PHP_SESSION_ACTIVE) { return; }
+        if (!isset($_SESSION['mn_qv_edit']) || !is_array($_SESSION['mn_qv_edit'])) { $_SESSION['mn_qv_edit'] = array(); }
+        $_SESSION['mn_qv_edit'][(int) $trp_id] = time();
+    }
+}
+
+if (!function_exists('maintenance_detail_job_repair_rate_qv_edit_granted')) {
+    function maintenance_detail_job_repair_rate_qv_edit_granted($trp_id)
+    {
+        if (session_status() === PHP_SESSION_NONE && !headers_sent()) { @session_start(); }
+        $at = isset($_SESSION['mn_qv_edit'][(int) $trp_id]) ? (int) $_SESSION['mn_qv_edit'][(int) $trp_id] : 0;
+
+        return $at > 0 && time() - $at < 8 * 3600;
+    }
+}
+
 if (!function_exists('maintenance_detail_job_repair_ma_approved_locked_db')) {
     /**
      * Purpose:
@@ -2081,6 +2139,13 @@ if (!function_exists('maintenance_detail_job_update_repair_qv_bundle')) {
                 ),
             ),
         ));
+
+        // ผู้บันทึกใบเสนอราคา / วันที่อนุมัติ (แก้จากหน้า detail_job)
+        require_once __DIR__ . '/job_stamp_helpers.php';
+        mn_job_stamp_set($connect, array($trp_id), 'qv');
+        if (trim((string) $firm_qv_date) !== trim((string) $old_db_firm)) {
+            mn_job_stamp_set($connect, array($trp_id), 'firm');
+        }
 
         return array('ok' => true);
     }

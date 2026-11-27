@@ -86,7 +86,12 @@ if (!function_exists('maintenance_status_wait_spare_fetch_join_rows')) {
         $cols = maintenance_status_wait_spare_list_select_columns_sql();
         $from = ' FROM ((transac_repair tr INNER JOIN transac_spare sp ON sp.tsp_trp_id = tr.trp_id) '
             . 'INNER JOIN transac t ON t.ts_id = tr.trp_ts_id) ';
-        $where = ' WHERE tr.trp_status_job = ? ';
+        // ไม่แสดงเครื่องที่รับคืน/ยกเลิก/สูญหายแล้ว (ใบงานที่สลับเครื่องสำรองมีหลายแถว)
+        require_once __DIR__ . '/spare_flow_helpers.php';
+        mn_spare_ensure_table($connect);
+        $where = ' WHERE tr.trp_status_job = ? '
+            . " AND (sp.tsp_datereturn IS NULL OR TRIM(sp.tsp_datereturn) = '') "
+            . " AND sp.tsp_id NOT IN (SELECT se_tsp_id FROM cl_spare_event WHERE se_type IN ('lost', 'cancel')) ";
         $types = 's';
         $bind = array($status);
 

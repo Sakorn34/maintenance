@@ -16,6 +16,7 @@ require_once __DIR__ . '/includes/maintenance_flow_sql_helpers.php';
 require_once __DIR__ . '/includes/update_rate_helpers.php';
 require_once __DIR__ . '/includes/detail_job_edit_helpers.php';
 require_once __DIR__ . '/includes/status_logistic_helpers.php';
+require_once __DIR__ . '/includes/assess_pdf_helpers.php';
 require_once __DIR__ . '/includes/bootstrap_logistic_recorder.php';
 require_once __DIR__ . '/includes/checklist_helpers.php';
 require_once __DIR__ . '/includes/assess_side_panels.php';
@@ -26,6 +27,9 @@ $trp_id       = maintenance_flow_get_int($_GET, 'trp_id', 0);
 $ar_row          = null;
 $rate_options = array();
 $locked       = false;
+$qv_edit      = false; // เสนอราคาแล้ว รออนุมัติ ปลดล็อกด้วยรหัสตั้งค่า
+// ?pdf=1 เปิดดูใบประเมิน PDF อย่างเดียว (จากหน้ารายละเอียดงาน) ไม่ต้องปลดล็อก ไม่แก้ข้อมูล
+$pdf_only     = isset($_GET['pdf']) && (string) $_GET['pdf'] === '1';
 $locked_ts_id = 0;
 $supported    = false;
 $symptoms     = array();
@@ -33,6 +37,7 @@ $bundles      = array();
 $reasons      = array();
 $history      = array();
 $photos       = array();
+$pdf_edit     = null; // ฉบับแก้ไขของใบประเมิน PDF ที่บันทึกไว้
 $photo_link   = null;
 $saved_symptom_ids = array();
 $checklist_saved   = false;
@@ -43,6 +48,7 @@ if ($trp_id > 0) {
         $locked_ts_id = (int) (isset($ar_row['trp_ts_id']) ? $ar_row['trp_ts_id'] : 0);
         $history      = mn_ar_fetch_history($connect, isset($ar_row['trp_sn']) ? $ar_row['trp_sn'] : '', $locked_ts_id);
         $photos       = mn_photo_list($connect, $trp_id);
+        $pdf_edit     = mn_assess_pdf_fetch($connect, $trp_id);
         // รูปของงานซ่อมครั้งก่อน (แสดงในแผงประวัติ)
         $hist_photos  = mn_photo_by_trps($connect, array_map(function ($h) { return isset($h['trp_id']) ? $h['trp_id'] : 0; }, $history));
         foreach ($history as &$h_row) {
@@ -50,10 +56,33 @@ if ($trp_id > 0) {
         }
         unset($h_row);
         $locked       = maintenance_detail_job_repair_rate_edit_locked($connect, $trp_id);
+        // เสนอราคาแล้วแต่ยังรออนุมัติซ่อม: ใส่รหัสตั้งค่าแล้วแก้ผลประเมินได้ ใบเสนอราคาเดิมไม่เปลี่ยน
+        if (!$pdf_only && $locked && maintenance_detail_job_repair_rate_qv_edit_eligible($connect, $trp_id)
+            && maintenance_checklist_product_supported($connect, (string) (isset($ar_row['trp_product']) ? $ar_row['trp_product'] : ''))) {
+            if (!maintenance_detail_job_repair_rate_qv_edit_granted($trp_id)) {
+                require_once __DIR__ . '/includes/settings_lock_helpers.php';
+                $qv_no = trim((string) (isset($ar_row['trp_qv_number']) ? $ar_row['trp_qv_number'] : ''));
+                mn_settings_gate($connect, 'page', array(
+                    'title'        => 'แก้ผลประเมินงานที่เสนอราคาแล้ว',
+                    'text'         => 'ใส่รหัสตั้งค่าระบบเพื่อแก้ผลประเมิน',
+                    'info'         => 'ใบงาน ' . (isset($ar_row['ts_mtn_number']) ? $ar_row['ts_mtn_number'] : '') . '  SN ' . (isset($ar_row['trp_sn']) ? $ar_row['trp_sn'] : '')
+                        . "\nเสนอราคาแล้ว" . ($qv_no !== '' && $qv_no !== '-' ? ' QV ' . $qv_no : '') . ' รออนุมัติซ่อม'
+                        . "\nแก้แล้วใบเสนอราคาเดิมไม่เปลี่ยน ตรวจราคาให้ตรงกับผลใหม่เอง",
+                    'btn'          => 'ปลดล็อกแก้ผลประเมิน',
+                    'page'         => 'status_wait_firmQV',
+                    'cancel_href'  => $locked_ts_id > 0 ? 'detail_job?ts_id=' . $locked_ts_id : 'status_wait_firmQV',
+                    'cancel_label' => 'กลับ',
+                    'note'         => 'ปลดล็อกแล้วแก้ใบงานนี้ได้ 8 ชั่วโมง',
+                ));
+                maintenance_detail_job_repair_rate_qv_edit_grant($trp_id);
+            }
+            $locked  = false;
+            $qv_edit = true;
+        }
         $product      = (string) (isset($ar_row['trp_product']) ? $ar_row['trp_product'] : '');
         maintenance_checklist_ensure_tables($connect);
         $supported    = maintenance_checklist_product_supported($connect, $product);
-        if (!$locked && $supported) {
+        if ((!$locked || $pdf_only) && $supported) {
             $rate_options = maintenance_update_rate_fetch_rate_options(
                 $connect,
                 maintenance_update_rate_resolve_rate_product($product)
@@ -112,7 +141,7 @@ $redirect_msg = '';
 $redirect_to  = 'status_rate';
 if ($missing) {
     $redirect_msg = 'ไม่พบข้อมูลหรือไม่ได้ระบุ trp_id';
-} elseif ($locked) {
+} elseif ($locked && !$pdf_only) {
     $redirect_msg = 'ไม่สามารถแก้ไขงานประเมินซ่อมได้ เนื่องจากมีการเสนอราคาซ่อมแล้ว';
     $redirect_to  = $locked_ts_id > 0 ? 'detail_job?ts_id=' . $locked_ts_id : 'status_rate';
 } elseif (!$supported) {
@@ -155,6 +184,7 @@ foreach ($symptoms as $s) {
 }
 $boot = array(
     'trpId'          => $trp_id,
+    'jobNo'          => mn_ar_f($ar_row, 'ts_mtn_number'),
     'product'        => mn_ar_f($ar_row, 'trp_product'),
     'symptoms'       => $sym_out,
     'savedSymptomIds' => $saved_symptom_ids,
@@ -176,12 +206,16 @@ $boot = array(
     'userRate'       => $user_rate,
     'insurance'      => $insurance,
     'statusJob'      => mn_ar_f($ar_row, 'trp_status_job'),
+    'qvEdit'         => $qv_edit,
+    'pdfOnly'        => $pdf_only,
+    'pdfEdit'        => $pdf_edit,
+    'backUrl'        => $locked_ts_id > 0 ? 'detail_job?ts_id=' . $locked_ts_id : 'status_rate',
 );
 $sn = mn_ar_f($ar_row, 'trp_sn');
 ?>
   <div class="header">
     <?php
-    $page = 'status_rate';
+    $page = $qv_edit ? 'status_wait_firmQV' : 'status_rate';
     require_once __DIR__ . '/includes/title-h.php';
     ?>
     <div class="progress-container">
@@ -208,7 +242,7 @@ $sn = mn_ar_f($ar_row, 'trp_sn');
 
       <header class="mn-ar-top">
         <div class="mn-ar-top__row">
-          <a class="mn-ar-top__back" href="update_rate?trp_id=<?php echo (int) $trp_id; ?>" aria-label="กลับหน้ารายการประเมิน"><i class="fa fa-angle-left" aria-hidden="true"></i></a>
+          <a class="mn-ar-top__back" href="<?php echo $qv_edit ? 'detail_job?ts_id=' . (int) $locked_ts_id : 'update_rate?trp_id=' . (int) $trp_id; ?>" aria-label="<?php echo $qv_edit ? 'กลับหน้ารายละเอียดงาน' : 'กลับหน้ารายการประเมิน'; ?>"><i class="fa fa-angle-left" aria-hidden="true"></i></a>
           <div class="mn-ar-top__id">
             <span class="mn-ar-top__product"><?php echo mn_ar_h($boot['product']); ?></span>
             <span class="mn-ar-top__sn">SN <?php echo mn_ar_h($sn !== '' ? $sn : '—'); ?></span>
@@ -224,6 +258,14 @@ $sn = mn_ar_f($ar_row, 'trp_sn');
           <li class="mn-ar-steps__seg" data-step="4"><span class="mn-ar-steps__fill"></span><span class="mn-ar-steps__lbl">สรุปผล</span></li>
         </ol>
       </header>
+      <?php if ($qv_edit) {
+          $qv_no = trim(mn_ar_f($ar_row, 'trp_qv_number'));
+          $qv_price = trim(mn_ar_f($ar_row, 'trp_qv_price'));
+          ?>
+      <p class="mn-ar-qvnote" role="note"><i class="fa fa-unlock-alt" aria-hidden="true"></i>
+        <span><b>แก้ผลประเมินหลังเสนอราคา</b> งานนี้เสนอราคาแล้ว<?php echo $qv_no !== '' && $qv_no !== '-' ? ' QV ' . mn_ar_h($qv_no) : ''; ?><?php echo $qv_price !== '' && $qv_price !== '0' ? ' ราคา ' . mn_ar_h($qv_price) : ''; ?> สถานะรออนุมัติซ่อม
+        บันทึกแล้วใบเสนอราคาและสถานะคงเดิม ถ้ารายการซ่อมเปลี่ยน ตรวจราคาเสนอให้ตรงด้วย</span></p>
+      <?php } ?>
 
       <div class="mn-ar-stage">
 
@@ -274,7 +316,10 @@ $sn = mn_ar_f($ar_row, 'trp_sn');
         </section>
 
         <section class="mn-ar-step" data-step="4" aria-label="สรุปผลและอะไหล่">
-          <h1 class="mn-ar-h">สรุปผล</h1>
+          <div class="mn-ar-h-row">
+            <h1 class="mn-ar-h">สรุปผล</h1>
+            <button type="button" class="mn-ar-pdf" id="mn_ar_pdf" title="เปิดตัวอย่างใบประเมิน A4 แก้ข้อความได้ก่อนบันทึกเป็น PDF"><i class="fa fa-file-pdf-o" aria-hidden="true"></i> ส่งออก PDF</button>
+          </div>
 
           <div class="mn-ar-card mn-ar-findings" id="mn_ar_findings"></div>
 
@@ -358,6 +403,7 @@ $sn = mn_ar_f($ar_row, 'trp_sn');
 
       <footer class="mn-ar-foot">
         <button type="button" class="mn-ar-btn mn-ar-btn--ghost" id="mn_ar_prev"><i class="fa fa-angle-left" aria-hidden="true"></i> ย้อน</button>
+        <span class="mn-ar-foot__left" id="mn_ar_left" hidden></span>
         <button type="button" class="mn-ar-btn mn-ar-btn--primary" id="mn_ar_next"><span class="mn-ar-btn__txt">เริ่มตรวจ</span> <i class="fa fa-angle-right" aria-hidden="true"></i></button>
       </footer>
 

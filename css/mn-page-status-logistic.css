@@ -78,3 +78,7 @@
   padding-bottom: 0.5em;
   padding-top: 0.5em;
 }
+
+/* ป้ายเครื่องสำรองที่ต้องส่งใหม่ (ตีกลับ) / ส่งแทนเครื่องอื่น */
+.mn-spare-badge { display: inline-flex; align-items: center; gap: 4px; margin: 2px 0; padding: 1px 9px; border-radius: 999px; background: #e6f1fa; color: #0b5d8f; font-size: 12px; font-weight: 600; }
+.mn-spare-badge.is-bounce { background: #fdf0f0; color: #b91c1c; }

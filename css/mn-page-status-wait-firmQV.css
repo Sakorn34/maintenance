@@ -56,3 +56,11 @@
 .mn-addjob-page.mn-status-wait-firmQV-page .mn-status-wait-firmQV-edit-link__inner {
   white-space: nowrap;
 }
+
+/* ลิงก์แก้ผลประเมินด้วยแบบประเมินใหม่ (ต้องใส่รหัสตั้งค่า) */
+.mn-wfq-assess {
+  display: inline-flex; align-items: center; gap: 5px; margin-top: 4px; padding: 2px 10px;
+  border: 1px solid #f0c78a; border-radius: 999px; background: #fff8eb;
+  color: #b45309 !important; font-size: 12.5px; text-decoration: none !important; white-space: nowrap;
+}
+.mn-wfq-assess:hover { background: #ffedd5; border-color: #e5a95b; }

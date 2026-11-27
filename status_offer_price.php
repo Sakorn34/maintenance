@@ -54,7 +54,7 @@ $row_count = count($join_rows);
 <link rel="stylesheet" type="text/css" href="css/smoothness/jquery-ui-1.7.2.custom.css" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" />
 <link rel="stylesheet" href="css/mn-page-addjob.css" />
-<link rel="stylesheet" href="css/mn-page-status-offer-price.css" />
+<link rel="stylesheet" href="css/mn-page-status-offer-price.css?v=<?php echo filemtime(__DIR__ . '/css/mn-page-status-offer-price.css'); ?>" />
 <link rel="stylesheet" href="css/mn-photo-lightbox.css?v=<?php echo filemtime(__DIR__ . '/css/mn-photo-lightbox.css'); ?>" />
 <?php
 $mnModalAssetPrefix = '';
@@ -162,7 +162,9 @@ require_once __DIR__ . '/includes/mn_modal_assets.php';
           <?php echo maintenance_status_logistic_h($trp_product); ?> &nbsp; <?php echo maintenance_status_logistic_h($trp_sn); ?> <br />
           <span class="mn-status-offer-price-age">อายุเครื่อง <?php echo maintenance_status_logistic_h($repair_age); ?></span><br />
           <span class="mn-status-offer-price-ins"><?php echo maintenance_status_logistic_h($insurance_val); ?></span></td>
-        <td width="43%" align="left"><span class="mn-status-offer-price-tech"><?php echo maintenance_status_logistic_h($tech); ?></span>
+        <?php $tech_v = maintenance_status_offer_price_tech_short($tech); ?>
+        <td width="43%" align="left"><span class="mn-status-offer-price-tech"><?php echo maintenance_status_logistic_h($tech_v['short']); ?></span>
+          <?php if ($tech_v['cut']) { ?><details class="mn-status-offer-price-full"><summary>ดูผลตรวจรายข้อ</summary><span class="mn-status-offer-price-tech"><?php echo maintenance_status_logistic_h($tech); ?></span></details><?php } ?>
           <?php echo mn_photo_strip_html(isset($photos_by_trp[$trp_id]) ? $photos_by_trp[$trp_id] : array(), 10, $trp_id); ?> <br /><b>รายการซ่อม</b><br /><?php echo $list_repair_html; ?><br>
           <a href="update_rate?trp_id=<?php echo (int) $trp_id; ?>"><span class="mn-status-offer-price-edit-rate"><i class="fa fa-wrench"></i> แก้ไขรายการซ่อม</span></a></td>
         <td width="8%" align="center">
